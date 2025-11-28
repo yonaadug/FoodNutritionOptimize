@@ -1,0 +1,7 @@
+__pycache__/
+.DS_Store
+.testing_apis/
+.trash/
+FoodData_Central_foundation_food_csv_2025-04-24/
+food-nutrition-app/node_modules
+food-nutrition-app/.next

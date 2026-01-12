@@ -1,11 +1,21 @@
 import sqlite3
 import argparse
 import logging
+import os
 from usda_fdc_api import USDAFoodDataCentralAPI
 
 # Configuration
-DB_PATH = "food-nutrition-app/nutrition.db"
-API_KEY = "whVe7UDbKycE3pV1TWxMpyXoU8iIgurZ5IdTXgYP"
+# Paths relative to project root
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(PROJECT_ROOT, "food-nutrition-app", "nutrition.db")
+
+# Load API key from environment variable or config file
+API_KEY = os.environ.get('USDA_API_KEY', '')
+if not API_KEY:
+    config_path = os.path.join(PROJECT_ROOT, 'config', 'api_keys.txt')
+    if os.path.exists(config_path):
+        with open(config_path) as f:
+            API_KEY = f.read().strip()
 
 def verify_food(fdc_id):
     """Verify a specific food item against the USDA API"""

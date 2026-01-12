@@ -9,9 +9,20 @@ from usda_fdc_api import USDAFoodDataCentralAPI
 import time
 
 # Configuration
-CSV_DIR = "FoodData_Central_foundation_food_csv_2025-04-24"
-DB_PATH = "nutrition_download.db"
-API_KEY = "whVe7UDbKycE3pV1TWxMpyXoU8iIgurZ5IdTXgYP"
+# Paths are relative to project root (parent directory of scripts/)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CSV_DIR = os.path.join(PROJECT_ROOT, "FoodData_Central_foundation_food_csv_2025-04-24")
+DB_PATH = os.path.join(PROJECT_ROOT, "data", "nutrition_download.db")
+
+# Load API key from environment variable or config file
+API_KEY = os.environ.get('USDA_API_KEY', '')
+if not API_KEY:
+    config_path = os.path.join(PROJECT_ROOT, 'config', 'api_keys.txt')
+    if os.path.exists(config_path):
+        with open(config_path) as f:
+            API_KEY = f.read().strip()
+    else:
+        logging.warning("No API key found. Set USDA_API_KEY environment variable or create config/api_keys.txt")
 
 # Setup logging
 logging.basicConfig(

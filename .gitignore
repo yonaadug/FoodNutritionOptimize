@@ -1,7 +1,82 @@
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Node.js / Next.js
+node_modules/
+.next/
+out/
+dist/
+build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Electron
+electron-app/dist/
+electron-app/out/
+electron-app/app/
+*.dmg
+*.exe
+*.AppImage
+
+# Environment variables & API keys
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.key
+*.pem
+config/secrets.json
+api_keys.txt
+usda_api_key.txt
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+nutrition_download.db
+food-nutrition-app/nutrition.db
+
+# Data directories
+data/raw/
+data/csv/
+FoodData_Central_*/
+*.csv
+!data/samples/*.csv
+
+# OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing & Temporary
 .testing_apis/
 .trash/
-FoodData_Central_foundation_food_csv_2025-04-24/
-food-nutrition-app/node_modules
-food-nutrition-app/.next
+tmp/
+temp/
+*.tmp
+
+# Logs
+logs/
+*.logconfig/

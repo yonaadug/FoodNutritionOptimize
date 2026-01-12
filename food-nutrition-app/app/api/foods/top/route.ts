@@ -1,50 +1,45 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getTopFoodsByNutrient } from '@/lib/db';
 import { NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
 
+/**
+ * GET /api/foods/top
+ * Returns top foods ranked by a specific nutrient
+ *
+ * Query params:
+ * - nutrient: Nutrient key (e.g., "protein_g", "vitamin_c_mg")
+ * - limit: Optional, max foods to return (default: 50)
+ */
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const nutrient = searchParams.get('nutrient');
-
-    if (!nutrient || !NUTRIENT_CONFIG[nutrient]) {
-        return NextResponse.json({ error: 'Invalid nutrient' }, { status: 400 });
-    }
-
-    const db = getDb();
-
-    // Safe to interpolate because we validated against NUTRIENT_CONFIG keys
-    // We also filter out items with 0 value to keep results relevant
-    const stmt = db.prepare(`
-        SELECT * FROM foods 
-        WHERE ${nutrient} > 0 
-        ORDER BY ${nutrient} DESC 
-        LIMIT 50
-    `);
-
     try {
-        const foods = stmt.all() as any[];
+        const { searchParams } = new URL(request.url);
+        const nutrient = searchParams.get('nutrient');
+        const limit = parseInt(searchParams.get('limit') || '50', 10);
 
-        if (foods.length > 0) {
-            const ids = foods.map(f => f.id);
-            const placeholders = ids.map(() => '?').join(',');
-
-            const servingStmt = db.prepare(`SELECT * FROM serving_sizes WHERE food_id IN (${placeholders})`);
-            const allServings = servingStmt.all(...ids) as any[];
-
-            const servingsMap = new Map<number, any[]>();
-            allServings.forEach(s => {
-                if (!servingsMap.has(s.food_id)) servingsMap.set(s.food_id, []);
-                servingsMap.get(s.food_id)?.push(s);
-            });
-
-            foods.forEach(f => {
-                f.serving_sizes = servingsMap.get(f.id) || [];
-            });
+        // Validate nutrient parameter against allowed keys
+        if (!nutrient || !NUTRIENT_CONFIG[nutrient]) {
+            return NextResponse.json(
+                { error: 'Invalid nutrient parameter' },
+                { status: 400 }
+            );
         }
+
+        // Validate limit
+        if (isNaN(limit) || limit < 1 || limit > 100) {
+            return NextResponse.json(
+                { error: 'Limit must be between 1 and 100' },
+                { status: 400 }
+            );
+        }
+
+        const foods = await getTopFoodsByNutrient(nutrient, limit);
 
         return NextResponse.json({ foods });
     } catch (error) {
-        console.error('Database error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        console.error('Error fetching top foods:', error);
+        return NextResponse.json(
+            { error: 'Internal server error' },
+            { status: 500 }
+        );
     }
 }

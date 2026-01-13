@@ -4,7 +4,7 @@
 
 NutriCompare is a smart nutrition planning application that uses mathematical optimization to help you create the perfect diet. Simply tell it what nutrients you need, and it finds the optimal combination of foods to meet your goals while minimizing calories or cost.
 
-![NutriCompare Screenshot](docs/assets/screenshot.png)
+![NutriCompare Top Foods Explorer](screenshots/show_foods_based_on_selenium.png)
 
 ---
 
@@ -486,20 +486,26 @@ MIT License - see LICENSE file
 
 - **Issues**: [GitHub Issues](https://github.com/yourusername/FoodNutritionOptimize/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/yourusername/FoodNutritionOptimize/discussions)
-- **Email**: your.email@example.com
+- **Email**: primeyonathan@gmail.com
 
 ---
 
 ## Screenshots
 
-### Main Interface
-![Main interface with search and selection](docs/assets/main-interface.png)
-
-### Optimization Results
-![Results showing diet plan and constraint analysis](docs/assets/results.png)
-
 ### Top Foods Explorer
-![Explorer showing foods highest in protein](docs/assets/top-foods.png)
+Discover foods highest in specific nutrients. Select any nutrient (protein, vitamins, minerals, etc.) and instantly see the top-ranked foods. Click to add foods to your optimization or comparison.
+
+![Top Foods Explorer - Selenium ranking](screenshots/show_foods_based_on_selenium.png)
+
+### Nutrition Facts Comparison
+Compare nutrition facts labels side-by-side for multiple foods. View detailed nutrient breakdowns in FDA-style nutrition labels, making it easy to see how different foods stack up.
+
+![Food comparison with nutrition facts](screenshots/food_selection_comparison.png)
+
+### Optimization Settings
+Set your nutritional goals with customizable constraints. Define minimum and maximum values for calories, macronutrients, vitamins, and minerals. Toggle diversity mode to encourage variety in your diet plan.
+
+![Optimization settings panel](screenshots/optimize_nutrition_based_on_requirements.png)
 
 ---
 

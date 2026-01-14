@@ -79,7 +79,7 @@
     "food",
     "usda"
   ],
-  "author": "Your Name",
+  "author": "Yonathan Kebede <primeyonathan@gmail.com>",
   "license": "MIT",
   "devDependencies": {
     "@electron/rebuild": "^4.0.2",

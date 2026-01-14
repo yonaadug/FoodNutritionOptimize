@@ -531,7 +531,7 @@ export default function Home() {
                                                 <input
                                                     type="number"
                                                     placeholder="Min"
-                                                    value={constraint.min !== undefined ? constraint.min : ''}
+                                                    value={constraint.min ?? ''}
                                                     onChange={(e) => handleConstraintChange(key, 'min', e.target.value ? parseFloat(e.target.value) : undefined)}
                                                     style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }}
                                                 />
@@ -540,7 +540,7 @@ export default function Home() {
                                                 <input
                                                     type="number"
                                                     placeholder="Max"
-                                                    value={constraint.max !== undefined ? constraint.max : ''}
+                                                    value={constraint.max ?? ''}
                                                     onChange={(e) => handleConstraintChange(key, 'max', e.target.value ? parseFloat(e.target.value) : undefined)}
                                                     style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--bg-page)', color: 'var(--text-primary)', fontSize: '13px' }}
                                                 />

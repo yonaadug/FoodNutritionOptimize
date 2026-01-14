@@ -79,4 +79,5 @@ temp/
 
 # Logs
 logs/
-*.logconfig/
+*.log
+config/

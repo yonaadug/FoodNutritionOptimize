@@ -74,7 +74,7 @@ The app shows you if you're over/under your targets with progress bars and sugge
 #### 2. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/FoodNutritionOptimize.git
+git clone https://github.com/yonaadug/FoodNutritionOptimize.git
 cd FoodNutritionOptimize
 ```
 
@@ -104,19 +104,19 @@ Run NutriCompare as a **native desktop application** with complete network isola
 #### Development Mode
 
 ```bash
-# Build the web app first
+# Install dependencies in both directories
 cd food-nutrition-app
-npm run build
+npm install
 
-# Then start Electron
 cd ../electron-app
 npm install
 npm start
 ```
 
 **What you'll see:**
-- Terminal: `Internal server running on port XXXXX (not exposed to network)`
-- App window opens with `app://nutricompare/` (no localhost!)
+- Terminal: Server starts automatically in development mode
+- App window opens showing the NutriCompare interface
+- No need to build first - dev server starts automatically!
 
 #### Build Installers
 
@@ -484,8 +484,7 @@ MIT License - see LICENSE file
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/FoodNutritionOptimize/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/FoodNutritionOptimize/discussions)
+- **Issues**: [GitHub Issues](https://github.com/yonaadug/FoodNutritionOptimize/issues)
 - **Email**: primeyonathan@gmail.com
 
 ---

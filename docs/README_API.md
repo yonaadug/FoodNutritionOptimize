@@ -2,6 +2,13 @@
 
 A comprehensive Python wrapper for the [USDA FoodData Central API](https://fdc.nal.usda.gov/api-guide).
 
+> **The app's database is not built through this API.** `food-nutrition-app/nutrition.db` is built
+> from FDC bulk downloads by `scripts/build_db.py` (no API key needed) — see
+> [VERIFICATION_INSTRUCTIONS.md](VERIFICATION_INSTRUCTIONS.md) and [KEY_NUTRIENTS.md](KEY_NUTRIENTS.md).
+> This wrapper (`scripts/usda_fdc_api.py`) is kept for ad-hoc lookups; for a quick DB-vs-API comparison
+> use `python3 -I scripts/verify_data_integrity.py --api <fdcId>`.
+> Never commit API keys: use the `USDA_API_KEY` environment variable or the gitignored `config/api_keys.txt`.
+
 ## Features
 
 - **Complete API Coverage**: All FoodData Central endpoints supported

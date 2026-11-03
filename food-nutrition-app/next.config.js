@@ -27,6 +27,9 @@ const nextConfig = {
     images: {
         unoptimized: true,
     },
+    // Don't let `next dev` write an AGENTS.md into the repo on every run.
+    agentRules: false,
+
     outputFileTracingExcludes: {
         // 'next-server' is the key Next uses for the server runtime's own trace.
         'next-server': ['**/node_modules/sharp/**/*', '**/node_modules/@img/**/*'],

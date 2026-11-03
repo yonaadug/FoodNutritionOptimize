@@ -1,45 +1,26 @@
-import { NextResponse } from 'next/server';
-import { getTopFoodsByNutrient } from '@/lib/db';
-import { NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
+import { NextRequest, NextResponse } from 'next/server';
+import { getTopFoodsByNutrient, sortableNutrients, SEARCH_MAX_LIMIT } from '@/lib/db';
+import { ApiError, handleError, intParam } from '@/lib/api';
+
+export const runtime = 'nodejs';
 
 /**
- * GET /api/foods/top
- * Returns top foods ranked by a specific nutrient
- *
- * Query params:
- * - nutrient: Nutrient key (e.g., "protein_g", "vitamin_c_mg")
- * - limit: Optional, max foods to return (default: 50)
+ * GET /api/foods/top?nutrient=protein_g&limit=50
+ * Top foods by a nutrient per 100 g (foods with no data are skipped).
+ * `nutrient` must be a configured nutrient that exists as a column in the DB.
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     try {
-        const { searchParams } = new URL(request.url);
-        const nutrient = searchParams.get('nutrient');
-        const limit = parseInt(searchParams.get('limit') || '50', 10);
-
-        // Validate nutrient parameter against allowed keys
-        if (!nutrient || !NUTRIENT_CONFIG[nutrient]) {
-            return NextResponse.json(
-                { error: 'Invalid nutrient parameter' },
-                { status: 400 }
-            );
+        const params = request.nextUrl.searchParams;
+        const nutrient = params.get('nutrient') ?? '';
+        const allowed = sortableNutrients();
+        if (!allowed.includes(nutrient)) {
+            throw new ApiError(400, 'invalid_request', 'Invalid nutrient parameter', { allowed });
         }
-
-        // Validate limit
-        if (isNaN(limit) || limit < 1 || limit > 100) {
-            return NextResponse.json(
-                { error: 'Limit must be between 1 and 100' },
-                { status: 400 }
-            );
-        }
-
+        const limit = intParam(params, 'limit', 50, 1, SEARCH_MAX_LIMIT);
         const foods = await getTopFoodsByNutrient(nutrient, limit);
-
         return NextResponse.json({ foods });
     } catch (error) {
-        console.error('Error fetching top foods:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
+        return handleError(error, 'foods/top');
     }
 }

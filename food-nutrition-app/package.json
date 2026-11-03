@@ -18,6 +18,7 @@
     },
     "scripts": {
         "dev": "next dev",
+        "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./lib/testing/register.mjs --test \"lib/**/*.test.ts\"",
         "build": "next build",
         "start": "next start",
         "lint": "eslint .",

@@ -1,20 +1,159 @@
-// @ts-ignore
 import Database from 'better-sqlite3';
-import path from 'path';
-
-const dbPath = path.join(process.cwd(), 'nutrition.db');
-
+import fs from 'node:fs';
+import path from 'node:path';
 import type { Food, ServingSize } from './food-types';
+import { ALL_NUTRIENT_CONFIG } from './nutrient-defaults';
+
 export type { Food, ServingSize } from './food-types';
 
-let db: Database.Database | null = null;
+type DB = Database.Database;
 
-export function getDb(): Database.Database {
-    if (!db) {
-        console.log(`Opening database at ${dbPath}`);
-        db = new Database(dbPath, { verbose: console.log });
+export const DB_FILENAME = 'nutrition.db';
+export const SEARCH_MAX_LIMIT = 100;
+export const SEARCH_MAX_PAGE = 500;
+export const SEARCH_MAX_QUERY_LENGTH = 200;
+const SEARCH_MAX_TOKENS = 8;
+const MAX_IDS = 500;
+
+export class DatabaseUnavailableError extends Error {}
+
+// ---------------------------------------------------------------------------
+// Database location
+// ---------------------------------------------------------------------------
+
+/**
+ * Locate nutrition.db.
+ *
+ * 1. NUTRITION_DB_PATH (absolute, or relative to cwd). If set, it must exist.
+ * 2. <cwd>/nutrition.db                 `next dev` / `next start` in the app dir;
+ *                                       standalone server.js (it chdir()s to its
+ *                                       own directory) and the Electron app, which
+ *                                       spawns server.js with cwd = app/.
+ * 3. <cwd>/food-nutrition-app/nutrition.db   run from the repository root.
+ * 4. $LAMBDA_TASK_ROOT/nutrition.db     AWS Lambda bundle root.
+ * 5. parents of cwd (up to 3 levels)    `.next/standalone` inside the app dir
+ *                                       when the DB was not copied next to it.
+ */
+export function resolveDbPath(
+    env: Record<string, string | undefined> = process.env,
+    cwd: string = process.cwd(),
+    exists: (p: string) => boolean = fileExists,
+): { path: string; tried: string[] } {
+    const explicit = env.NUTRITION_DB_PATH?.trim();
+    if (explicit) {
+        const p = path.resolve(cwd, explicit);
+        if (exists(p)) return { path: p, tried: [p] };
+        throw new DatabaseUnavailableError(`NUTRITION_DB_PATH points to a missing file: ${p}`);
     }
-    return db;
+    const candidates = [
+        path.join(cwd, DB_FILENAME),
+        path.join(cwd, 'food-nutrition-app', DB_FILENAME),
+    ];
+    if (env.LAMBDA_TASK_ROOT) candidates.push(path.join(env.LAMBDA_TASK_ROOT, DB_FILENAME));
+    let dir = cwd;
+    for (let i = 0; i < 3; i++) {
+        const parent = path.dirname(dir);
+        if (parent === dir) break;
+        dir = parent;
+        candidates.push(path.join(dir, DB_FILENAME));
+    }
+    const tried = Array.from(new Set(candidates));
+    const found = tried.find(exists);
+    if (!found) {
+        throw new DatabaseUnavailableError(`${DB_FILENAME} not found (set NUTRITION_DB_PATH). Tried: ${tried.join(', ')}`);
+    }
+    return { path: found, tried };
+}
+
+function fileExists(p: string): boolean {
+    try {
+        return fs.statSync(p).isFile();
+    } catch {
+        return false;
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Connection (read-only singleton, survives Next dev hot reloads)
+// ---------------------------------------------------------------------------
+
+interface SchemaInfo {
+    hasFts: boolean;
+    hasMeta: boolean;
+    hasServingSizes: boolean;
+    foodColumns: Set<string>;
+}
+
+interface Connection {
+    db: DB;
+    path: string;
+    schema: SchemaInfo;
+}
+
+const globalKey = Symbol.for('nutricompare.db');
+type GlobalWithDb = typeof globalThis & { [globalKey]?: Connection };
+
+export function openDatabase(file: string): Connection {
+    const db = new Database(file, { readonly: true, fileMustExist: true });
+    return { db, path: file, schema: inspectSchema(db) };
+}
+
+function inspectSchema(db: DB): SchemaInfo {
+    const tables = new Set(
+        (db.prepare(`SELECT name FROM sqlite_master WHERE type IN ('table', 'view')`).all() as { name: string }[])
+            .map(r => r.name),
+    );
+    const foodColumns = new Set(
+        (db.prepare(`SELECT name FROM pragma_table_info('foods')`).all() as { name: string }[]).map(r => r.name),
+    );
+    return {
+        hasFts: tables.has('foods_fts'),
+        hasMeta: tables.has('meta'),
+        hasServingSizes: tables.has('serving_sizes'),
+        foodColumns,
+    };
+}
+
+function connection(): Connection {
+    const g = globalThis as GlobalWithDb;
+    if (!g[globalKey]) {
+        const { path: file } = resolveDbPath();
+        try {
+            g[globalKey] = openDatabase(file);
+        } catch (e) {
+            throw new DatabaseUnavailableError(`Could not open ${file}: ${(e as Error).message}`);
+        }
+    }
+    return g[globalKey]!;
+}
+
+/** The shared read-only connection. */
+export function getDb(): DB {
+    return connection().db;
+}
+
+// ---------------------------------------------------------------------------
+// Queries (each takes an optional connection so tests can use a temp DB)
+// ---------------------------------------------------------------------------
+
+function attachServingSizes(foods: Food[], conn: Connection): void {
+    if (foods.length === 0) return;
+    if (!conn.schema.hasServingSizes) {
+        for (const f of foods) f.serving_sizes = [];
+        return;
+    }
+    const ids = Array.from(new Set(foods.map(f => f.id)));
+    const placeholders = ids.map(() => '?').join(',');
+    const rows = conn.db
+        .prepare(`SELECT id, food_id, label, weight_g FROM serving_sizes WHERE food_id IN (${placeholders}) ORDER BY food_id, weight_g, id`)
+        .all(...ids) as ServingSize[];
+    const byFood = new Map<number, ServingSize[]>();
+    for (const s of rows) {
+        const list = byFood.get(s.food_id);
+        if (list) list.push(s);
+        else byFood.set(s.food_id, [s]);
+    }
+    for (const f of foods) f.serving_sizes = byFood.get(f.id) ?? [];
 }
 
 export interface SearchResult {
@@ -22,111 +161,234 @@ export interface SearchResult {
     total: number;
     page: number;
     totalPages: number;
+    limit: number;
+}
+
+/** Split a user query into lowercase word tokens (same idea as FTS5 unicode61). */
+export function tokenizeQuery(query: string): string[] {
+    const tokens = query.toLowerCase().normalize('NFKC').match(/[\p{L}\p{N}]+/gu) ?? [];
+    return Array.from(new Set(tokens.map(t => t.slice(0, 40)))).slice(0, SEARCH_MAX_TOKENS);
+}
+
+function escapeLike(s: string): string {
+    return s.replace(/[\\%_]/g, c => '\\' + c);
+}
+
+/** A token plus simple English singular/plural variants (egg/eggs, tomato/tomatoes). */
+export function wordForms(token: string): string[] {
+    const forms = new Set([token, token + 's', token + 'es']);
+    if (token.length > 3 && token.endsWith('es')) forms.add(token.slice(0, -2));
+    if (token.length > 2 && token.endsWith('s')) forms.add(token.slice(0, -1));
+    return Array.from(forms);
+}
+
+/** Prefix used for matching so plural queries find singular names (milks -> milk*, tomatoes -> tomato*). */
+export function matchStem(token: string): string {
+    if (token.length > 4 && token.endsWith('es')) return token.slice(0, -2);
+    if (token.length > 3 && token.endsWith('s') && !token.endsWith('ss')) return token.slice(0, -1);
+    return token;
+}
+
+/** Description normalised so whole words are delimited by single spaces at both ends. */
+const NORM_DESC = `(' ' || replace(replace(replace(replace(replace(replace(replace(lower(f.description), ', ', ' '), ',', ' '), '(', ' '), ')', ' '), '-', ' '), '/', ' '), '.', ' ') || ' ')`;
+
+/**
+ * Foundation, then SR Legacy, then everything else. Uses the DB's
+ * data_type_rank column (schema v2) when present.
+ */
+function dataTypeRank(schema: SchemaInfo): string {
+    if (schema.foodColumns.has('data_type_rank')) return 'coalesce(f.data_type_rank, 99)';
+    return `CASE WHEN lower(coalesce(f.data_type, '')) LIKE 'foundation%' THEN 1
+        WHEN lower(coalesce(f.data_type, '')) LIKE 'sr%legacy%' THEN 2 ELSE 3 END`;
+}
+
+export interface SearchOptions {
+    /** Include SR Legacy rows superseded by a Foundation food (hidden by default). */
+    includeSuperseded?: boolean;
 }
 
 /**
- * Attaches serving sizes to an array of foods
- * @param foods Array of foods to attach serving sizes to
- * @param database Database instance
+ * Ranked search.
+ *   tier 0: description equals the query (case-insensitive)
+ *   tier 1: description starts with the query's first word (singular/plural)
+ *           and every query word appears as a whole word
+ *   tier 2: every query word appears as a whole word in the description
+ *   tier 3: every query word prefixes a word in (FTS) / occurs in (LIKE) the description
+ *   tier 4: matched only through food_category
+ * then data type (Foundation, SR Legacy, others), then shorter descriptions,
+ * then bm25 relevance (FTS only).
+ * Uses the foods_fts FTS5 index when present, LIKE otherwise.
  */
-function attachServingSizes(foods: Food[], database: Database.Database): void {
-    if (foods.length === 0) return;
+export function searchFoodsIn(conn: Connection, query: string, page = 1, limit = 20, options: SearchOptions = {}): SearchResult {
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit) || 20), SEARCH_MAX_LIMIT);
+    const safePage = Math.min(Math.max(1, Math.floor(page) || 1), SEARCH_MAX_PAGE);
+    const q = query.trim().toLowerCase().slice(0, SEARCH_MAX_QUERY_LENGTH);
+    const tokens = tokenizeQuery(q);
+    if (tokens.length === 0) return { foods: [], total: 0, page: safePage, totalPages: 0, limit: safeLimit };
 
-    const ids = foods.map(f => f.id);
-    const placeholders = ids.map(() => '?').join(',');
+    const params: Record<string, string | number> = {
+        q,
 
-    const servingStmt = database.prepare(`SELECT * FROM serving_sizes WHERE food_id IN (${placeholders})`);
-    const allServings = servingStmt.all(...ids) as ServingSize[];
-
-    const servingsMap = new Map<number, ServingSize[]>();
-    allServings.forEach(s => {
-        if (!servingsMap.has(s.food_id)) servingsMap.set(s.food_id, []);
-        servingsMap.get(s.food_id)?.push(s);
+        limit: safeLimit,
+        offset: (safePage - 1) * safeLimit,
+    };
+    tokens.forEach((t, i) => {
+        wordForms(t).forEach((form, j) => {
+            params[`w${i}_${j}`] = `% ${escapeLike(form)} %`;
+            if (i === 0) params[`f${j}`] = ` ${escapeLike(form)} %`;
+        });
+        params[`s${i}`] = `%${escapeLike(matchStem(t))}%`;
     });
+    const wholeWord = (i: number) =>
+        '(' + wordForms(tokens[i]).map((_, j) => `${NORM_DESC} LIKE @w${i}_${j} ESCAPE '\\'`).join(' OR ') + ')';
+    const allWords = tokens.map((_, i) => wholeWord(i)).join(' AND ');
+    const startsWithFirst = '(' + wordForms(tokens[0]).map((_, j) => `${NORM_DESC} LIKE @f${j} ESCAPE '\\'`).join(' OR ') + ')';
 
-    foods.forEach(f => {
-        f.serving_sizes = servingsMap.get(f.id) || [];
-    });
+    let from: string;
+    let where: string;
+    let tier3: string;
+    if (conn.schema.hasFts) {
+        // Tokens are [\p{L}\p{N}]+ only, so quoting them cannot inject FTS syntax.
+        params.match = tokens.map(t => `"${matchStem(t)}"*`).join(' ');
+        params.descMatch = tokens.map(t => `description : "${matchStem(t)}"*`).join(' AND ');
+        from = `foods f JOIN (SELECT rowid AS id, bm25(foods_fts, 10.0, 1.0) AS score FROM foods_fts WHERE foods_fts MATCH @match) m ON m.id = f.id`;
+        where = '1';
+        tier3 = `f.id IN (SELECT rowid FROM foods_fts WHERE foods_fts MATCH @descMatch)`;
+    } else {
+        from = 'foods f';
+        where = tokens
+            .map((_, i) => `(lower(f.description) LIKE @s${i} ESCAPE '\\' OR lower(coalesce(f.food_category, '')) LIKE @s${i} ESCAPE '\\')`)
+            .join(' AND ');
+        tier3 = tokens.map((_, i) => `lower(f.description) LIKE @s${i} ESCAPE '\\'`).join(' AND ');
+    }
+
+    if (!options.includeSuperseded && conn.schema.foodColumns.has('superseded_by_fdc_id')) {
+        where += ' AND f.superseded_by_fdc_id IS NULL';
+    }
+    const relevance = conn.schema.hasFts ? 'm.score, ' : '';
+
+    const tier = `CASE
+        WHEN lower(f.description) = @q THEN 0
+        WHEN ${startsWithFirst} AND ${allWords} THEN 1
+        WHEN ${allWords} THEN 2
+        WHEN ${tier3} THEN 3
+        ELSE 4 END`;
+
+    const countParams = { ...params };
+    const total = (conn.db.prepare(`SELECT COUNT(*) AS count FROM ${from} WHERE ${where}`)
+        .get(pick(countParams, conn.schema.hasFts ? ['match'] : tokens.map((_, i) => `s${i}`))) as { count: number }).count;
+
+    const foods = conn.db.prepare(`
+        SELECT f.* FROM ${from}
+        WHERE ${where}
+        ORDER BY ${tier}, ${dataTypeRank(conn.schema)}, length(f.description), ${relevance}f.description, f.id
+        LIMIT @limit OFFSET @offset
+    `).all(params) as Food[];
+    attachServingSizes(foods, conn);
+
+    return { foods, total, page: safePage, totalPages: Math.ceil(total / safeLimit), limit: safeLimit };
 }
 
-export async function searchFoods(query: string, page: number = 1, limit: number = 20): Promise<SearchResult> {
-    const database = getDb();
-    const offset = (page - 1) * limit;
+function pick(obj: Record<string, string | number>, keys: string[]): Record<string, string | number> {
+    const out: Record<string, string | number> = {};
+    for (const k of keys) out[k] = obj[k];
+    return out;
+}
 
-    // Get total count
-    const countStmt = database.prepare(`
-        SELECT COUNT(*) as count
-        FROM foods
-        WHERE description LIKE ?
-    `);
-    const total = (countStmt.get(`%${query}%`) as { count: number }).count;
+export async function searchFoods(query: string, page = 1, limit = 20, options: SearchOptions = {}): Promise<SearchResult> {
+    return searchFoodsIn(connection(), query, page, limit, options);
+}
 
-    // Get paginated results
-    // Ordering by length of description helps surface exact matches or simpler items first
-    const stmt = database.prepare(`
-        SELECT * FROM foods
-        WHERE description LIKE ?
-        ORDER BY length(description) ASC, description ASC
-        LIMIT ? OFFSET ?
-    `);
-
-    const foods = stmt.all(`%${query}%`, limit, offset) as Food[];
-    attachServingSizes(foods, database);
-
-    return {
-        foods,
-        total,
-        page,
-        totalPages: Math.ceil(total / limit)
-    };
+export function getFoodsByIdsIn(conn: Connection, ids: number[]): Food[] {
+    const unique = Array.from(new Set(ids.filter(id => Number.isSafeInteger(id)))).slice(0, MAX_IDS);
+    if (unique.length === 0) return [];
+    const placeholders = unique.map(() => '?').join(',');
+    const foods = conn.db.prepare(`SELECT * FROM foods WHERE id IN (${placeholders})`).all(...unique) as Food[];
+    attachServingSizes(foods, conn);
+    return foods;
 }
 
 export async function getFoodById(id: number): Promise<Food | undefined> {
-    const database = getDb();
-    const stmt = database.prepare('SELECT * FROM foods WHERE id = ?');
-    const food = stmt.get(id) as Food | undefined;
-
-    if (food) {
-        const servings = database.prepare('SELECT * FROM serving_sizes WHERE food_id = ?').all(id) as ServingSize[];
-        food.serving_sizes = servings;
-    }
-
-    return food;
+    return getFoodsByIdsIn(connection(), [id])[0];
 }
 
 export async function getFoodsByIds(ids: number[]): Promise<Food[]> {
-    if (ids.length === 0) return [];
+    return getFoodsByIdsIn(connection(), ids);
+}
 
-    const database = getDb();
-    const placeholders = ids.map(() => '?').join(',');
-    const stmt = database.prepare(`SELECT * FROM foods WHERE id IN (${placeholders})`);
+/** Nutrient keys that may be used as a sort column: configured AND present in this DB. */
+export function sortableNutrients(conn: Connection = connection()): string[] {
+    return ['calories', ...Object.keys(ALL_NUTRIENT_CONFIG).filter(k => k !== 'calories')]
+        .filter(k => conn.schema.foodColumns.has(k));
+}
 
-    const foods = stmt.all(...ids) as Food[];
-    attachServingSizes(foods, database);
-
+export function getTopFoodsByNutrientIn(conn: Connection, nutrient: string, limit = 50): Food[] {
+    // Identifiers cannot be bound as parameters, so the column is allow-listed
+    // against both the nutrient config and the actual table schema.
+    if (!sortableNutrients(conn).includes(nutrient) || !/^[a-z0-9_]+$/.test(nutrient)) {
+        throw new RangeError(`Unknown nutrient: ${nutrient}`);
+    }
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit) || 50), SEARCH_MAX_LIMIT);
+    const foods = conn.db
+        .prepare(`SELECT * FROM foods WHERE "${nutrient}" > 0 ORDER BY "${nutrient}" DESC, length(description), id LIMIT ?`)
+        .all(safeLimit) as Food[];
+    attachServingSizes(foods, conn);
     return foods;
 }
 
 /**
- * Gets top foods ranked by a specific nutrient
- * @param nutrient Nutrient key (must be a valid column name)
- * @param limit Maximum number of foods to return
- * @returns Array of foods sorted by nutrient content (descending)
+ * Gets top foods ranked by a specific nutrient (per 100 g).
+ * Throws RangeError for nutrients that are not allow-listed.
  */
-export async function getTopFoodsByNutrient(nutrient: string, limit: number = 50): Promise<Food[]> {
-    const database = getDb();
+export async function getTopFoodsByNutrient(nutrient: string, limit = 50): Promise<Food[]> {
+    return getTopFoodsByNutrientIn(connection(), nutrient, limit);
+}
 
-    // Query only foods with non-zero nutrient values to keep results relevant
-    // Note: nutrient parameter must be validated against NUTRIENT_CONFIG before calling
-    const stmt = database.prepare(`
-        SELECT * FROM foods
-        WHERE ${nutrient} > 0
-        ORDER BY ${nutrient} DESC
-        LIMIT ?
-    `);
+/**
+ * Replace client-supplied nutrient data with the database's (the server is the
+ * source of truth for nutrients). Matches by fdc_id when the client sent one
+ * (ids can change when the DB is rebuilt), else by id. The client's id is kept
+ * so per-food constraints keyed by id still line up. Unknown foods are
+ * returned unchanged.
+ */
+export function hydrateFoodsIn<T extends { id: number; fdc_id?: number | null }>(conn: Connection, foods: T[]): (T | Food)[] {
+    if (foods.length === 0) return [];
+    const fdcIds = foods.map(f => f.fdc_id).filter((x): x is number => Number.isSafeInteger(x));
+    const ids = foods.filter(f => !Number.isSafeInteger(f.fdc_id)).map(f => f.id).filter(id => Number.isSafeInteger(id));
+    const rows: Food[] = [];
+    if (fdcIds.length > 0) {
+        const unique = Array.from(new Set(fdcIds)).slice(0, MAX_IDS);
+        rows.push(...(conn.db.prepare(`SELECT * FROM foods WHERE fdc_id IN (${unique.map(() => '?').join(',')})`).all(...unique) as Food[]));
+    }
+    if (ids.length > 0) rows.push(...getFoodsByIdsIn(conn, ids));
+    attachServingSizes(rows, conn);
+    const byFdc = new Map(rows.map(r => [r.fdc_id, r]));
+    const byId = new Map(rows.map(r => [r.id, r]));
+    return foods.map(f => {
+        const row = Number.isSafeInteger(f.fdc_id) ? byFdc.get(f.fdc_id as number) : byId.get(f.id);
+        if (!row) return f;
+        return { ...row, id: f.id };
+    });
+}
 
-    const foods = stmt.all(limit) as Food[];
-    attachServingSizes(foods, database);
+export function hydrateFoods<T extends { id: number; fdc_id?: number | null }>(foods: T[]): (T | Food)[] {
+    return hydrateFoodsIn(connection(), foods);
+}
 
-    return foods;
+/** Provenance key/values from the `meta` table, or null if the DB has none. */
+export function getMetaIn(conn: Connection): Record<string, string> | null {
+    if (!conn.schema.hasMeta) return null;
+    const rows = conn.db.prepare(`SELECT key, value FROM meta ORDER BY key`).all() as { key: string; value: string }[];
+    return Object.fromEntries(rows.map(r => [r.key, r.value]));
+}
+
+export function getMeta(): Record<string, string> | null {
+    return getMetaIn(connection());
+}
+
+/** Lightweight description of the open database (for /api/meta). */
+export function getDbInfo(): { searchMode: 'fts' | 'like'; foodCount: number } {
+    const conn = connection();
+    const { count } = conn.db.prepare('SELECT COUNT(*) AS count FROM foods').get() as { count: number };
+    return { searchMode: conn.schema.hasFts ? 'fts' : 'like', foodCount: count };
 }

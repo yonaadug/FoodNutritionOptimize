@@ -1,52 +1,41 @@
 {
   "name": "nutricompare-desktop",
+  "productName": "NutriCompare",
   "version": "1.0.0",
   "description": "NutriCompare - Desktop nutrition optimization application",
-  "main": "main-standalone.js",
+  "main": "main.js",
   "scripts": {
-    "start": "unset ELECTRON_RUN_AS_NODE && NODE_ENV=development electron .",
-    "start:prod": "unset ELECTRON_RUN_AS_NODE && NODE_ENV=production electron .",
-    "start:standalone": "NODE_ENV=development electron main-standalone.js",
-    "postinstall": "electron-rebuild",
-    "prebuild": "cd ../food-nutrition-app && npm run build && mkdir -p ../electron-app/app && cp nutrition.db ../electron-app/app/nutrition.db",
-    "build": "npm run prebuild && electron-builder",
-    "build:mac": "npm run prebuild && electron-builder --mac",
-    "build:win": "npm run prebuild && electron-builder --win",
-    "build:linux": "npm run prebuild && electron-builder --linux",
-    "package": "npm run prebuild && electron-builder --dir"
+    "start": "unset ELECTRON_RUN_AS_NODE && electron .",
+    "start:prod": "npm run stage && unset ELECTRON_RUN_AS_NODE && NUTRICOMPARE_USE_STAGED=1 electron .",
+    "stage": "npm --prefix ../food-nutrition-app run build && node scripts/stage-web.js",
+    "pack": "npm run stage && electron-builder --dir",
+    "build": "npm run stage && electron-builder",
+    "build:mac": "npm run stage && electron-builder --mac",
+    "build:win": "npm run stage && electron-builder --win",
+    "build:linux": "npm run stage && electron-builder --linux"
   },
   "build": {
     "appId": "com.nutricompare.app",
     "productName": "NutriCompare",
     "directories": {
+      "app": ".",
       "output": "dist"
     },
     "files": [
-      "main-protocol.js",
-      "main-standalone.js",
-      "main-zero-network.js",
-      "preload.js",
-      "preload-ipc.js",
-      "!main.js",
-      "app/nutrition.db",
+      "main.js",
+      "assets/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
       {
-        "from": "../food-nutrition-app/.next/standalone",
-        "to": "app",
+        "from": "staging",
+        "to": ".",
         "filter": [
-          "**/*",
-          "!nutrition.db"
+          "web/**/*"
         ]
-      },
-      {
-        "from": "../food-nutrition-app/.next/static",
-        "to": "app/.next/static"
-      },
-      {
-        "from": "../food-nutrition-app/public",
-        "to": "app/public"
       }
     ],
-    "asar": false,
+    "asar": true,
     "mac": {
       "category": "public.app-category.healthcare-fitness",
       "icon": "assets/icon.icns",
@@ -56,7 +45,7 @@
       ]
     },
     "win": {
-      "icon": "assets/icon.ico",
+      "icon": "assets/icon.png",
       "target": [
         "nsis",
         "portable"
@@ -82,15 +71,7 @@
   "author": "Yonathan Kebede <primeyonathan@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "@electron/rebuild": "^4.0.2",
-    "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
-  },
-  "dependencies": {
-    "better-sqlite3": "^12.4.5",
-    "javascript-lp-solver": "^0.4.24",
-    "next": "^16.0.4",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0"
   }
 }

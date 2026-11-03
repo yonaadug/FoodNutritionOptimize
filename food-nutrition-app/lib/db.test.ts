@@ -25,7 +25,9 @@ const FOODS: [number, number, string, string, string, number | null][] = [
 
 let tmp: string;
 
-function buildDb(file: string, { fts, meta, v2 = false }: { fts: boolean; meta: boolean; v2?: boolean }) {
+type FoodRow = [number, number, string, string, string, number | null];
+
+function buildDb(file: string, { fts, meta, v2 = false, rows = FOODS }: { fts: boolean; meta: boolean; v2?: boolean; rows?: FoodRow[] }) {
     const w = new Database(file);
     const cols = NUTRIENT_COLUMNS.map(c => `${c} REAL`).join(', ');
     w.exec(`CREATE TABLE foods (id INTEGER PRIMARY KEY, fdc_id INTEGER UNIQUE, description TEXT, data_type TEXT,
@@ -33,7 +35,7 @@ function buildDb(file: string, { fts, meta, v2 = false }: { fts: boolean; meta: 
         CREATE TABLE serving_sizes (id INTEGER PRIMARY KEY, food_id INTEGER, label TEXT, weight_g REAL);`);
     const ins = w.prepare(`INSERT INTO foods (id, fdc_id, description, data_type, food_category, calories, protein_g)
         VALUES (?, ?, ?, ?, ?, 50, ?)`);
-    for (const f of FOODS) ins.run(...f);
+    for (const f of rows) ins.run(...f);
     if (v2) {
         w.exec(`ALTER TABLE foods ADD COLUMN data_type_rank INTEGER;
             ALTER TABLE foods ADD COLUMN superseded_by_fdc_id INTEGER;
@@ -124,8 +126,9 @@ for (const mode of ['fts', 'like'] as const) {
             assert.deepEqual(ids('milks').slice(0, 3), [2, 1, 6], 'plural query matches singular words');
         });
 
-        it('matches all words in any order', () => {
-            assert.deepEqual(ids('whole milk'), [4, 9, 1, 6]);
+        it('matches all words in any order, preferring foods named by a query word', () => {
+            // "Milk, whole..." is milk; "Cheese, mozzarella, whole milk" merely contains it.
+            assert.deepEqual(ids('whole milk'), [1, 6, 4, 9]);
         });
 
         it('paginates with total and totalPages', () => {
@@ -172,6 +175,54 @@ describe('searchFoods (schema v2 columns)', () => {
     it('top foods skips NULLs and supports columns present only in the new schema', () => {
         assert.deepEqual(getTopFoodsByNutrientIn(v2Conn, 'choline_mg', 10).map(f => f.id), [8, 2]);
         assert.deepEqual(getTopFoodsByNutrientIn(v2Conn, 'protein_g', 20).map(f => f.id).includes(7), false);
+    });
+});
+
+describe('searchFoods ranking (everyday foods first)', () => {
+    const RANKING: FoodRow[] = [
+        [1, 2001, 'Egg, yolk, dried', 'foundation_food', 'Dairy and Egg Products', 34],
+        [2, 2002, 'Eggs, Grade A, Large, egg whole', 'foundation_food', 'Dairy and Egg Products', 12.4],
+        [3, 2003, 'Eggs, Grade A, Large, egg yolk', 'foundation_food', 'Dairy and Egg Products', 16],
+        [4, 2004, 'Egg, whole, raw, fresh', 'sr_legacy_food', 'Dairy and Egg Products', 12.6],
+        [5, 2005, 'Salmon nuggets, breaded, frozen, heated', 'sr_legacy_food', 'Finfish and Shellfish Products', 12],
+        [6, 2006, 'Salmon, sockeye, canned, total can contents', 'sr_legacy_food', 'Finfish and Shellfish Products', 23],
+        [7, 2007, 'Fish, salmon, sockeye, wild caught, raw', 'foundation_food', 'Finfish and Shellfish Products', 22],
+        [8, 2008, 'Salmon salad', 'survey_fndds_food', 'Fish', 15],
+        [9, 2009, 'Apricots, dried, sulfured, uncooked', 'sr_legacy_food', 'Fruits and Fruit Juices', 3.4],
+        [10, 2010, 'Apricots, raw', 'sr_legacy_food', 'Fruits and Fruit Juices', 1.4],
+        [11, 2011, 'Pepper, banana, raw', 'foundation_food', 'Vegetables and Vegetable Products', 1.7],
+        [12, 2012, 'Bananas, raw', 'sr_legacy_food', 'Fruits and Fruit Juices', 1.1],
+        [13, 2013, 'Oil, corn, peanut, and olive', 'sr_legacy_food', 'Fats and Oils', 0],
+        [14, 2014, 'Oil, olive, salad or cooking', 'sr_legacy_food', 'Fats and Oils', 0],
+    ];
+    let conn: ReturnType<typeof openDatabase>;
+    before(() => {
+        conn = buildDb(path.join(tmp, 'ranking.db'), { fts: true, meta: false, rows: RANKING });
+    });
+    after(() => conn.db.close());
+    const ids = (q: string) => searchFoodsIn(conn, q).foods.map(f => f.id);
+
+    it('puts plain whole foods ahead of dried/processed forms', () => {
+        assert.deepEqual(ids('egg'), [2, 3, 4, 1]);
+        assert.deepEqual(ids('apricot'), [10, 9]);
+    });
+
+    it('treats a food named in its second segment ("Fish, salmon") as that food', () => {
+        assert.deepEqual(ids('salmon'), [7, 6, 8, 5]);
+    });
+
+    it('only treats generic group prefixes that way ("Pepper, banana" is a pepper)', () => {
+        assert.deepEqual(ids('banana'), [12, 11]);
+    });
+
+    it('prefers foods whose leading segments name more of the query words', () => {
+        assert.deepEqual(ids('olive oil'), [14, 13]);
+        assert.deepEqual(ids('banana pepper'), [11]);
+    });
+
+    it('does not penalise a processed form the user asked for', () => {
+        assert.equal(ids('dried apricots')[0], 9);
+        assert.equal(ids('dried egg')[0], 1);
     });
 });
 

@@ -215,8 +215,7 @@ export interface SearchOptions {
  *   tier 2: every query word appears as a whole word in the description
  *   tier 3: every query word prefixes a word in (FTS) / occurs in (LIKE) the description
  *   tier 4: matched only through food_category
- * then data type (Foundation, SR Legacy, others), then shorter descriptions,
- * then bm25 relevance (FTS only).
+ * Matches are then ordered by rankCandidates (everyday forms first).
  * Uses the foods_fts FTS5 index when present, LIKE otherwise.
  */
 export function searchFoodsIn(conn: Connection, query: string, page = 1, limit = 20, options: SearchOptions = {}): SearchResult {
@@ -265,7 +264,6 @@ export function searchFoodsIn(conn: Connection, query: string, page = 1, limit =
     if (!options.includeSuperseded && conn.schema.foodColumns.has('superseded_by_fdc_id')) {
         where += ' AND f.superseded_by_fdc_id IS NULL';
     }
-    const relevance = conn.schema.hasFts ? 'm.score, ' : '';
 
     const tier = `CASE
         WHEN lower(f.description) = @q THEN 0
@@ -274,26 +272,96 @@ export function searchFoodsIn(conn: Connection, query: string, page = 1, limit =
         WHEN ${tier3} THEN 3
         ELSE 4 END`;
 
-    const countParams = { ...params };
-    const total = (conn.db.prepare(`SELECT COUNT(*) AS count FROM ${from} WHERE ${where}`)
-        .get(pick(countParams, conn.schema.hasFts ? ['match'] : tokens.map((_, i) => `s${i}`))) as { count: number }).count;
-
-    const foods = conn.db.prepare(`
-        SELECT f.* FROM ${from}
+    // Every match is ranked (the DB holds ~10k foods, so this stays cheap); only the
+    // requested page is then loaded in full.
+    const candidates = conn.db.prepare(`
+        SELECT f.id, f.description, ${tier} AS tier, ${dataTypeRank(conn.schema)} AS dtr, ${conn.schema.hasFts ? 'm.score' : '0'} AS score
+        FROM ${from}
         WHERE ${where}
-        ORDER BY ${tier}, ${dataTypeRank(conn.schema)}, length(f.description), ${relevance}f.description, f.id
-        LIMIT @limit OFFSET @offset
-    `).all(params) as Food[];
-    attachServingSizes(foods, conn);
+    `).all(omit(params, ['limit', 'offset'])) as SearchCandidate[];
+    const ranked = rankCandidates(candidates, tokens);
 
+    const pageIds = ranked.slice((safePage - 1) * safeLimit, safePage * safeLimit).map(c => c.id);
+    const byId = new Map(getFoodsByIdsIn(conn, pageIds).map(f => [f.id, f]));
+    const foods = pageIds.map(id => byId.get(id)).filter((f): f is Food => f !== undefined);
+
+    const total = ranked.length;
     return { foods, total, page: safePage, totalPages: Math.ceil(total / safeLimit), limit: safeLimit };
 }
 
-function pick(obj: Record<string, string | number>, keys: string[]): Record<string, string | number> {
-    const out: Record<string, string | number> = {};
-    for (const k of keys) out[k] = obj[k];
+interface SearchCandidate {
+    id: number;
+    description: string;
+    tier: number;
+    dtr: number;
+    score: number;
+}
+
+/** Words that mark a processed or specialty form; ranked after the plain food unless the query asks for them. */
+const SPECIALTY_WORDS = new Set([
+    'dried', 'dehydrated', 'powder', 'powdered', 'freeze', 'babyfood', 'infant', 'formula', 'imitation',
+    'substitute', 'nuggets', 'breaded', 'canned', 'frozen', 'smoked', 'patty', 'patties',
+    'sticks', 'mix', 'concentrate', 'restaurant', 'pickled',
+]);
+
+/**
+ * Generic USDA group prefixes whose second segment names the food ("Fish, salmon, ...",
+ * "Nuts, almonds", "Cheese, cheddar"). Elsewhere the first segment is the food
+ * ("Pepper, banana" is a pepper, "Flour, oat" is flour).
+ */
+const GROUP_PREFIXES = new Set([
+    'fish', 'nuts', 'seeds', 'spices', 'cheese', 'beverages', 'alcoholic beverage',
+    'mollusks', 'crustaceans', 'game meat',
+]);
+
+/** Words that mark the plain, everyday form of a food. */
+const PLAIN_WORDS = new Set(['raw', 'whole', 'plain', 'fresh']);
+
+/**
+ * Orders search matches so the everyday form of the food the user typed comes first:
+ *   1. match tier (exact description; every query word as a whole word; prefix; category only)
+ *   2. head: a query word names the food — it is the first comma segment ("Egg, ...") or the
+ *      second after a group prefix ("Fish, salmon, ...") > the first segment starts with it
+ *      ("Salmon nuggets") > elsewhere
+ *   3. more query words naming one of the first two segments ("olive oil" -> "Oil, olive, ...")
+ *   4. fewer specialty words (dried, canned, breaded, ...) the query didn't ask for
+ *   5. data type (Foundation, SR Legacy, others)
+ *   6. plain-form words (raw, whole, plain, fresh)
+ *   7. shorter description, then bm25 relevance (FTS only), then description and id
+ */
+export function rankCandidates<T extends SearchCandidate>(candidates: T[], tokens: string[]): T[] {
+    const tokenForms = tokens.map(t => new Set(wordForms(t)));
+    const queryForms = new Set(tokens.flatMap(wordForms));
+    const keyed = candidates.map(c => {
+        const desc = c.description.toLowerCase();
+        const segments = desc.split(',').map(s => s.trim());
+        const words = tokenizeQuery(desc);
+        const firstWord = tokenizeQuery(segments[0] ?? '')[0] ?? '';
+        const named = queryForms.has(segments[0]) || (GROUP_PREFIXES.has(segments[0]) && queryForms.has(segments[1] ?? ''));
+        const head = named ? 0 : queryForms.has(firstWord) ? 1 : 2;
+        const leading = segments.slice(0, 2);
+        const namedWords = tokenForms.filter(forms => leading.some(seg => forms.has(seg))).length;
+        const specialty = words.filter(w => SPECIALTY_WORDS.has(w) && !queryForms.has(w)).length;
+        const plain = words.some(w => PLAIN_WORDS.has(w)) ? 0 : 1;
+        // Tiers 1 and 2 differ only by "starts with the first query word", which `head` refines.
+        const tierGroup = c.tier === 0 ? 0 : c.tier <= 2 ? 1 : c.tier - 1;
+        return { c, key: [tierGroup, head, -namedWords, specialty, c.dtr, plain, c.description.length, c.score] };
+    });
+    keyed.sort((a, b) => {
+        for (let i = 0; i < a.key.length; i++) {
+            if (a.key[i] !== b.key[i]) return a.key[i] - b.key[i];
+        }
+        return a.c.description.localeCompare(b.c.description) || a.c.id - b.c.id;
+    });
+    return keyed.map(k => k.c);
+}
+
+function omit(obj: Record<string, string | number>, keys: string[]): Record<string, string | number> {
+    const out = { ...obj };
+    for (const k of keys) delete out[k];
     return out;
 }
+
 
 export async function searchFoods(query: string, page = 1, limit = 20, options: SearchOptions = {}): Promise<SearchResult> {
     return searchFoodsIn(connection(), query, page, limit, options);

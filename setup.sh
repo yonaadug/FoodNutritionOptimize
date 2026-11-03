@@ -1,102 +1,86 @@
-#!/bin/bash
-# NutriCompare Setup Script
+#!/usr/bin/env bash
+# NutriCompare setup: checks prerequisites, fetches the LFS database and
+# installs the web app. Safe to re-run.
+#
+# Usage: ./setup.sh [--with-electron] [--with-python]
+#   --with-electron  also install the desktop app (electron-app/)
+#   --with-python    also create .venv and install the data-ingestion deps
+set -euo pipefail
 
-echo "=================================="
-echo "NutriCompare Setup"
-echo "=================================="
-echo ""
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WEB="$ROOT/food-nutrition-app"
+MIN_NODE=22
 
-# Colors for output
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+WITH_ELECTRON=0
+WITH_PYTHON=0
+for arg in "$@"; do
+  case "$arg" in
+    --with-electron) WITH_ELECTRON=1 ;;
+    --with-python) WITH_PYTHON=1 ;;
+    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
 
-# Check Node.js
-echo "Checking prerequisites..."
-if ! command -v node &> /dev/null; then
-    echo "❌ Node.js is not installed. Please install Node.js 18+ from https://nodejs.org/"
-    exit 1
+if [ -t 1 ]; then GREEN=$'\033[0;32m'; YELLOW=$'\033[1;33m'; RED=$'\033[0;31m'; NC=$'\033[0m'; else GREEN=; YELLOW=; RED=; NC=; fi
+ok()   { echo "${GREEN}✔${NC} $*"; }
+warn() { echo "${YELLOW}!${NC} $*"; }
+die()  { echo "${RED}✘${NC} $*" >&2; exit 1; }
+
+echo "== NutriCompare setup =="
+
+# --- Prerequisites ---------------------------------------------------------
+command -v node >/dev/null 2>&1 || die "Node.js is not installed. Install Node.js ${MIN_NODE}+ (LTS) from https://nodejs.org/"
+NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
+[ "$NODE_MAJOR" -ge "$MIN_NODE" ] || die "Node.js ${MIN_NODE}+ required, found $(node -v). Upgrade (e.g. 'nvm install --lts')."
+ok "Node.js $(node -v)"
+command -v npm >/dev/null 2>&1 || die "npm is not installed"
+ok "npm $(npm -v)"
+
+# --- Database (Git LFS) ----------------------------------------------------
+is_sqlite() { [ -f "$1" ] && [ "$(head -c 15 "$1")" = "SQLite format 3" ]; }
+
+if ! is_sqlite "$WEB/nutrition.db"; then
+  if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    command -v git-lfs >/dev/null 2>&1 \
+      || die "nutrition.db is a Git LFS pointer and git-lfs is not installed. Install it (macOS: 'brew install git-lfs'; Debian/Ubuntu: 'sudo apt install git-lfs'), then re-run."
+    echo "Fetching the database with Git LFS..."
+    git -C "$ROOT" lfs install --local >/dev/null
+    git -C "$ROOT" lfs pull --include="food-nutrition-app/nutrition.db"
+  fi
+fi
+is_sqlite "$WEB/nutrition.db" || die "food-nutrition-app/nutrition.db is missing or not a SQLite file. Run 'git lfs pull', or rebuild it with the scripts in scripts/ (see README)."
+ok "Database: food-nutrition-app/nutrition.db ($(du -h "$WEB/nutrition.db" | cut -f1 | tr -d ' '))"
+
+# --- Web app ---------------------------------------------------------------
+echo "Installing web app dependencies..."
+# --ignore-scripts: better-sqlite3 13 ships prebuilt N-API binaries; this stops
+# some npm versions from trying a node-gyp source build (needs Python + a C++ toolchain).
+( cd "$WEB" && npm ci --no-audit --no-fund --ignore-scripts )
+( cd "$WEB" && node -e "const D=require('better-sqlite3'); const db=new D('nutrition.db',{readonly:true}); const n=db.prepare('select count(*) n from foods').get().n; console.log('foods in DB:', n)" ) \
+  || die "better-sqlite3 failed to load. See 'Troubleshooting' in README.md (native module)."
+ok "Web app ready"
+
+# --- Optional: desktop app -------------------------------------------------
+if [ "$WITH_ELECTRON" = 1 ]; then
+  echo "Installing desktop app dependencies..."
+  ( cd "$ROOT/electron-app" && npm ci --no-audit --no-fund )
+  ok "Desktop app ready (cd electron-app && npm start)"
 fi
 
-NODE_VERSION=$(node -v | cut -d'v' -f2 | cut -d'.' -f1)
-if [ "$NODE_VERSION" -lt 18 ]; then
-    echo "❌ Node.js version must be 18 or higher. Current: $(node -v)"
-    exit 1
+# --- Optional: Python data scripts -----------------------------------------
+if [ "$WITH_PYTHON" = 1 ]; then
+  command -v python3 >/dev/null 2>&1 || die "python3 is not installed"
+  python3 -m venv "$ROOT/.venv"
+  "$ROOT/.venv/bin/pip" install --quiet -r "$ROOT/requirements.txt"
+  ok "Python venv ready (source .venv/bin/activate)"
 fi
 
-echo "✅ Node.js $(node -v) detected"
+cat <<EOF
 
-# Check npm
-if ! command -v npm &> /dev/null; then
-    echo "❌ npm is not installed"
-    exit 1
-fi
-echo "✅ npm $(npm -v) detected"
+${GREEN}Setup complete.${NC}
 
-echo ""
-echo "=================================="
-echo "Setting up Web App"
-echo "=================================="
-
-# Navigate to web app directory
-cd food-nutrition-app
-
-# Install dependencies
-echo "Installing dependencies..."
-npm install
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to install dependencies"
-    exit 1
-fi
-
-echo "✅ Dependencies installed"
-
-# Check if database exists
-if [ ! -f "nutrition.db" ]; then
-    echo ""
-    echo "${YELLOW}⚠️  Database not found!${NC}"
-    echo "The app needs a nutrition database to function."
-    echo ""
-    echo "Options:"
-    echo "  1. Use sample data (quick start)"
-    echo "  2. Download from USDA (requires API key)"
-    echo ""
-    read -p "Choose option (1 or 2): " choice
-
-    if [ "$choice" = "2" ]; then
-        echo ""
-        echo "To download data from USDA:"
-        echo "1. Get API key: https://fdc.nal.usda.gov/api-key-signup.html"
-        echo "2. Create config/api_keys.txt and paste your key"
-        echo "3. Run: cd ../scripts && python ingest_data.py"
-        echo ""
-        read -p "Press Enter when done..."
-    fi
-fi
-
-# Create .env file if it doesn't exist
-if [ ! -f ".env" ]; then
-    echo "Creating .env file..."
-    cp .env.example .env
-    echo "✅ .env file created (edit if needed)"
-fi
-
-echo ""
-echo "=================================="
-echo "Setup Complete!"
-echo "=================================="
-echo ""
-echo "To start the web app:"
-echo "  ${GREEN}cd food-nutrition-app${NC}"
-echo "  ${GREEN}npm run dev${NC}"
-echo ""
-echo "Then open: ${GREEN}http://localhost:3000${NC}"
-echo ""
-echo "To build desktop app:"
-echo "  ${GREEN}cd electron-app${NC}"
-echo "  ${GREEN}npm install${NC}"
-echo "  ${GREEN}npm start${NC}"
-echo ""
-echo "For more info, see README.md"
-echo ""
+  Web app (dev):     cd food-nutrition-app && npm run dev     -> http://localhost:3000
+  Production build:  cd food-nutrition-app && npm run build && npm start
+  Desktop app:       ./setup.sh --with-electron, then: cd electron-app && npm start
+EOF

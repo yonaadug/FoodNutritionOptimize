@@ -46,7 +46,7 @@ The app shows you if you're over/under your targets with progress bars and sugge
 ## Features
 
 ### Core Features
-- 🔍 **Search 411 Foods** from USDA FoodData Central (vegetables, fruits, meats, dairy, grains, etc.)
+- 🔍 **Search 9,400+ Foods** from USDA FoodData Central (Foundation Foods, SR Legacy, and FNDDS mixed dishes)
 - 📊 **30+ Nutrients Tracked** (protein, vitamins A-K, minerals, fats, fiber, etc.)
 - ⚙️ **Automatic Optimization** using linear programming solver
 - 🎯 **Custom Constraints** for each nutrient (min/max limits)
@@ -165,43 +165,35 @@ standalone server against the real (LFS) database.
 
 ## Data Setup (Optional)
 
-The app comes with a pre-built database of 411 foods. If you want to refresh or customize the data:
+The app ships with a pre-built database (`food-nutrition-app/nutrition.db`, Git LFS, ~7 MB) of
+9,435 foods from USDA FoodData Central:
+- 389 Foundation Foods (2026-10 release)
+- 7,448 SR Legacy foods
+- 1,598 FNDDS mixed dishes
 
-### Get USDA API Key (Free)
+Missing nutrient values are stored as `NULL` (no data), not `0`. You only need the steps below
+to rebuild or customize the data.
 
-1. Go to https://fdc.nal.usda.gov/api-key-signup.html
-2. Sign up for a free API key
-3. Create `config/api_keys.txt` and paste your key:
-   ```
-   YOUR_API_KEY_HERE
-   ```
+### Rebuild the Database
 
-   Or set as environment variable:
-   ```bash
-   export USDA_API_KEY=your_key_here
-   ```
-
-### Download USDA Data (CSVs)
-
-If you want to ingest data from CSV files instead of the API:
-
-1. Go to https://fdc.nal.usda.gov/download-datasets.html
-2. Download **Foundation Foods CSV** (latest version)
-3. Extract to project root (creates `FoodData_Central_foundation_food_csv_YYYY-MM-DD/`)
-
-### Run Data Ingestion
+The builder uses only the Python standard library. It downloads the pinned USDA bulk releases
+(sha256-verified) into `data/raw/` and writes `food-nutrition-app/nutrition.db`. No API key is needed.
 
 ```bash
-cd scripts
-
-# Option 1: From USDA API (requires API key)
-python ingest_data.py
-
-# Option 2: From CSV files (requires CSV download)
-python ingest_csv.py
+python3 -I scripts/build_db.py --download   # fetch + verify + build
+python3 -I scripts/build_db.py              # rebuild from data/raw (already downloaded)
+python3 -I scripts/verify_data_integrity.py # validate; exits non-zero on any failure
 ```
 
-This creates/updates `food-nutrition-app/nutrition.db`
+To move to a newer USDA release, update `SOURCES` in `scripts/build_db.py`. See
+[docs/VERIFICATION_INSTRUCTIONS.md](docs/VERIFICATION_INSTRUCTIONS.md) for details and
+[docs/KEY_NUTRIENTS.md](docs/KEY_NUTRIENTS.md) for nutrient definitions and units.
+
+### USDA API Key (optional)
+
+You only need a key for live API spot checks (`verify_data_integrity.py --api <fdcId>`) and the
+`usda_fdc_api.py` wrapper. Get a free key at https://fdc.nal.usda.gov/api-key-signup.html, then
+`export USDA_API_KEY=...` or put it in `config/api_keys.txt` (gitignored). Never commit it.
 
 ---
 
@@ -223,7 +215,7 @@ FoodNutritionOptimize/
 │   │   ├── db.ts                # SQLite database access
 │   │   ├── optimizer.ts         # Linear programming solver
 │   │   └── nutrient-defaults.ts # Nutrient configurations
-│   ├── nutrition.db             # SQLite database (411 foods)
+│   ├── nutrition.db             # SQLite database (9,435 USDA foods, Git LFS)
 │   └── package.json
 │
 ├── electron-app/                # Electron desktop wrapper
@@ -237,19 +229,19 @@ FoodNutritionOptimize/
 ├── setup.sh                     # One-shot developer setup
 │
 ├── scripts/                     # Data ingestion scripts (Python)
-│   ├── ingest_data.py           # USDA API → SQLite
-│   ├── ingest_csv.py            # CSV → SQLite
-│   ├── usda_fdc_api.py          # API wrapper
-│   ├── key_nutrients.py         # Nutrient definitions
-│   └── verify_data_integrity.py # Data validation
+│   ├── build_db.py              # USDA bulk downloads → nutrition.db (reproducible)
+│   ├── nutrient_spec.py         # Nutrient ID/unit mapping used by the builder
+│   ├── verify_data_integrity.py # Automated validation (exit 1 on failure)
+│   ├── usda_fdc_api.py          # Optional FDC API wrapper
+│   └── key_nutrients.py         # Nutrient reference helpers
 │
 ├── docs/                        # Documentation
 │   ├── README_API.md            # API documentation
 │   ├── KEY_NUTRIENTS.md         # Nutrient reference
 │   └── VERIFICATION_INSTRUCTIONS.md
 │
-├── data/                        # Data files (gitignored)
-│   └── nutrition_download.db    # Staging database
+├── data/                        # Data files
+│   └── raw/                     # Downloaded USDA releases (gitignored)
 │
 ├── config/                      # Configuration (gitignored)
 │   └── api_keys.txt.example     # API key template
@@ -395,9 +387,11 @@ View optimization equations:
 # Ensure database exists
 ls food-nutrition-app/nutrition.db
 
-# If missing, run data ingestion
-cd scripts
-python ingest_data.py  # or ingest_csv.py
+# If it's a tiny text file, it's an LFS pointer: fetch the real DB
+git lfs pull
+
+# Or rebuild it from USDA data
+python3 -I scripts/build_db.py --download
 ```
 
 ### Optimization Fails (Infeasible)

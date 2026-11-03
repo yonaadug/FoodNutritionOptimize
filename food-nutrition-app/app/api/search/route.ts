@@ -1,22 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchFoods } from '@/lib/db';
+import { searchFoods, SEARCH_MAX_LIMIT, SEARCH_MAX_PAGE, SEARCH_MAX_QUERY_LENGTH } from '@/lib/db';
+import { ApiError, boolParam, handleError, intParam } from '@/lib/api';
 
+export const runtime = 'nodejs';
+
+/**
+ * GET /api/search?q=...&page=1&limit=20[&includeSuperseded=1]
+ * 200: { foods, total, page, totalPages, limit }
+ */
 export async function GET(request: NextRequest) {
-    const searchParams = request.nextUrl.searchParams;
-    const query = searchParams.get('q');
-
-    if (!query) {
-        return NextResponse.json({ error: 'Query parameter required' }, { status: 400 });
-    }
-
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '20');
-
     try {
-        const result = await searchFoods(query, page, limit);
+        const params = request.nextUrl.searchParams;
+        const query = params.get('q')?.trim() ?? '';
+        if (!query) throw new ApiError(400, 'invalid_request', 'Query parameter q is required');
+        if (query.length > SEARCH_MAX_QUERY_LENGTH) {
+            throw new ApiError(400, 'invalid_request', `q must be at most ${SEARCH_MAX_QUERY_LENGTH} characters`);
+        }
+        const page = intParam(params, 'page', 1, 1, SEARCH_MAX_PAGE);
+        const limit = intParam(params, 'limit', 20, 1, SEARCH_MAX_LIMIT);
+        const result = await searchFoods(query, page, limit, { includeSuperseded: boolParam(params, 'includeSuperseded') });
         return NextResponse.json(result);
     } catch (error) {
-        console.error('Search error:', error);
-        return NextResponse.json({ error: 'Search failed' }, { status: 500 });
+        return handleError(error, 'search');
     }
 }

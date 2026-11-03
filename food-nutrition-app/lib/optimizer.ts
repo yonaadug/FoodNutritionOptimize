@@ -79,8 +79,8 @@ export interface OptimizationResult {
     diet?: DietItem[];
     guaranteedStats?: { calories: number; nutrients: Record<string, number> };
     totalCalories?: number;
-    totalNutrients?: any;
-    constraintLimits?: any;
+    totalNutrients?: Record<string, number>;
+    constraintLimits?: Record<string, ConstraintLimit>;
     debugEquations?: string[];
     lpModel?: LpModel;
     /** Set (with success=false) for malformed input; the API maps it to HTTP 400. */

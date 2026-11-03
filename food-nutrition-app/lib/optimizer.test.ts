@@ -13,7 +13,7 @@ describe('optimizeDiet: basic mechanics', () => {
         const result = optimizeDiet({ foods: mockFoods, customConstraints: constraints });
 
         assert.equal(result.success, true);
-        assert.ok(result.totalNutrients.protein_g >= 49.9, `protein ${result.totalNutrients.protein_g}`);
+        assert.ok(result.totalNutrients!.protein_g >= 49.9, `protein ${result.totalNutrients!.protein_g}`);
         assert.ok(result.diet?.some(d => d.food.id === chicken.id), 'chicken is the most calorie-efficient protein');
     });
 
@@ -110,7 +110,7 @@ describe('optimizeDiet: guaranteed foods', () => {
             guaranteedFoods: [{ food: chicken, grams: 100 }],
         });
         assert.equal(result.success, true, result.message);
-        assert.ok(result.totalNutrients.protein_g >= 49.9);
+        assert.ok(result.totalNutrients!.protein_g >= 49.9);
         const added = result.diet!.reduce((s, d) => s + d.nutrients.protein_g, 0);
         assert.ok(added > 0 && added < 40, `added protein ${added}`);
     });
@@ -119,7 +119,7 @@ describe('optimizeDiet: guaranteed foods', () => {
         const result = optimizeDiet({ foods: [], guaranteedFoods: [{ food: chicken, grams: 200 }] });
         assert.equal(result.success, true);
         assert.equal(result.totalCalories, 330);
-        assert.ok(Math.abs(result.totalNutrients.protein_g - 62) < 1e-9);
+        assert.ok(Math.abs(result.totalNutrients!.protein_g - 62) < 1e-9);
     });
 });
 
@@ -136,8 +136,8 @@ describe('optimizeDiet: constraint parsing regressions', () => {
         constraints.vitamin_b12_ug = { max: 100 };
         const result = optimizeDiet({ foods: [broccoli], customConstraints: constraints });
         assert.equal(result.success, true, result.message);
-        assert.equal(result.constraintLimits.vitamin_d_ug, undefined);
-        assert.deepEqual(result.constraintLimits.vitamin_b12_ug, { min: undefined, max: 100 });
+        assert.equal(result.constraintLimits!.vitamin_d_ug, undefined);
+        assert.deepEqual(result.constraintLimits!.vitamin_b12_ug, { min: undefined, max: 100 });
     });
 
     it('null bounds mean "no bound" rather than NaN', () => {
@@ -145,7 +145,7 @@ describe('optimizeDiet: constraint parsing regressions', () => {
         constraints.vitamin_d_ug = { min: null, max: null };
         const result = optimizeDiet({ foods: [broccoli], customConstraints: constraints });
         assert.equal(result.success, true, result.message);
-        assert.equal(result.constraintLimits.vitamin_d_ug, undefined);
+        assert.equal(result.constraintLimits!.vitamin_d_ug, undefined);
     });
 
     it('rejects non-numeric bounds instead of passing NaN to the solver', () => {
@@ -238,7 +238,7 @@ describe('optimizeDiet: result regressions', () => {
             guaranteedFoods: [{ food: chicken, grams: 100 }],
         });
         assert.equal(result.success, true, result.message);
-        assert.ok(Math.abs(result.totalNutrients.calories - result.totalCalories!) <= 1);
+        assert.ok(Math.abs(result.totalNutrients!.calories - result.totalCalories!) <= 1);
     });
 
     it('keeps foods used in sub-gram amounts so reported totals still meet the goals', () => {
@@ -253,11 +253,11 @@ describe('optimizeDiet: result regressions', () => {
             foodConstraints: { [lettuce.id]: { max: 100 } },
         });
         assert.equal(result.success, true, result.message);
-        assert.ok(result.totalNutrients.vitamin_k_ug >= 119.99, `vitamin K ${result.totalNutrients.vitamin_k_ug}`);
+        assert.ok(result.totalNutrients!.vitamin_k_ug >= 119.99, `vitamin K ${result.totalNutrients!.vitamin_k_ug}`);
         const h = result.diet!.find(d => d.food.id === herb.id);
         assert.ok(h && h.grams > 0 && h.grams < 1, `herb grams ${h?.grams}`);
         const summed = result.diet!.reduce((s, d) => s + d.nutrients.vitamin_k_ug, 0);
-        assert.ok(Math.abs(summed - result.totalNutrients.vitamin_k_ug) < 1e-9);
+        assert.ok(Math.abs(summed - result.totalNutrients!.vitamin_k_ug) < 1e-9);
     });
 
     it('tracks optional nutrients that have an FDA DV (phosphorus) when constrained', () => {
@@ -265,7 +265,7 @@ describe('optimizeDiet: result regressions', () => {
         constraints.phosphorus_mg = { min: 500 };
         const result = optimizeDiet({ foods: mockFoods, customConstraints: constraints });
         assert.equal(result.success, true, result.message);
-        assert.ok(result.totalNutrients.phosphorus_mg >= 499.9, `phosphorus ${result.totalNutrients.phosphorus_mg}`);
+        assert.ok(result.totalNutrients!.phosphorus_mg >= 499.9, `phosphorus ${result.totalNutrients!.phosphorus_mg}`);
     });
 });
 
@@ -322,7 +322,7 @@ describe('optimizeDiet: missing data (null nutrients)', () => {
         const result = optimizeDiet({ foods: [noVitC, broccoli], customConstraints: constraints });
         assert.equal(result.success, true, result.message);
         assert.ok(result.diet!.some(d => d.food.id === broccoli.id));
-        assert.ok(result.totalNutrients.vitamin_c_mg >= 49.9);
+        assert.ok(result.totalNutrients!.vitamin_c_mg >= 49.9);
     });
 
     it('warns about selected foods that lack data for constrained nutrients only', () => {
@@ -368,8 +368,8 @@ describe('optimizeDiet: tolerable upper intake levels', () => {
         constraints.protein_g = { min: 20 };
         const capped = optimizeDiet({ foods: [ironBomb, chicken], customConstraints: constraints, applyUpperLimits: true });
         assert.equal(capped.success, true, capped.message);
-        assert.ok(capped.totalNutrients.iron_mg <= 45 + 1e-6, `iron ${capped.totalNutrients.iron_mg}`);
-        assert.equal(capped.constraintLimits.iron_mg.max, 45);
-        assert.equal(capped.constraintLimits.magnesium_mg, undefined);
+        assert.ok(capped.totalNutrients!.iron_mg <= 45 + 1e-6, `iron ${capped.totalNutrients!.iron_mg}`);
+        assert.equal(capped.constraintLimits!.iron_mg.max, 45);
+        assert.equal(capped.constraintLimits!.magnesium_mg, undefined);
     });
 });

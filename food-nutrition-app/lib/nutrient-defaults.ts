@@ -18,12 +18,13 @@
  * - sugars_g is USDA nutrient 269 "Sugars, total". The FDA DV of 50 g is for
  *   *added* sugars only and there is no DV for total sugars, so the default
  *   cap is disabled by default (defaultEnabled: false).
- * - folate_ug is USDA 417 "Folate, total" (mcg); the DV is in mcg DFE. For
- *   unfortified foods they are equal; for folic-acid-fortified foods total
- *   folate under-counts DFE (DFE = food folate + 1.7 x folic acid).
- * - niacin_mg is USDA 406 (preformed niacin); the DV is in mg niacin
- *   equivalents (NE, includes tryptophan/60), so totals are conservative.
- * - vitamin_a_ug is USDA 320 "Vitamin A, RAE" which matches the DV basis.
+ * - folate_ug is mcg DFE (DB schema v2 derives food folate + 1.7 x folic
+ *   acid; falls back to total folate for unfortified foods), matching the DV.
+ *   Databases built by the legacy ingest stored total folate (USDA 417),
+ *   which under-counts DFE for fortified foods.
+ * - niacin_mg is preformed niacin; the DV is in mg niacin equivalents (NE,
+ *   includes tryptophan/60), so totals are conservative.
+ * - vitamin_a_ug is mcg RAE, which matches the DV basis.
  */
 
 export type ConstraintType = 'min' | 'max';
@@ -242,7 +243,7 @@ export const NUTRIENT_CONFIG: Record<string, NutrientConfig> = {
         source: DV_RDI,
     },
     folate_ug: {
-        label: 'Folate',
+        label: 'Folate (DFE)',
         unit: 'mcg',
         defaultValue: 400, // mcg DFE
         defaultType: 'min',
@@ -304,8 +305,8 @@ export const NUTRIENT_CONFIG: Record<string, NutrientConfig> = {
  * NUTRIENT_CONFIG so existing UIs that turn every NUTRIENT_CONFIG entry into
  * a default goal do not suddenly impose them; the optimizer accepts and
  * reports them when a client sends an explicit constraint.
- * (choline_mg is a column Section A may add; until then foods lack it and
- * any choline goal will produce missing-data warnings.)
+ * Columns that are absent from an older database are treated as missing data
+ * (null) and produce warnings if constrained.
  */
 export const OPTIONAL_NUTRIENT_CONFIG: Record<string, NutrientConfig> = {
     phosphorus_mg: {
@@ -330,9 +331,37 @@ export const OPTIONAL_NUTRIENT_CONFIG: Record<string, NutrientConfig> = {
         unit: 'mg',
         defaultValue: 550,
         defaultType: 'min',
-        defaultEnabled: false,
+        defaultEnabled: false, // ~37% of foods lack choline data
         ul: { value: 3500, appliesTo: 'total' },
         source: DV_RDI,
+    },
+    ala_g: {
+        label: 'ALA (omega-3)',
+        unit: 'g',
+        // No FDA DV. NASEM Adequate Intake (Macronutrients DRI, 2002/2005):
+        // 1.6 g/day men, 1.1 g/day women 19+ y. Men's value used.
+        defaultValue: 1.6,
+        defaultType: 'min',
+        defaultEnabled: false,
+        source: 'NASEM AI (men 19+ y); no FDA DV',
+    },
+    epa_g: {
+        label: 'EPA (omega-3)',
+        unit: 'g',
+        // No FDA DV and no DRI (AI/RDA) exists for EPA; tracked only.
+        defaultValue: 0,
+        defaultType: 'min',
+        defaultEnabled: false,
+        source: 'No DV or DRI established',
+    },
+    dha_g: {
+        label: 'DHA (omega-3)',
+        unit: 'g',
+        // No FDA DV and no DRI (AI/RDA) exists for DHA; tracked only.
+        defaultValue: 0,
+        defaultType: 'min',
+        defaultEnabled: false,
+        source: 'No DV or DRI established',
     },
 };
 

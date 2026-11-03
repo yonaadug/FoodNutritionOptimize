@@ -60,8 +60,23 @@ export interface Food {
     copper_mg: NutrientValue;
     manganese_mg: NutrientValue;
     selenium_ug: NutrientValue;
-    /** Provenance of the calories value (added by the DB rebuild). */
+    // Added by DB schema v2 (absent in older databases)
+    water_g?: NutrientValue;
+    alcohol_g?: NutrientValue;
+    caffeine_mg?: NutrientValue;
+    ala_g?: NutrientValue;
+    epa_g?: NutrientValue;
+    dha_g?: NutrientValue;
+    /** Provenance of the calories value, e.g. "fdc_1008_energy". */
     calories_source?: string | null;
+    /** 1 Foundation, 2 SR Legacy, 3 FNDDS (lower is better). */
+    data_type_rank?: number | null;
+    /** Set on SR Legacy rows that have a Foundation equivalent. */
+    superseded_by_fdc_id?: number | null;
+    ndb_number?: number | null;
+    fndds_food_code?: number | null;
+    publication_date?: string | null;
+    source_release?: string | null;
     serving_sizes?: ServingSize[];
 }
 

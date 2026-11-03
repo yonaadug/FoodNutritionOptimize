@@ -13,28 +13,31 @@
     "bugs": {
         "url": "https://github.com/yonaadug/FoodNutritionOptimize/issues"
     },
+    "engines": {
+        "node": ">=22"
+    },
     "scripts": {
         "dev": "next dev",
+        "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./lib/testing/register.mjs --test \"lib/**/*.test.ts\"",
         "build": "next build",
         "start": "next start",
-        "lint": "next lint"
+        "lint": "eslint .",
+        "typecheck": "next typegen && tsc --noEmit"
     },
     "dependencies": {
-        "better-sqlite3": "^12.4.5",
+        "better-sqlite3": "^13.0.3",
         "javascript-lp-solver": "^0.4.24",
-        "next": "^16.0.4",
-        "react": "^19.2.0",
-        "react-dom": "^19.2.0",
-        "sqlite3": "^5.1.7"
+        "next": "^16.4.4",
+        "react": "^19.3.1",
+        "react-dom": "^19.3.1"
     },
     "devDependencies": {
         "@types/better-sqlite3": "^7.6.13",
-        "@types/node": "^20",
-        "@types/react": "^18",
-        "@types/react-dom": "^18",
-        "@types/sql.js": "^1.4.9",
+        "@types/node": "^22",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
         "eslint": "^9.39.1",
-        "eslint-config-next": "^16.0.4",
+        "eslint-config-next": "^16.4.4",
         "typescript": "^5"
     }
 }

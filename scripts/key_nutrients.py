@@ -11,6 +11,10 @@ Usage:
 
     # Get all key nutrient IDs
     all_ids = get_all_key_nutrient_ids()
+
+Note: this module is a reference for FDC API requests (legacy nutrient
+*numbers*). The mapping used to build nutrition.db lives in
+scripts/nutrient_spec.py (FDC nutrient *ids*, fallbacks, derivations).
 """
 
 # ============================================================================
@@ -153,8 +157,8 @@ VITAMINS = {
         'daily_value': 1.7
     },
     'folate': {
-        'number': '417',
-        'name': 'Folate, total',
+        'number': '435',
+        'name': 'Folate, DFE',  # FDA DV basis is µg DFE (total folate is 417)
         'unit': 'UG',
         'daily_value': 400
     },

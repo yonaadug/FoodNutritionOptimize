@@ -1,0 +1,53 @@
+# =============================================================================
+# UNTESTED EXAMPLE — Lambda (arm64) container for the Next.js standalone server.
+# Intended location: food-nutrition-app/Dockerfile.lambda (next to the regular Dockerfile).
+# See docs/aws/AWS_HOSTING_DESIGN.md §2.2 Option A and §3.3.
+#
+# Build context: food-nutrition-app/. CI must place the pinned nutrition.db (from S3,
+# checksum-verified) at food-nutrition-app/nutrition.db before building — *.db is gitignored.
+# =============================================================================
+
+FROM --platform=linux/arm64 node:24-bookworm-slim AS deps
+WORKDIR /app
+# Toolchain only needed if better-sqlite3 has no prebuilt binary for this Node/arch
+# (not needed at all if you switch the web build to node:sqlite).
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
+ && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+RUN npm ci
+
+FROM deps AS build
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+FROM --platform=linux/arm64 node:24-bookworm-slim AS runtime
+# AWS Lambda Web Adapter runs as a Lambda extension and proxies invocations to the HTTP server.
+# Pin to the latest released tag (check https://github.com/awslabs/aws-lambda-web-adapter/releases).
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
+
+WORKDIR /app
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=127.0.0.1 \
+    AWS_LWA_PORT=3000 \
+    AWS_LWA_READINESS_CHECK_PATH=/api/health \
+    NUTRITION_DB_PATH=/app/data/nutrition.db
+
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+# (no public/ directory in the app today; add `COPY --from=build /app/public ./public` if one is added)
+
+# Read-only nutrition DB baked into the image (journal_mode=DELETE, VACUUMed).
+COPY nutrition.db /app/data/nutrition.db
+
+# Lambda's filesystem is read-only except /tmp. If Next writes to .next/cache
+# (image optimization / ISR — not used today), redirect it. The app must `mkdir -p /tmp/next-cache`
+# at startup (the symlink target does not exist on a fresh environment):
+RUN rm -rf /app/.next/cache && ln -s /tmp/next-cache /app/.next/cache
+
+# Lambda runs the container as a non-root user; files must be world-readable.
+RUN chmod -R a+rX /app
+
+CMD ["node", "server.js"]

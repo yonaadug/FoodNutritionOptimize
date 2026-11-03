@@ -1,4 +1,2 @@
-nutrition_download.db filter=lfs diff=lfs merge=lfs -text
+# Only the production database is stored in Git LFS (built by scripts/build_db.py).
 food-nutrition-app/nutrition.db filter=lfs diff=lfs merge=lfs -text
-food-nutrition-app/nutrition_bkp.db filter=lfs diff=lfs merge=lfs -text
-food-nutrition-app/nutrition_download.db filter=lfs diff=lfs merge=lfs -text

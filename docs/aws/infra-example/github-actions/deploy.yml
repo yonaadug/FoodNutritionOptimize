@@ -1,0 +1,80 @@
+# =============================================================================
+# UNTESTED EXAMPLE — copy to .github/workflows/deploy.yml and adapt.
+# GitHub OIDC -> AWS (no long-lived keys). See docs/aws/AWS_HOSTING_DESIGN.md §3.11.
+#
+# Repo settings required:
+#   Environments: `dev` (no approval) and `production` (required reviewer = you).
+#   Environment variables: AWS_DEPLOY_ROLE_ARN, ARTIFACTS_BUCKET (per environment).
+# Pin actions to commit SHAs before real use.
+# =============================================================================
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "Stage to deploy"
+        type: choice
+        options: [dev, prod]
+        default: prod
+
+permissions:
+  id-token: write   # OIDC
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event.inputs.stage || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: food-nutrition-app } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm, cache-dependency-path: food-nutrition-app/package-lock.json }
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test --if-present
+
+  deploy:
+    needs: test
+    # arm64 runner so the image builds natively for Lambda arm64.
+    # (Verify arm runner availability/pricing for your repo; fallback: ubuntu-latest + docker/setup-qemu-action.)
+    runs-on: ubuntu-24.04-arm
+    environment: ${{ (github.event.inputs.stage || 'dev') == 'prod' && 'production' || 'dev' }}
+    env:
+      STAGE: ${{ github.event.inputs.stage || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24 }
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Fetch pinned nutrition DB artifact (gitignored)
+        working-directory: food-nutrition-app
+        run: |
+          VERSION="$(cat nutrition-db.version)"
+          aws s3 cp "s3://${{ vars.ARTIFACTS_BUCKET }}/nutrition-db/${VERSION}/nutrition.db" nutrition.db
+          aws s3 cp "s3://${{ vars.ARTIFACTS_BUCKET }}/nutrition-db/${VERSION}/nutrition.db.sha256" nutrition.db.sha256
+          sha256sum -c nutrition.db.sha256
+
+      - name: CDK deploy
+        working-directory: docs/aws/infra-example/cdk   # move to infra/ when adopting
+        run: |
+          npm ci || npm install
+          npx cdk deploy "NutriCompare-${STAGE}" -c stage="${STAGE}" --require-approval never
+
+      - name: Smoke test
+        run: |
+          URL="$(aws cloudformation describe-stacks --stack-name "NutriCompare-${STAGE}" \
+                 --query "Stacks[0].Outputs[?OutputKey=='SiteUrl'].OutputValue" --output text)"
+          curl -fsS "${URL}/api/health"
+          curl -fsS "${URL}/api/search?q=apple&limit=5" | head -c 300

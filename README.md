@@ -46,7 +46,7 @@ The app shows you if you're over/under your targets with progress bars and sugge
 ## Features
 
 ### Core Features
-- 🔍 **Search 411 Foods** from USDA FoodData Central (vegetables, fruits, meats, dairy, grains, etc.)
+- 🔍 **Search 9,400+ Foods** from USDA FoodData Central (Foundation Foods, SR Legacy, and FNDDS mixed dishes)
 - 📊 **30+ Nutrients Tracked** (protein, vitamins A-K, minerals, fats, fiber, etc.)
 - ⚙️ **Automatic Optimization** using linear programming solver
 - 🎯 **Custom Constraints** for each nutrient (min/max limits)
@@ -65,120 +65,135 @@ The app shows you if you're over/under your targets with progress bars and sugge
 
 ## Installation & Setup
 
+### Prerequisites
+- **Node.js 22+** (current LTS recommended; CI and Docker use the latest LTS). [Download](https://nodejs.org/) or `nvm install --lts`
+- **Git LFS**: the food database (`food-nutrition-app/nutrition.db`) is stored with [Git LFS](https://git-lfs.com/). Install it with `brew install git-lfs` or `sudo apt install git-lfs`, then run `git lfs install` once.
+- **Python 3.8+**: only needed to rebuild the database with the scripts in `scripts/`
+
 ### Quick Start (Web App)
-
-#### 1. Prerequisites
-- **Node.js 18+** - [Download here](https://nodejs.org/)
-- **Python 3.8+** - For data ingestion scripts
-
-#### 2. Clone the Repository
 
 ```bash
 git clone https://github.com/yonaadug/FoodNutritionOptimize.git
 cd FoodNutritionOptimize
-```
+./setup.sh            # checks Node, pulls the LFS database, installs the web app
+                      # add --with-electron and/or --with-python for the extras
 
-#### 3. Setup the Web App
-
-```bash
 cd food-nutrition-app
-npm install
 npm run dev
 ```
 
-Open your browser to **http://localhost:3000** 🎉
+Then open **http://localhost:3000** 🎉
+
+<details>
+<summary>Manual setup (what <code>setup.sh</code> does)</summary>
+
+```bash
+git lfs pull                       # replaces the LFS pointer with the real nutrition.db
+cd food-nutrition-app
+npm ci --ignore-scripts            # better-sqlite3 ships prebuilt binaries, so no compiler is needed
+npm run dev
+```
+</details>
+
+### Everyday Commands (`food-nutrition-app/`)
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Dev server with hot reload (http://localhost:3000) |
+| `npm run lint` | ESLint (flat config in `eslint.config.mjs`) |
+| `npm run typecheck` | `next typegen` + `tsc --noEmit` |
+| `npm test` | Unit tests |
+| `npm run build` | Production build, including a self-contained server in `.next/standalone/` |
+| `npm start` | Serve the production build (`npm start -- -p 3300` picks a different port) |
+
+Configuration lives in `food-nutrition-app/.env.example`. `NUTRITION_DB_PATH` points the server at a different database file.
+
+### Production / Self-Hosting
+
+`npm run build` writes a standalone server, about 24 MB, with `nutrition.db` bundled. It can run from any directory:
+
+```bash
+cd food-nutrition-app && npm run build
+cp -r .next/static .next/standalone/.next/static     # Next.js does not copy static assets for you
+PORT=3000 node .next/standalone/server.js
+```
+
+Or build the container image from the repo root. It is multi-stage, runs as a non-root user, and the database is read-only:
+
+```bash
+git lfs pull
+docker build -t nutricompare .
+docker run --rm -p 3000:3000 nutricompare
+```
 
 ---
 
 ### Desktop App (Electron)
 
-Run NutriCompare as a **native desktop application** with complete network isolation!
-
-**Features:**
-- ✅ No visible localhost URLs (uses custom `app://` protocol)
-- ✅ No exposed network ports (internal server only)
-- ✅ Works completely offline
-- ✅ Native window controls
-- ✅ One-click installation
+Run NutriCompare as a **native desktop application** that works completely offline. The
+app runs its own server on `127.0.0.1` with a random port, and its window is locked down:
+it is sandboxed, has a CSP, and cannot load remote content. End users don't need Node.js.
+See [electron-app/README.md](electron-app/README.md) for details.
 
 #### Development Mode
 
 ```bash
-# Install dependencies in both directories
-cd food-nutrition-app
-npm install
-
-cd ../electron-app
-npm install
-npm start
+./setup.sh --with-electron     # or: (cd food-nutrition-app && npm ci) && (cd electron-app && npm ci)
+cd electron-app
+npm start                      # starts `next dev` and opens the app window
 ```
-
-**What you'll see:**
-- Terminal: Server starts automatically in development mode
-- App window opens showing the NutriCompare interface
-- No need to build first - dev server starts automatically!
 
 #### Build Installers
 
 ```bash
 cd electron-app
-
-# macOS
-npm run build:mac   # Creates .dmg file
-
-# Windows
-npm run build:win   # Creates .exe installer
-
-# Linux
-npm run build:linux # Creates .AppImage
-
-# All platforms
-npm run build
+npm run pack        # quick check: unpacked app in dist/<platform>/
+npm run build:mac   # .dmg + .zip
+npm run build:win   # NSIS installer + portable .exe
+npm run build:linux # .AppImage + .deb
 ```
 
-Installers will be in `electron-app/dist/`
+Each build runs the web app's production build first. Installers end up in `electron-app/dist/`. Build each platform on a matching OS and CPU, because the bundled SQLite driver is a native binary.
+
+### Continuous Integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and on every pull request. It runs
+`npm ci`, lint, typecheck, tests, and the production build, then smoke-tests the
+standalone server against the real (LFS) database.
 
 ---
 
 ## Data Setup (Optional)
 
-The app comes with a pre-built database of 411 foods. If you want to refresh or customize the data:
+The app ships with a pre-built database (`food-nutrition-app/nutrition.db`, Git LFS, ~7 MB) of
+9,435 foods from USDA FoodData Central:
+- 389 Foundation Foods (2026-10 release)
+- 7,448 SR Legacy foods
+- 1,598 FNDDS mixed dishes
 
-### Get USDA API Key (Free)
+Missing nutrient values are stored as `NULL` (no data), not `0`. You only need the steps below
+to rebuild or customize the data.
 
-1. Go to https://fdc.nal.usda.gov/api-key-signup.html
-2. Sign up for a free API key
-3. Create `config/api_keys.txt` and paste your key:
-   ```
-   YOUR_API_KEY_HERE
-   ```
+### Rebuild the Database
 
-   Or set as environment variable:
-   ```bash
-   export USDA_API_KEY=your_key_here
-   ```
-
-### Download USDA Data (CSVs)
-
-If you want to ingest data from CSV files instead of the API:
-
-1. Go to https://fdc.nal.usda.gov/download-datasets.html
-2. Download **Foundation Foods CSV** (latest version)
-3. Extract to project root (creates `FoodData_Central_foundation_food_csv_YYYY-MM-DD/`)
-
-### Run Data Ingestion
+The builder uses only the Python standard library. It downloads the pinned USDA bulk releases
+(sha256-verified) into `data/raw/` and writes `food-nutrition-app/nutrition.db`. No API key is needed.
 
 ```bash
-cd scripts
-
-# Option 1: From USDA API (requires API key)
-python ingest_data.py
-
-# Option 2: From CSV files (requires CSV download)
-python ingest_csv.py
+python3 -I scripts/build_db.py --download   # fetch + verify + build
+python3 -I scripts/build_db.py              # rebuild from data/raw (already downloaded)
+python3 -I scripts/verify_data_integrity.py # validate; exits non-zero on any failure
 ```
 
-This creates/updates `food-nutrition-app/nutrition.db`
+To move to a newer USDA release, update `SOURCES` in `scripts/build_db.py`. See
+[docs/VERIFICATION_INSTRUCTIONS.md](docs/VERIFICATION_INSTRUCTIONS.md) for details and
+[docs/KEY_NUTRIENTS.md](docs/KEY_NUTRIENTS.md) for nutrient definitions and units.
+
+### USDA API Key (optional)
+
+You only need a key for live API spot checks (`verify_data_integrity.py --api <fdcId>`) and the
+`usda_fdc_api.py` wrapper. Get a free key at https://fdc.nal.usda.gov/api-key-signup.html, then
+`export USDA_API_KEY=...` or put it in `config/api_keys.txt` (gitignored). Never commit it.
 
 ---
 
@@ -200,33 +215,33 @@ FoodNutritionOptimize/
 │   │   ├── db.ts                # SQLite database access
 │   │   ├── optimizer.ts         # Linear programming solver
 │   │   └── nutrient-defaults.ts # Nutrient configurations
-│   ├── nutrition.db             # SQLite database (411 foods)
+│   ├── nutrition.db             # SQLite database (9,435 USDA foods, Git LFS)
 │   └── package.json
 │
 ├── electron-app/                # Electron desktop wrapper
-│   ├── main-protocol.js         # Custom protocol handler (default)
-│   ├── main-standalone.js       # Standalone localhost version
-│   ├── main-zero-network.js     # IPC-only version (advanced)
-│   ├── preload.js               # Security preload script
-│   ├── preload-ipc.js           # IPC preload for zero-network
-│   ├── NETWORK-ISOLATION.md     # Network isolation documentation
-│   ├── IMPLEMENTATION-STATUS.md # Implementation status & verification
-│   └── package.json
+│   ├── main.js                  # Main process: local server + hardened window
+│   ├── scripts/stage-web.js     # Copies the Next.js standalone build for packaging
+│   ├── README.md                # Desktop architecture, security, build docs
+│   └── package.json             # electron-builder config
+│
+├── .github/workflows/ci.yml     # CI: lint, typecheck, test, build, smoke test
+├── Dockerfile                   # Container image (standalone server + read-only DB)
+├── setup.sh                     # One-shot developer setup
 │
 ├── scripts/                     # Data ingestion scripts (Python)
-│   ├── ingest_data.py           # USDA API → SQLite
-│   ├── ingest_csv.py            # CSV → SQLite
-│   ├── usda_fdc_api.py          # API wrapper
-│   ├── key_nutrients.py         # Nutrient definitions
-│   └── verify_data_integrity.py # Data validation
+│   ├── build_db.py              # USDA bulk downloads → nutrition.db (reproducible)
+│   ├── nutrient_spec.py         # Nutrient ID/unit mapping used by the builder
+│   ├── verify_data_integrity.py # Automated validation (exit 1 on failure)
+│   ├── usda_fdc_api.py          # Optional FDC API wrapper
+│   └── key_nutrients.py         # Nutrient reference helpers
 │
 ├── docs/                        # Documentation
 │   ├── README_API.md            # API documentation
 │   ├── KEY_NUTRIENTS.md         # Nutrient reference
 │   └── VERIFICATION_INSTRUCTIONS.md
 │
-├── data/                        # Data files (gitignored)
-│   └── nutrition_download.db    # Staging database
+├── data/                        # Data files
+│   └── raw/                     # Downloaded USDA releases (gitignored)
 │
 ├── config/                      # Configuration (gitignored)
 │   └── api_keys.txt.example     # API key template
@@ -256,7 +271,7 @@ FoodNutritionOptimize/
 - **CSV parsing** - Bulk data import
 
 ### Desktop
-- **Electron 28** - Cross-platform desktop framework
+- **Electron 45** - Cross-platform desktop framework
 - **electron-builder** - Build native installers
 
 ---
@@ -372,9 +387,11 @@ View optimization equations:
 # Ensure database exists
 ls food-nutrition-app/nutrition.db
 
-# If missing, run data ingestion
-cd scripts
-python ingest_data.py  # or ingest_csv.py
+# If it's a tiny text file, it's an LFS pointer: fetch the real DB
+git lfs pull
+
+# Or rebuild it from USDA data
+python3 -I scripts/build_db.py --download
 ```
 
 ### Optimization Fails (Infeasible)
@@ -401,40 +418,49 @@ python ingest_data.py  # or ingest_csv.py
 - Try simpler search terms ("carrot" not "organic baby carrots")
 - Re-run data ingestion if database is corrupt
 
+### "file is not a database" / the database is a few hundred bytes
+
+`nutrition.db` is still a Git LFS pointer. Install git-lfs, then run:
+```bash
+git lfs install
+git lfs pull
+```
+
 ### Web App Won't Start
 
-**Problem:** `npm run dev` fails
+**Problem:** `npm run dev` or `npm install` fails
 
 **Solutions:**
 ```bash
-# Clear Next.js cache
-rm -rf .next
+node --version             # must be 22 or newer
+cd food-nutrition-app
+rm -rf .next node_modules  # clear the Next.js cache and dependencies (keep package-lock.json)
+npm ci --ignore-scripts
+```
 
-# Reinstall dependencies
-rm -rf node_modules package-lock.json
-npm install
+### better-sqlite3 / native module errors
 
-# Check Node version
-node --version  # Should be 18+
+**Problem:** `npm install` prints `gyp ERR!` or `No module named 'distutils'`, or startup fails with `Could not locate the bindings file` or `NODE_MODULE_VERSION`.
+
+better-sqlite3 13 ships prebuilt Node-API binaries for macOS, Linux (glibc and musl), and Windows on x64 and arm64. You don't need a compiler. The errors above usually mean one of two things:
+- An old lockfile or `node_modules` from before the upgrade. Delete `node_modules` and run `npm ci --ignore-scripts`. `--ignore-scripts` stops npm from falling back to a `node-gyp` source build, which needs Python and a C++ toolchain.
+- Copying `node_modules` or `.next/standalone` between machines. The bundled binary only matches the OS and CPU it was installed on, so build on the target platform. For Docker, build inside the image (the provided `Dockerfile` does this).
+
+Check that it loads:
+```bash
+cd food-nutrition-app
+node -e "console.log(new (require('better-sqlite3'))('nutrition.db',{readonly:true}).prepare('select count(*) n from foods').get())"
 ```
 
 ### Electron App Won't Launch
 
-**Problem:** Electron window doesn't open
+**Problem:** The Electron window doesn't open, or an error dialog appears
 
 **Solutions:**
-```bash
-# Build web app first
-cd food-nutrition-app
-npm run build
-
-# Ensure port 3000 is free
-lsof -ti:3000 | xargs kill -9
-
-# Restart Electron
-cd ../electron-app
-npm start
-```
+- Read the log at `~/Library/Logs/NutriCompare/main.log` (macOS), `%APPDATA%\NutriCompare\logs\main.log` (Windows), or `~/.config/NutriCompare/logs/main.log` (Linux).
+- In dev mode, make sure `food-nutrition-app` is installed (`npm ci --ignore-scripts`) and the LFS database is pulled.
+- If `electron .` acts like plain Node, unset `ELECTRON_RUN_AS_NODE` (some IDE terminals set it). The npm scripts already unset it.
+- The app picks a random free port, so you never need to free port 3000.
 
 ---
 
@@ -453,8 +479,7 @@ Contributions welcome! Here are some ideas:
 ### Code Quality
 - Add unit tests (Jest, Vitest)
 - E2E tests (Playwright)
-- CI/CD pipeline (GitHub Actions)
-- Docker containerization
+- Release pipeline (signed desktop builds, container publishing)
 
 ### Data Enhancements
 - Add branded foods (cereals, yogurt, etc.)

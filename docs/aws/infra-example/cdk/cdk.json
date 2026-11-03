@@ -1,0 +1,7 @@
+{
+  "//": "UNTESTED EXAMPLE — see docs/aws/AWS_HOSTING_DESIGN.md",
+  "app": "npx tsx bin/nutricompare.ts",
+  "context": {
+    "@aws-cdk/core:stackRelativeExports": true
+  }
+}

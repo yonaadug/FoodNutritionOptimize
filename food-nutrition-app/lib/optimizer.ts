@@ -196,9 +196,17 @@ function displayGrams(g: number): number {
     return Number(g.toPrecision(2));
 }
 
-/** Reference serving for the default cap: RACC if labelled, else the (lower) median serving. */
+/** Generic gram-based rows ("100 g", "1 g") that every food carries; not a real portion. */
+const GENERIC_GRAM_SERVING = /^\s*\d+(\.\d+)?\s*(g|gram|grams)\s*$/i;
+
+/**
+ * Reference serving for the default cap: RACC if labelled, else the (lower)
+ * median household serving, ignoring generic "100 g" rows.
+ */
 function referenceServingGrams(servings: ServingSize[] | undefined): number | undefined {
-    const valid = (servings ?? []).filter(s => typeof s?.weight_g === 'number' && s.weight_g > 0);
+    const valid = (servings ?? []).filter(s =>
+        typeof s?.weight_g === 'number' && s.weight_g > 0 &&
+        !(typeof s.label === 'string' && GENERIC_GRAM_SERVING.test(s.label)));
     if (valid.length === 0) return undefined;
     const racc = valid.find(s => typeof s.label === 'string' && s.label.toUpperCase().includes('RACC'));
     if (racc) return racc.weight_g;

@@ -198,6 +198,21 @@ describe('optimizeDiet: per-food bound regressions', () => {
         assert.equal(result.diet!.find(d => d.food.id === chicken.id), undefined);
     });
 
+    it('the default cap ignores the generic "100 g" serving row every food now has', () => {
+        const oil = {
+            ...oliveOil,
+            serving_sizes: [
+                { id: 1, food_id: 3, label: '100 g', weight_g: 100 },
+                { id: 2, food_id: 3, label: '1 tbsp', weight_g: 13.5 },
+                { id: 3, food_id: 3, label: '1 cup', weight_g: 216 },
+            ],
+        };
+        const constraints = relaxed();
+        constraints.total_fat_g = { min: 60 };
+        const result = optimizeDiet({ foods: [oil], customConstraints: constraints });
+        assert.equal(result.success, false, 'median of household servings is 1 tbsp -> 40.5 g cap');
+    });
+
     it('the default cap uses a typical (median) serving, not the largest one', () => {
         // Previously 3 x "1 cup" (648 g of oil) was allowed by default.
         const oil = {

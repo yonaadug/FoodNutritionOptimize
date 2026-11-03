@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useRef, useState } from 'react';
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 import Icon from '@/components/ui/Icon';
 import FoodRow, { FoodRowSkeleton } from './FoodRow';
 import { useFoodSearch } from '@/hooks/useFoodSearch';

@@ -1,10 +1,10 @@
 'use client';
 
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 import Icon from '@/components/ui/Icon';
 import { plannerActions, type PlannerState } from '@/hooks/usePlannerState';
 import { useTopFoods } from '@/hooks/useTopFoods';
-import { fmtNumber, hasCoreData, nutrientLabel, nutrientUnit, nv, splitFoodName } from '@/components/planner/nutrients';
+import { fmtNumber, hasCoreData, nutrientLabel, nutrientUnit, nv } from '@/components/planner/nutrients';
 import type { PlanIssue } from './analysis';
 
 interface InfeasibleHelpProps {
@@ -123,9 +123,12 @@ function IssueCard({ issue, state, selectedIds, showSuggestions }: { issue: Plan
 }
 
 function Suggestions({ nutrient, selectedIds }: { nutrient: string; selectedIds: Set<number> }) {
-    const top = useTopFoods(nutrient, 25);
+    const top = useTopFoods(nutrient, 50);
     const unit = nutrientUnit(nutrient);
-    const picks: Food[] = top.foods.filter(f => !selectedIds.has(f.id) && hasCoreData(f)).slice(0, 3);
+    const candidates = top.foods.filter(f => !selectedIds.has(f.id) && hasCoreData(f));
+    const everyday = candidates.filter(isEverydayFood);
+    // Prefer everyday foods; if every top source is specialty (e.g. vitamin A → organ meats), still show something.
+    const picks: Food[] = (everyday.length ? everyday : candidates).slice(0, 3);
 
     if (top.loading) return <div className="suggestions" aria-hidden="true">{[0, 1, 2].map(i => <span key={i} className="skeleton" style={{ width: 140, height: 30, borderRadius: 999 }} />)}</div>;
     if (top.error || picks.length === 0) return null;
@@ -135,9 +138,22 @@ function Suggestions({ nutrient, selectedIds }: { nutrient: string; selectedIds:
             {picks.map(f => (
                 <button key={f.id} type="button" className="chip chip-btn" title={f.description}
                     onClick={() => plannerActions.addFood(f)} aria-label={`Add ${f.description}`}>
-                    <Icon name="plus" size={12} /> {splitFoodName(f.description).name} <span className="muted">({fmtNumber(nv(f, nutrient))} {unit}/100 g)</span>
+                    <Icon name="plus" size={12} /> {shortName(f.description)} <span className="muted">({fmtNumber(nv(f, nutrient))} {unit}/100 g)</span>
                 </button>
             ))}
         </div>
     );
+}
+
+const SPECIALTY = /(powder|dehydrated|dry mix|drink mix|instant|freeze-dried|liver|giblet|p[aâ]t[eé]|variety meats|kidney|oil, |fish oil|supplement|formula|baby|leavening|spices?,|seasoning|yeast extract|gelatin)/i;
+const SPECIALTY_CATEGORIES = /(fats and oils|spices and herbs|baby foods|supplements|beverages)/i;
+
+/** Hide concentrated or specialty items (spices, powders, organ meats, oils) from beginner suggestions. */
+function isEverydayFood(f: Food): boolean {
+    return !SPECIALTY.test(f.description) && !SPECIALTY_CATEGORIES.test(f.food_category ?? '');
+}
+
+/** A readable but bounded USDA name, e.g. "Sweet potato, cooked, baked in skin". */
+function shortName(description: string): string {
+    return description.length > 48 ? `${description.slice(0, 46).trimEnd()}…` : description;
 }

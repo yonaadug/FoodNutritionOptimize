@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef } from 'react';
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 import Icon from '@/components/ui/Icon';
 import NutrientBreakdown, { type BreakdownItem } from '@/components/NutrientBreakdown';
 import type { FixedFood, PlannerState } from '@/hooks/usePlannerState';
@@ -200,12 +200,19 @@ function PlanResultView({ state, result, fixedAtRun, headingId, headingRef, onEd
             {warnings.length > 0 && (
                 <div className="callout callout-warn" role="note">
                     <span className="callout-icon"><Icon name="alert" /></span>
-                    <div>
-                        <div className="callout-title">Some foods are missing data</div>
-                        <ul style={{ margin: '6px 0 0', paddingLeft: 18 }} className="small">
-                            {warnings.slice(0, 6).map((w, i) => <li key={i}>{warningText(w)}</li>)}
-                        </ul>
-                        {warnings.length > 6 && <p className="tiny muted">…and {warnings.length - 6} more.</p>}
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                        <div className="callout-title">
+                            {warnings.length} {warnings.length === 1 ? 'food is' : 'foods are'} missing some nutrient data
+                        </div>
+                        <p className="small secondary">USDA didn&apos;t measure everything for every food. Missing values count as 0, so your real totals may be a little higher than shown.</p>
+                        <details className="disclosure disclosure-plain" style={{ marginTop: 4 }}>
+                            <summary>See which foods</summary>
+                            <div className="disclosure-body">
+                                <ul style={{ margin: 0, paddingLeft: 18 }} className="small">
+                                    {warnings.map((w, i) => <li key={i}>{warningText(w)}</li>)}
+                                </ul>
+                            </div>
+                        </details>
                     </div>
                 </div>
             )}

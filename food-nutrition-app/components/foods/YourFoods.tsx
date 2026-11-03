@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 import Icon from '@/components/ui/Icon';
 import NumberInput from '@/components/ui/NumberInput';
 import { plannerActions, type FixedFood, type FoodLimits } from '@/hooks/usePlannerState';
@@ -58,8 +58,12 @@ export default function YourFoods({ foods, fixedFoods, foodLimits, onCompare, on
             {count > 0 && (
                 <>
                     <ul className="basket-list" aria-label="Your foods">
-                        {foods.map(f => <BasketItem key={f.id} food={f} fixedGrams={null} limits={foodLimits[f.id]} />)}
-                        {fixedFoods.map(f => <BasketItem key={f.food.id} food={f.food} fixedGrams={f.grams} limits={undefined} />)}
+                        {[
+                            ...foods.map(f => ({ food: f, grams: null as number | null })),
+                            ...fixedFoods.map(f => ({ food: f.food, grams: f.grams as number | null })),
+                        ].sort((a, b) => a.food.description.localeCompare(b.food.description)).map(({ food, grams }) => (
+                            <BasketItem key={food.id} food={food} fixedGrams={grams} limits={grams === null ? foodLimits[food.id] : undefined} />
+                        ))}
                     </ul>
                     {limited > 0 && (
                         <p className="small" style={{ marginTop: 12, color: 'var(--warning)' }}>

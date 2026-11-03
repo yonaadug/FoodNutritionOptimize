@@ -1,7 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 import {
     DEFAULT_PORTION_CAP, DEFAULT_PRESET, matchPreset, migrateLegacyGoals, presetById,
     type CalorieRange, type GoalRange, type Goals, type PortionCap, type PresetId,
@@ -30,6 +30,8 @@ export interface PlannerState {
     goals: Goals;
     calories: CalorieRange;
     portionCap: PortionCap;
+    /** Also cap nutrients at their Tolerable Upper Intake Level (opt-in). */
+    upperLimits: boolean;
     hydrated: boolean;
 }
 
@@ -43,6 +45,7 @@ const INITIAL: PlannerState = {
     goals: DEFAULT_PRESET.goals,
     calories: DEFAULT_PRESET.calories,
     portionCap: DEFAULT_PORTION_CAP,
+    upperLimits: false,
     hydrated: false,
 };
 
@@ -68,7 +71,7 @@ function load(): PlannerState {
     const foods = readJSON<Food[]>('selectedFoods');
     const fixed = readJSON<FixedFood[]>('guaranteedFoods');
     const limits = readJSON<FoodLimits>('foodConstraints');
-    const v2 = readJSON<{ presetId: PresetId; goals: Goals; calories: CalorieRange; portionCap: PortionCap }>(GOALS_KEY);
+    const v2 = readJSON<{ presetId: PresetId; goals: Goals; calories: CalorieRange; portionCap: PortionCap; upperLimits?: boolean }>(GOALS_KEY);
 
     const next: PlannerState = {
         ...INITIAL,
@@ -86,6 +89,7 @@ function load(): PlannerState {
         next.goals = v2.goals;
         next.calories = v2.calories ?? {};
         next.portionCap = v2.portionCap ?? DEFAULT_PORTION_CAP;
+        next.upperLimits = !!v2.upperLimits;
     } else {
         const legacy = readJSON<unknown>('customConstraints');
         if (legacy !== undefined) {
@@ -109,7 +113,7 @@ function persist(s: PlannerState) {
         localStorage.setItem('guaranteedFoods', JSON.stringify(s.fixedFoods));
         localStorage.setItem('foodConstraints', JSON.stringify(s.foodLimits));
         localStorage.setItem(GOALS_KEY, JSON.stringify({
-            presetId: s.presetId, goals: s.goals, calories: s.calories, portionCap: s.portionCap,
+            presetId: s.presetId, goals: s.goals, calories: s.calories, portionCap: s.portionCap, upperLimits: s.upperLimits,
         }));
     } catch { /* storage full or blocked: keep working in memory */ }
 }
@@ -217,6 +221,9 @@ export const plannerActions = {
     },
     setPortionCap(portionCap: PortionCap) {
         update(s => ({ ...s, portionCap }));
+    },
+    setUpperLimits(upperLimits: boolean) {
+        update(s => ({ ...s, upperLimits }));
     },
 };
 

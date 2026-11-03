@@ -202,7 +202,7 @@ button:disabled { cursor: not-allowed; }
 }
 
 /* ---------------- layout ---------------- */
-.main { padding-bottom: 120px; }
+.main { padding-bottom: 0; }
 .layout-2col { display: grid; gap: var(--space-5); align-items: start; }
 @media (min-width: 960px) {
   .layout-2col { grid-template-columns: minmax(0, 1fr) 380px; }
@@ -324,7 +324,7 @@ button:disabled { cursor: not-allowed; }
     radial-gradient(900px 300px at 100% 100%, color-mix(in srgb, #22c55e 14%, transparent), transparent 60%),
     var(--bg-card);
   border: 1px solid var(--border);
-  margin-bottom: var(--space-5);
+  margin: var(--space-5) 0;
 }
 .hero h1 { font-size: clamp(26px, 4vw, 38px); font-weight: 800; letter-spacing: -0.03em; max-width: 640px; }
 .hero p { color: var(--text-secondary); font-size: 16px; max-width: 600px; margin-top: var(--space-3); }
@@ -393,10 +393,11 @@ button:disabled { cursor: not-allowed; }
 .preset-card input { position: absolute; opacity: 0; pointer-events: none; }
 .preset-card:has(input:checked) { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
 .preset-card:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
-.preset-title { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.preset-title { font-weight: 700; font-size: 15px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; padding-right: 26px; }
+.preset-title .chip { flex: none; }
 .preset-blurb { font-size: 13px; color: var(--text-secondary); }
 .preset-check {
-  margin-left: auto; width: 20px; height: 20px; border-radius: 50%; flex: none;
+  position: absolute; top: 16px; right: 16px; width: 20px; height: 20px; border-radius: 50%; flex: none;
   border: 1.5px solid var(--border-strong); display: grid; place-items: center; color: transparent;
 }
 .preset-card:has(input:checked) .preset-check { background: var(--primary); border-color: var(--primary); color: var(--primary-text); }
@@ -544,3 +545,7 @@ button:disabled { cursor: not-allowed; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
 }
+
+/* ---------------- footer ---------------- */
+.site-footer { padding-top: var(--space-6); padding-bottom: 120px; display: flex; flex-direction: column; gap: 4px; }
+.site-footer a { color: var(--text-secondary); }

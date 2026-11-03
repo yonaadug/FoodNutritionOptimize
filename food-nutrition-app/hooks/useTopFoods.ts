@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 
 interface TopData { key: string; foods: Food[]; error?: string }
 

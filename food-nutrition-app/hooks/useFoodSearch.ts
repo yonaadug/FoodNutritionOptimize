@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 
 const PAGE_SIZE = 20;
 const DEBOUNCE_MS = 250;

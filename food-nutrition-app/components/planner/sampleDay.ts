@@ -1,6 +1,6 @@
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 import { fetchSearch } from '@/hooks/useFoodSearch';
-import { hasCoreData } from './nutrients';
+import { DEFAULT_GOAL_KEYS, hasCoreData, nv } from './nutrients';
 
 /**
  * "Try a sample day": a varied set of everyday staples.
@@ -17,20 +17,24 @@ export const SAMPLE_DAY: SampleItem[] = [
     { q: 'banana', prefer: ['raw', 'ripe'], avoid: ['chips', 'dried'] },
     { q: 'almonds', prefer: ['raw', 'whole'], avoid: ['butter', 'milk', 'flour'] },
     { q: 'broccoli', prefer: ['raw'], avoid: ['frozen'] },
-    { q: 'chicken', prefer: ['breast', 'cooked', 'roasted'], avoid: ['skin', 'nugget', 'ground', 'fried'] },
+    { q: 'chicken breast', prefer: ['broiler', 'meat only', 'roasted', 'cooked'], avoid: ['skin', 'nugget', 'ground', 'fried', 'breaded', 'tenders', 'uncooked', 'patty', 'sandwich', 'deli'] },
     { q: 'orange', prefer: ['raw', 'navel'], avoid: ['juice', 'peel'] },
     { q: 'bread', prefer: ['whole-wheat', 'whole wheat'], avoid: ['flour', 'crumbs'] },
     { q: 'carrots', prefer: ['raw', 'baby'], avoid: ['juice', 'canned'] },
     { q: 'sunflower', prefer: ['kernel', 'raw'], avoid: ['oil', 'butter'] },
-    { q: 'egg', prefer: ['whole', 'raw', 'cooked'], avoid: ['white', 'yolk', 'dried', 'plant', 'eggplant', 'substitute'] },
+    { q: 'egg whole', prefer: ['egg, whole', 'hard-boiled', 'cooked', 'raw, fresh'], avoid: ['white', 'yolk', 'dried', 'plant', 'eggplant', 'substitute', 'duck', 'goose', 'quail', 'turkey', 'frozen', 'omelet', 'salad'] },
     { q: 'kale', prefer: ['raw'], avoid: ['frozen', 'chips'] },
     { q: 'milk', prefer: ['whole', 'reduced fat', '2%'], avoid: ['buttermilk', 'dry', 'condensed', 'evaporated', 'chocolate', 'yogurt', 'cheese', 'coconut', 'soy', 'almond'] },
 ];
 
+function completeness(food: Food): number {
+    return DEFAULT_GOAL_KEYS.filter(k => nv(food, k) !== null).length / Math.max(1, DEFAULT_GOAL_KEYS.length);
+}
+
 function score(food: Food, item: SampleItem): number {
     const d = food.description.toLowerCase();
     if (!hasCoreData(food)) return -Infinity;
-    let s = 0;
+    let s = completeness(food) * 8; // prefer foods with fuller nutrient data
     if (d.startsWith(item.q)) s += 3;
     item.prefer.forEach((p, i) => { if (d.includes(p)) s += 10 - i; });
     item.avoid?.forEach(a => { if (d.includes(a)) s -= 25; });

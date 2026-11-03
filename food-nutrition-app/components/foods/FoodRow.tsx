@@ -1,6 +1,6 @@
 'use client';
 
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 import Icon from '@/components/ui/Icon';
 import { dataSourceLabel, fmtNumber, hasCoreData, nv, splitFoodName } from '@/components/planner/nutrients';
 

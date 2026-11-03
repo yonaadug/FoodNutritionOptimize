@@ -1,5 +1,5 @@
-import { NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
-import { GOAL_KEYS, type NutrientKey } from './nutrients';
+import { ALL_NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
+import { DEFAULT_GOAL_KEYS, GOAL_KEYS, type NutrientKey } from './nutrients';
 
 /** A goal for one nutrient. Both bounds empty = goal is off. */
 export interface GoalRange {
@@ -35,15 +35,15 @@ export function isGoalOn(g: GoalRange | undefined): boolean {
 
 /** The FDA Daily Value for a nutrient, as a floor ("at least") or ceiling ("at most"). */
 export function fdaGoal(key: NutrientKey): GoalRange {
-    const cfg = NUTRIENT_CONFIG[key];
+    const cfg = ALL_NUTRIENT_CONFIG[key];
     if (!cfg) return {};
     return cfg.defaultType === 'max' ? { max: cfg.defaultValue } : { min: cfg.defaultValue };
 }
 
 function pick(keys: NutrientKey[], overrides: Goals = {}): Goals {
     const out: Goals = {};
-    for (const k of keys) if (NUTRIENT_CONFIG[k]) out[k] = fdaGoal(k);
-    for (const [k, v] of Object.entries(overrides)) if (NUTRIENT_CONFIG[k]) out[k] = v;
+    for (const k of keys) if (ALL_NUTRIENT_CONFIG[k]) out[k] = fdaGoal(k);
+    for (const [k, v] of Object.entries(overrides)) if (ALL_NUTRIENT_CONFIG[k]) out[k] = v;
     return out;
 }
 
@@ -51,31 +51,31 @@ export const GOAL_PRESETS: GoalPreset[] = [
     {
         id: 'essentials',
         title: 'Everyday essentials',
-        blurb: 'The 10 nutrients most people should watch: protein, fiber, key vitamins & minerals, and limits on salt, sugar and saturated fat.',
+        blurb: 'The nutrients most people should watch: protein, fiber, key vitamins & minerals, with limits on salt and saturated fat.',
         calories: { min: 1800, max: 2200 },
-        goals: pick(['protein_g', 'fiber_g', 'calcium_mg', 'iron_mg', 'potassium_mg', 'vitamin_a_ug', 'vitamin_c_mg', 'saturated_g', 'sodium_mg', 'sugars_g']),
+        goals: pick(['protein_g', 'fiber_g', 'calcium_mg', 'iron_mg', 'potassium_mg', 'vitamin_a_ug', 'vitamin_c_mg', 'saturated_g', 'sodium_mg']),
     },
     {
         id: 'fda',
         title: 'Standard adult (FDA Daily Values)',
-        blurb: 'Every tracked vitamin and mineral at 100% of the FDA Daily Value. Thorough, but needs a wide variety of foods.',
+        blurb: 'Every vitamin and mineral with an FDA Daily Value, at 100%. Thorough, but needs a wide variety of foods.',
         calories: { min: 1800, max: 2200 },
-        goals: pick(GOAL_KEYS),
+        goals: pick(DEFAULT_GOAL_KEYS),
     },
     {
         id: 'high-protein',
         title: 'High protein',
         blurb: 'At least 120 g protein for active days, with plenty of fiber and the usual limits.',
         calories: { min: 2000, max: 2600 },
-        goals: pick(['fiber_g', 'saturated_g', 'sodium_mg', 'sugars_g'], { protein_g: { min: 120 } }),
+        goals: pick(['fiber_g', 'saturated_g', 'sodium_mg', 'calcium_mg', 'potassium_mg'], { protein_g: { min: 120 } }),
     },
     {
         id: 'lower-carb',
         title: 'Lower carb',
-        blurb: 'Carbs capped at 100 g and sugars at 30 g, with protein at least 90 g.',
+        blurb: 'Carbs capped at 100 g, with at least 90 g protein and 20 g fiber.',
         calories: { min: 1600, max: 2000 },
         goals: pick(['saturated_g', 'sodium_mg'], {
-            carbohydrate_g: { max: 100 }, protein_g: { min: 90 }, fiber_g: { min: 20 }, sugars_g: { max: 30 },
+            carbohydrate_g: { max: 100 }, protein_g: { min: 90 }, fiber_g: { min: 20 },
         }),
     },
 ];
@@ -98,8 +98,9 @@ export function countGoals(goals: Goals): number {
 
 /**
  * Build the `customConstraints` object for /api/optimize.
- * Every nutrient is sent explicitly; '' means "no limit", which the optimizer
- * honours (an absent key would fall back to the FDA default instead).
+ * Every nutrient is sent explicitly as { min, max }; '' means "no bound" and
+ * {min:'', max:''} means "no goal" (an absent key would fall back to the
+ * optimizer's default instead).
  */
 export function goalsToPayload(goals: Goals): Record<string, { min: number | ''; max: number | '' }> {
     const out: Record<string, { min: number | ''; max: number | '' }> = {};
@@ -112,21 +113,22 @@ export function goalsToPayload(goals: Goals): Record<string, { min: number | '';
 
 /**
  * Migrate the legacy `customConstraints` localStorage value (3 historical
- * shapes) into Goals. Missing keys fall back to the FDA default, matching how
- * the old UI + optimizer behaved.
+ * shapes) into Goals. Missing keys fall back to the optimizer default (if that
+ * nutrient is a default goal), matching how the old UI behaved.
  */
 export function migrateLegacyGoals(raw: unknown): Goals {
     const out: Goals = {};
     const parsed = (raw && typeof raw === 'object') ? raw as Record<string, unknown> : {};
     for (const k of GOAL_KEYS) {
         const val = parsed[k];
-        const cfg = NUTRIENT_CONFIG[k];
+        const cfg = ALL_NUTRIENT_CONFIG[k];
+        const fallback = DEFAULT_GOAL_KEYS.includes(k) ? fdaGoal(k) : {};
         if (val && typeof val === 'object') {
             const v = val as Record<string, unknown>;
             if (v.min !== undefined || v.max !== undefined) {
                 const min = typeof v.min === 'number' ? v.min : undefined;
                 const max = typeof v.max === 'number' ? v.max : undefined;
-                out[k] = (min === undefined && max === undefined) ? fdaGoal(k) : { min, max };
+                out[k] = (min === undefined && max === undefined) ? fallback : { min, max };
                 continue;
             }
             if (v.value !== undefined) {
@@ -137,7 +139,7 @@ export function migrateLegacyGoals(raw: unknown): Goals {
             const n = parseFloat(String(val));
             if (Number.isFinite(n) && cfg) { out[k] = cfg.defaultType === 'max' ? { max: n } : { min: n }; continue; }
         }
-        out[k] = fdaGoal(k);
+        out[k] = fallback;
     }
     return out;
 }

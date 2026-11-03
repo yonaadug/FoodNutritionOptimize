@@ -1,6 +1,6 @@
 'use client';
 
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 import { amountFor, dailyValue, fmtNumber, hasCoreData, nutrientLabel, nutrientUnit } from '@/components/planner/nutrients';
 
 interface NutritionLabelProps {
@@ -85,7 +85,7 @@ export default function NutritionLabel({ food, grams = 100, servingLabel }: Nutr
                         borderBottom: row.key === 'protein_g' ? 'none' : '1px solid var(--border-strong)',
                         paddingLeft: row.indent ? 14 : 0, fontWeight: row.bold ? 700 : 400,
                     }}>
-                        <span>{row.label ?? nutrientLabel(row.key)} <span style={{ fontWeight: 400 }}>{fmtNumber(v)}{v === null ? '' : unitOf(row.key)}</span></span>
+                        <span>{row.label ?? nutrientLabel(row.key)} <span style={{ fontWeight: 400 }}>{v === null ? '—' : `${fmtNumber(v)} ${unitOf(row.key)}`}</span></span>
                         {pct !== null && <span style={{ fontWeight: 700 }}>{pct}%</span>}
                     </div>
                 );

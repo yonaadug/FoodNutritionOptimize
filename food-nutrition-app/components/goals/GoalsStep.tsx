@@ -5,7 +5,7 @@ import Icon from '@/components/ui/Icon';
 import NumberInput from '@/components/ui/NumberInput';
 import { plannerActions, type PlannerState } from '@/hooks/usePlannerState';
 import { GOAL_PRESETS, countGoals, fdaGoal, isGoalOn, type GoalRange } from '@/components/planner/goals';
-import { NUTRIENT_GROUPS, dailyValue, fmtNumber, nutrientLabel, nutrientUnit } from '@/components/planner/nutrients';
+import { NUTRIENT_GROUPS, dailyValue, fmtNumber, nutrientLabel, nutrientUnit, referenceKind, upperLimit } from '@/components/planner/nutrients';
 
 export default function GoalsStep({ state }: { state: PlannerState }) {
     const presetsId = useId();
@@ -78,6 +78,17 @@ export default function GoalsStep({ state }: { state: PlannerState }) {
                         )}
                     </div>
                 </div>
+                <div className="setting-row">
+                    <div className="setting-text">
+                        <div className="setting-title">Respect safe upper limits <span className="chip">Optional</span></div>
+                        <div className="setting-help">Also keeps nutrients like iron, zinc and selenium under the adult Tolerable Upper Intake Level.</div>
+                    </div>
+                    <label className="switch">
+                        <input type="checkbox" checked={state.upperLimits} aria-label="Respect safe upper limits"
+                            onChange={e => plannerActions.setUpperLimits(e.target.checked)} />
+                        <span className="switch-track" />
+                    </label>
+                </div>
             </section>
 
             <details className="disclosure" id={fineId}>
@@ -88,7 +99,7 @@ export default function GoalsStep({ state }: { state: PlannerState }) {
                 <div className="disclosure-body">
                     <p className="small secondary" style={{ marginBottom: 16 }}>
                         Switch a goal off to ignore it. &ldquo;At least&rdquo; is a minimum to reach and &ldquo;at most&rdquo; is a limit to stay under.
-                        FDA Daily Values are shown for reference.
+                        Reference values are FDA Daily Values unless noted. Total sugars is off by default because the FDA value is for <em>added</em> sugars only.
                     </p>
                     {NUTRIENT_GROUPS.map(g => (
                         <div className="goal-group" key={g.id}>
@@ -108,6 +119,7 @@ function GoalRow({ nutrient, goal }: { nutrient: string; goal: GoalRange | undef
     const unit = nutrientUnit(nutrient);
     const dv = dailyValue(nutrient);
     const ref = fdaGoal(nutrient);
+    const ul = upperLimit(nutrient);
     const set = (r: GoalRange) => plannerActions.setGoal(nutrient, r);
 
     return (
@@ -119,7 +131,10 @@ function GoalRow({ nutrient, goal }: { nutrient: string; goal: GoalRange | undef
             </label>
             <div>
                 <div className="goal-name">{label}</div>
-                <div className="goal-ref">FDA Daily Value: {dv !== null ? `${fmtNumber(dv)} ${unit}` : '—'}{ref.max !== undefined ? ' (limit)' : ''}</div>
+                <div className="goal-ref">
+                    {dv !== null ? `${referenceKind(nutrient)}: ${fmtNumber(dv)} ${unit}${ref.max !== undefined ? ' (limit)' : ''}` : referenceKind(nutrient)}
+                    {ul?.total ? ` · Upper limit ${fmtNumber(ul.value)} ${unit}` : ''}
+                </div>
             </div>
             <div className="goal-inputs" style={{ gridColumn: 'span 2' }}>
                 <NumberInput label="At least" unit={unit} value={goal?.min} placeholder="—"

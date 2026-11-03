@@ -1,5 +1,5 @@
-import type { Food, ServingSize } from '@/lib/db';
-import { NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
+import type { Food, ServingSize } from '@/lib/food-types';
+import { ALL_NUTRIENT_CONFIG, NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
 
 /**
  * UI-side nutrient helpers.
@@ -11,8 +11,13 @@ import { NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
 
 export type NutrientKey = string;
 
-/** All goal-able nutrient keys (calories handled separately). */
-export const GOAL_KEYS: NutrientKey[] = Object.keys(NUTRIENT_CONFIG).filter(k => k !== 'calories');
+/** All goal-able nutrient keys, including optional ones (calories handled separately). */
+export const GOAL_KEYS: NutrientKey[] = Object.keys(ALL_NUTRIENT_CONFIG).filter(k => k !== 'calories');
+
+/** Nutrients the optimizer treats as default goals (the FDA Daily Value set). */
+export const DEFAULT_GOAL_KEYS: NutrientKey[] = Object.entries(NUTRIENT_CONFIG)
+    .filter(([k, c]) => k !== 'calories' && c.defaultEnabled !== false)
+    .map(([k]) => k);
 
 export interface NutrientGroup {
     id: string;
@@ -25,15 +30,16 @@ const GROUP_DEFS: NutrientGroup[] = [
     { id: 'limits', title: 'Keep these in check', keys: ['saturated_g', 'sugars_g', 'sodium_mg', 'cholesterol_mg'] },
     {
         id: 'vitamins', title: 'Vitamins', keys: ['vitamin_a_ug', 'vitamin_c_mg', 'vitamin_d_ug', 'vitamin_e_mg', 'vitamin_k_ug',
-            'thiamin_mg', 'riboflavin_mg', 'niacin_mg', 'vitamin_b6_mg', 'folate_ug', 'vitamin_b12_ug'],
+            'thiamin_mg', 'riboflavin_mg', 'niacin_mg', 'vitamin_b6_mg', 'folate_ug', 'vitamin_b12_ug', 'pantothenic_acid_mg', 'choline_mg'],
     },
-    { id: 'minerals', title: 'Minerals', keys: ['calcium_mg', 'iron_mg', 'potassium_mg', 'magnesium_mg', 'zinc_mg', 'copper_mg', 'manganese_mg', 'selenium_ug'] },
+    { id: 'minerals', title: 'Minerals', keys: ['calcium_mg', 'iron_mg', 'potassium_mg', 'magnesium_mg', 'zinc_mg', 'copper_mg', 'manganese_mg', 'selenium_ug', 'phosphorus_mg'] },
+    { id: 'fats', title: 'Omega-3 fats', keys: ['ala_g', 'epa_g', 'dha_g'] },
 ];
 
 /** Groups for display; any nutrient added to NUTRIENT_CONFIG later lands in "Other". */
 export const NUTRIENT_GROUPS: NutrientGroup[] = (() => {
     const known = new Set(GROUP_DEFS.flatMap(g => g.keys));
-    const groups = GROUP_DEFS.map(g => ({ ...g, keys: g.keys.filter(k => NUTRIENT_CONFIG[k]) }));
+    const groups = GROUP_DEFS.map(g => ({ ...g, keys: g.keys.filter(k => ALL_NUTRIENT_CONFIG[k]) })).filter(g => g.keys.length);
     const other = GOAL_KEYS.filter(k => !known.has(k));
     if (other.length) groups.push({ id: 'other', title: 'Other', keys: other });
     return groups;
@@ -41,7 +47,7 @@ export const NUTRIENT_GROUPS: NutrientGroup[] = (() => {
 
 const LABEL_OVERRIDES: Record<string, string> = {
     folate_ug: 'Folate (DFE)',
-    choline_mg: 'Choline', ala_g: 'Omega-3 ALA', epa_g: 'Omega-3 EPA', dha_g: 'Omega-3 DHA',
+    choline_mg: 'Choline', ala_g: 'Omega-3 (ALA)', epa_g: 'Omega-3 (EPA)', dha_g: 'Omega-3 (DHA)',
     water_g: 'Water', caffeine_mg: 'Caffeine', alcohol_g: 'Alcohol',
     pantothenic_acid_mg: 'Pantothenic acid', phosphorus_mg: 'Phosphorus',
 };
@@ -49,21 +55,37 @@ const LABEL_OVERRIDES: Record<string, string> = {
 export function nutrientLabel(key: NutrientKey): string {
     if (key === 'calories') return 'Calories';
     if (LABEL_OVERRIDES[key]) return LABEL_OVERRIDES[key];
-    return NUTRIENT_CONFIG[key]?.label ?? key.replace(/_(g|mg|ug)$/, '').replace(/_/g, ' ');
+    return ALL_NUTRIENT_CONFIG[key]?.label ?? key.replace(/_(g|mg|ug)$/, '').replace(/_/g, ' ');
 }
 
 export function nutrientUnit(key: NutrientKey): string {
     if (key === 'calories') return 'kcal';
-    const cfg = NUTRIENT_CONFIG[key];
+    const cfg = ALL_NUTRIENT_CONFIG[key];
     if (cfg) return cfg.unit;
     if (key.endsWith('_ug')) return 'mcg';
     if (key.endsWith('_mg')) return 'mg';
     return 'g';
 }
 
-/** FDA Daily Value reference for a nutrient (from NUTRIENT_CONFIG). */
+/** Reference intake for a nutrient (FDA DV, or NASEM AI where no DV exists); null if none. */
 export function dailyValue(key: NutrientKey): number | null {
-    return NUTRIENT_CONFIG[key]?.defaultValue ?? null;
+    const v = ALL_NUTRIENT_CONFIG[key]?.defaultValue;
+    return v && v > 0 ? v : null;
+}
+
+/** What kind of reference `dailyValue()` is, in plain words. */
+export function referenceKind(key: NutrientKey): string {
+    const src = ALL_NUTRIENT_CONFIG[key]?.source ?? '';
+    if (dailyValue(key) === null) return 'No official target';
+    if (/^FDA DV/.test(src)) return /added sugars/.test(src) ? 'FDA DV is for added sugars' : 'FDA Daily Value';
+    if (/AI/.test(src)) return 'Adequate intake';
+    return 'Reference';
+}
+
+/** Tolerable upper limit (adults) if one exists. */
+export function upperLimit(key: NutrientKey): { value: number; total: boolean } | null {
+    const ul = ALL_NUTRIENT_CONFIG[key]?.ul;
+    return ul ? { value: ul.value, total: ul.appliesTo === 'total' } : null;
 }
 
 /** Read a numeric value safely: returns null for null/undefined/NaN/non-numbers. */
@@ -131,7 +153,7 @@ function fmtQty(q: number): string {
 
 const PLURALS: Record<string, string> = {
     cup: 'cups', slice: 'slices', piece: 'pieces', tablespoon: 'tablespoons', teaspoon: 'teaspoons', link: 'links',
-    fillet: 'fillets', leaf: 'leaves', stick: 'sticks', steak: 'steaks', wedge: 'wedges', strip: 'strips', head: 'heads', bunch: 'bunches',
+    fillet: 'fillets', leaf: 'leaves', egg: 'eggs', container: 'containers', banana: 'bananas', fruit: 'fruits', serving: 'servings', stick: 'sticks', steak: 'steaks', wedge: 'wedges', strip: 'strips', head: 'heads', bunch: 'bunches',
 };
 
 /**

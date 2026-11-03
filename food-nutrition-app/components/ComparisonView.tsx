@@ -1,7 +1,7 @@
 'use client';
 
 import { useId, useState } from 'react';
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 import NutritionLabel from './NutritionLabel';
 import Icon from '@/components/ui/Icon';
 import { splitFoodName } from '@/components/planner/nutrients';

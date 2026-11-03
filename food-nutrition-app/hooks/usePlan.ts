@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
 import { goalsToPayload } from '@/components/planner/goals';
 import type { FixedFood, PlannerState } from './usePlannerState';
 
@@ -44,6 +44,7 @@ export function buildPayload(s: PlannerState) {
         diversityMode: s.portionCap.enabled,
         maxFoodAmount: s.portionCap.enabled ? String(s.portionCap.grams) : undefined,
         foodConstraints: s.foodLimits,
+        applyUpperLimits: s.upperLimits || undefined,
     };
 }
 
@@ -52,7 +53,7 @@ export function payloadKey(s: PlannerState): string {
     return JSON.stringify({
         f: s.foods.map(f => f.id),
         x: s.fixedFoods.map(f => [f.food.id, f.grams]),
-        g: s.goals, c: s.calories, p: s.portionCap, l: s.foodLimits,
+        g: s.goals, c: s.calories, p: s.portionCap, l: s.foodLimits, u: s.upperLimits,
     });
 }
 

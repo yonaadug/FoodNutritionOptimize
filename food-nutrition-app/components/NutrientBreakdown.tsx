@@ -1,135 +1,61 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
-import type { Food } from '@/lib/db';
+import { useId, useMemo, useState } from 'react';
+import { GOAL_KEYS, fmtNumber, nutrientLabel, nutrientUnit, splitFoodName } from '@/components/planner/nutrients';
 
-interface NutrientBreakdownProps {
-    optimizationResult: any;
-    guaranteedFoods: { food: Food, grams: number }[];
+export interface BreakdownItem {
+    name: string;
+    fixed: boolean;
+    /** Absolute amounts in this plan (not per 100 g); null = no data. */
+    amounts: Record<string, number | null>;
 }
 
-export default function NutrientBreakdown({ optimizationResult, guaranteedFoods }: NutrientBreakdownProps) {
-    const [selectedNutrient, setSelectedNutrient] = useState('protein_g');
+/** "Where does my iron come from?": per-food contribution to one nutrient. */
+export default function NutrientBreakdown({ items, initial = 'protein_g' }: { items: BreakdownItem[]; initial?: string }) {
+    const [nutrient, setNutrient] = useState(initial);
+    const selectId = useId();
+    const unit = nutrientUnit(nutrient);
 
-    const breakdown = useMemo(() => {
-        if (!optimizationResult) return [];
-
-        const items: { name: string; value: number; type: 'Guaranteed' | 'Optimized'; pct: number }[] = [];
-        let totalValue = 0;
-
-        // 1. Guaranteed Foods
-        guaranteedFoods.forEach(item => {
-            const multiplier = item.grams / 100;
-            let val = 0;
-            if (selectedNutrient === 'calories') {
-                val = (item.food.calories || 0) * multiplier;
-            } else {
-                // @ts-ignore
-                val = (item.food[selectedNutrient] || 0) * multiplier;
-            }
-            if (val > 0) {
-                items.push({
-                    name: item.food.description,
-                    value: val,
-                    type: 'Guaranteed',
-                    pct: 0 // calc later
-                });
-                totalValue += val;
-            }
-        });
-
-        // 2. Optimized Foods
-        optimizationResult.diet.forEach((item: any) => {
-            let val = 0;
-            if (selectedNutrient === 'calories') {
-                val = item.calories;
-            } else {
-                val = item.nutrients[selectedNutrient] || 0;
-            }
-            if (val > 0) {
-                items.push({
-                    name: item.food.description,
-                    value: val,
-                    type: 'Optimized',
-                    pct: 0 // calc later
-                });
-                totalValue += val;
-            }
-        });
-
-        // 3. Calc percentages and sort
-        if (totalValue > 0) {
-            items.forEach(item => {
-                item.pct = (item.value / totalValue) * 100;
-            });
-        }
-
-        return items.sort((a, b) => b.value - a.value);
-    }, [optimizationResult, guaranteedFoods, selectedNutrient]);
-
-    const config = NUTRIENT_CONFIG[selectedNutrient];
-    const unit = config ? config.unit : (selectedNutrient === 'calories' ? 'kcal' : '');
+    const { rows, missing } = useMemo(() => {
+        const withVals = items.map(i => ({ ...i, value: i.amounts[nutrient] ?? null }));
+        const total = withVals.reduce((s, i) => s + (i.value ?? 0), 0);
+        return {
+            rows: withVals.filter(i => (i.value ?? 0) > 0)
+                .map(i => ({ ...i, pct: total > 0 ? ((i.value ?? 0) / total) * 100 : 0 }))
+                .sort((a, b) => (b.value ?? 0) - (a.value ?? 0)),
+            missing: withVals.filter(i => i.value === null).map(i => i.name),
+        };
+    }, [items, nutrient]);
 
     return (
-        <div style={{ marginBottom: '32px', padding: '20px', background: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: 'var(--text-primary)' }}>Nutrient Sources</h4>
-                <select
-                    value={selectedNutrient}
-                    onChange={(e) => setSelectedNutrient(e.target.value)}
-                    style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--border)',
-                        background: 'var(--bg-page)',
-                        color: 'var(--text-primary)',
-                        fontSize: '14px'
-                    }}
-                >
+        <div className="stack">
+            <div className="field" style={{ maxWidth: 280 }}>
+                <label htmlFor={selectId} className="field-label">Nutrient</label>
+                <select id={selectId} className="select" value={nutrient} onChange={e => setNutrient(e.target.value)}>
                     <option value="calories">Calories</option>
-                    {Object.entries(NUTRIENT_CONFIG).map(([key, conf]) => {
-                        if (key === 'calories') return null;
-                        return (
-                            <option key={key} value={key}>{conf.label}</option>
-                        );
-                    })}
+                    {GOAL_KEYS.map(k => <option key={k} value={k}>{nutrientLabel(k)}</option>)}
                 </select>
             </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {breakdown.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13px' }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>
-                                    {item.name} <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>({item.type})</span>
-                                </span>
-                                <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
-                                    {Math.round(item.value)}{unit} <span style={{ color: 'var(--text-secondary)', fontWeight: '400' }}>({Math.round(item.pct)}%)</span>
-                                </span>
+            {rows.length === 0 ? (
+                <p className="small muted">None of the foods in this plan provide {nutrientLabel(nutrient)}.</p>
+            ) : (
+                <ul className="stack" style={{ listStyle: 'none', margin: 0, padding: 0, gap: 10 }}>
+                    {rows.map((r, i) => (
+                        <li key={i} className="progress-item">
+                            <div className="progress-head">
+                                <span className="progress-name">{splitFoodName(r.name).name}{r.fixed && <span className="tiny muted"> (fixed)</span>}</span>
+                                <span className="progress-value">{fmtNumber(r.value)} {unit} · {Math.round(r.pct)}%</span>
                             </div>
-                            <div style={{
-                                height: '6px',
-                                width: '100%',
-                                background: 'var(--bg-secondary)',
-                                borderRadius: '3px',
-                                overflow: 'hidden'
-                            }}>
-                                <div style={{
-                                    width: `${item.pct}%`,
-                                    height: '100%',
-                                    background: item.type === 'Guaranteed' ? 'var(--text-secondary)' : 'var(--primary)',
-                                    borderRadius: '3px'
-                                }} />
+                            <div className="progress-track" aria-hidden="true">
+                                <div className="progress-fill" style={{ width: `${r.pct}%`, background: r.fixed ? 'var(--text-muted)' : 'var(--primary)' }} />
                             </div>
-                        </div>
-                    </div>
-                ))}
-                {breakdown.length === 0 && (
-                    <p style={{ color: 'var(--text-muted)', textAlign: 'center', fontSize: '13px' }}>No contribution to this nutrient.</p>
-                )}
-            </div>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            {missing.length > 0 && (
+                <p className="tiny muted">No data for: {missing.map(m => splitFoodName(m).name).join(', ')}.</p>
+            )}
         </div>
     );
 }

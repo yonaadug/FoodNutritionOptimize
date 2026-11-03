@@ -1,0 +1,24 @@
+# Only the web app is needed to build the image (allowlist).
+*
+!food-nutrition-app/
+
+# ...minus local build output, deps, secrets and dev-only files
+food-nutrition-app/node_modules
+food-nutrition-app/.next
+food-nutrition-app/out
+food-nutrition-app/*.tsbuildinfo
+food-nutrition-app/next-env.d.ts
+food-nutrition-app/AGENTS.md
+food-nutrition-app/.env*
+!food-nutrition-app/.env.example
+# Only nutrition.db ships; stale copies/backups don't
+food-nutrition-app/*.db
+!food-nutrition-app/nutrition.db
+food-nutrition-app/*.db-journal
+food-nutrition-app/*.db-wal
+food-nutrition-app/*.db-shm
+# Tests aren't part of the production image
+food-nutrition-app/**/*.test.ts
+food-nutrition-app/**/*.test.tsx
+food-nutrition-app/**/__tests__
+**/.DS_Store

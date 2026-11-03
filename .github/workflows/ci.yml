@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web app (lint, types, tests, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: food-nutrition-app
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v7
+
+      # nutrition.db lives in Git LFS. Cache the LFS object so repeat runs
+      # don't spend the repo's LFS bandwidth quota.
+      - name: Compute LFS cache key
+        working-directory: .
+        run: git lfs ls-files --long --include=food-nutrition-app/nutrition.db | cut -d' ' -f1 > .lfs-assets-id
+      - uses: actions/cache@v6
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id') }}
+      - name: Fetch database (Git LFS)
+        working-directory: .
+        run: git lfs pull --include=food-nutrition-app/nutrition.db
+      - name: Verify database is not an LFS pointer
+        run: |
+          test "$(head -c 15 nutrition.db)" = "SQLite format 3" || { echo "::error::nutrition.db is an LFS pointer"; exit 1; }
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: food-nutrition-app/package-lock.json
+
+      # better-sqlite3 ships N-API prebuilds; skip the node-gyp fallback
+      - run: npm ci --no-audit --no-fund --ignore-scripts
+      - run: npm run lint
+      - name: Type check
+        run: npm run typecheck # next typegen && tsc --noEmit
+      - run: npm test --if-present
+      - name: Build (standalone)
+        run: npm run build
+
+      - name: Smoke test standalone server
+        run: |
+          cp -r .next/static .next/standalone/.next/static
+          cd /tmp
+          PORT=3300 HOSTNAME=127.0.0.1 node "$GITHUB_WORKSPACE/food-nutrition-app/.next/standalone/server.js" &
+          for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:3300/ && break; sleep 1; done
+          out="$(curl -fsS "http://127.0.0.1:3300/api/search?q=apple")"
+          echo "${out:0:300}"
+          grep -q '"foods"' <<< "$out"
+          du -sh "$GITHUB_WORKSPACE/food-nutrition-app/.next/standalone"

@@ -91,4 +91,71 @@ The persona was a first-time, non-technical visitor who wants "a day of food tha
     * Restrained motion (bar fills, step transitions) that respects `prefers-reduced-motion`.
 11. **Code.** Split the 888-line `page.tsx` into hooks (`usePlannerState`, `useFoodSearch`, `usePlan`) and step components. Existing `localStorage` keys keep working (`selectedFoods`, `guaranteedFoods`, `customConstraints` in all 3 legacy formats, `foodConstraints`, min/max calories, `maxFoodAmount`).
 
-_After results are recorded below once implemented._
+## After: what changed
+
+These were re-tested with the same Playwright setup against the merged 9,435-food database (Foundation + SR Legacy + FNDDS) and Section B's API.
+
+| | Before | After |
+|---|---|---|
+| Clicks to a first useful plan | Not reached (14 interactions, then failure) | **1 click** ("Try a sample day", about 1 s) gives "Every goal met" on all 4 device/theme runs |
+| Manual path (8 foods) | 14+ interactions, then failure with jargon | 18 actions (2 per food + "Make my plan"). Shortfalls get a plain-language explanation, one-click food suggestions and quick fixes |
+| Default goals | 27 nutrients at 100 % DV, can't be switched off | Preset *Everyday essentials* (9 goals, 1,800–2,200 kcal); FDA, high-protein and lower-carb presets; per-goal on/off switches |
+| Phone width | `scrollWidth` 680 px on a 390 px viewport | 390 px on every step (no horizontal scroll) |
+| Missing data | Shown as "0 kcal / 0.0 g" | "—" everywhere, a "Limited data" badge in results, and one calm callout built from the API `warnings` |
+| Keyboard | Hidden sidebar button focusable, no focus ring | A skip link comes first, then header, stepper and search; every control has a 2 px focus ring (inputs use a 3 px focus halo) |
+| Theme | Always light, flashes on load | Follows the OS on first visit; an inline script sets it before paint |
+| Console errors | — | None across all journeys (including hydration) |
+
+![Landing](ux/after-desktop-landing.png)
+![Plan](ux/after-desktop-plan-full.png)
+![Infeasible help](ux/after-desktop-infeasible.png)
+![Dark goals](ux/after-desktop-dark-goals.png)
+![Phone plan](ux/after-phone-plan.png) ![Phone fine-tune (dark)](ux/after-phone-dark-finetune.png)
+
+### Implemented
+
+* **Guided flow.**
+  * A stepper (Pick foods → Set goals → Your plan) and a sticky action bar ("8 foods · 9 goals · **Make my plan**").
+  * A welcome hero with **Try a sample day**. It resolves 15 staples by search, preferring foods with complete data, so it survives DB rebuilds.
+* **Goals.**
+  * Preset radio cards.
+  * Calorie range.
+  * "Keep portions realistic", on by default at 300 g per food. This uses the optimizer's `diversityMode`.
+  * Opt-in "Respect safe upper limits" (`applyUpperLimits`).
+  * A collapsible "Fine-tune individual goals" section, grouped as macros, limits, vitamins, minerals and omega-3s. Every nutrient row has a switch, "at least" and "at most" inputs, and its reference value (FDA DV, adequate intake or none) plus the upper limit.
+  * Turning a goal off sends `{min:'', max:''}`.
+  * Total sugars is off by default, with an explanation of the added-vs-total distinction.
+* **Foods.**
+  * Live debounced search that aborts stale requests.
+  * Compact two-line rows: bold short name plus detail, category chip, kcal and protein per 100 g, data-source label, Add/Added toggle with `aria-pressed`.
+  * A scroll-capped list with "Show more", quick-start chips, and a "Best sources of…" tab covering all nutrients.
+  * "Your foods" basket. Each item has an options panel: "Let the planner choose" or "I'll eat exactly ___ g" (this replaces the separate guaranteed list), and optional at least/at most limits with household serving references.
+  * "Clear all" with Undo.
+  * "Compare nutrition labels" with a per-food serving-size picker.
+* **Plan.**
+  * Summary: headline "Every goal met" or "7 of 9 goals met", total kcal with a macro split bar, goals-met ring, protein and fiber, and cost if the API ever provides it.
+  * "What to eat" lists grams plus household amounts (e.g. "≈ 3¼ cups, chopped", "≈ 1½ breast"). Fixed foods are tagged.
+  * Goal progress bars with plain status text ("Short by 155 mcg") and a `role="meter"` label.
+  * Collapsed "Where each nutrient comes from" and "Show the math (advanced)".
+  * An "out of date: Update plan" banner instead of wiping the result. Focus moves to the result heading. An `aria-live` region announces the outcome.
+* **Infeasible.**
+  * The message is "We can't hit every goal with these foods". Each issue is a card ("Not enough Vitamin D · short by 20 mcg") with **Drop this minimum** and up to 3 one-click **Add** suggestions from `/api/foods/top`, skipping specialty items such as powders, oils and organ meats where possible.
+  * Global quick fixes: switch to Everyday essentials, allow bigger portions, review goals, try again.
+* **States.** Skeletons for search, top foods and plan. Error callouts with **Try again** for search, top foods and optimize (the API `error` text is shown). Empty states for no results, no foods and no plan.
+* **Code.**
+  * `page.tsx` went from 888 lines to about 120.
+  * State lives in `hooks/usePlannerState.ts`, a persisted `useSyncExternalStore` store with no setState-in-effect, so lint is clean. The other hooks are `useFoodSearch`, `useTopFoods` and `usePlan`.
+  * Components live in `components/{shell,foods,goals,plan,planner,ui}`.
+  * The duplicated Daily Values tables were removed. Everything reads `lib/nutrient-defaults`.
+  * `DailyValuesSidebar`, `FoodCard`, `TopFoods` and `SearchBar` were deleted.
+* **Storage compatibility.** `selectedFoods`, `guaranteedFoods` and `foodConstraints` keep their keys and shapes. Goals move to `nc.goals.v2`, and the legacy `customConstraints` (all 3 historical shapes), `minCalories` and `maxCalories` are migrated on first load. This was verified with a seeded legacy profile: protein `{value:80,type:'min'}` became "at least 80", sodium `2000` became "at most 2000", and the preset showed as Custom.
+
+### Known remaining issues
+
+* **Search ranking (API).** "egg" ranks "Egg, yolk, dried" first and "salmon" ranks "Salmon nuggets, breaded". New users who tap the first result get odd foods.
+* **"Best sources" and suggestions rank per 100 g.** Dried, fortified and organ foods dominate (vitamin A → liver). The UI filters these heuristically, but a per-serving or per-kcal ranking from the API would be better.
+* **The optimizer minimizes calories,** so plans sit at the calorie minimum and can include very small amounts (for example 4 g of something). Household amounts show "a little" for these.
+* **Sample-day foods still have gaps** (Foundation foods often lack saturated fat and vitamin A), so the missing-data callout usually appears.
+* **Household servings are heuristic** ("≈ ¼ cup", "≈ 2 containers"). Some USDA portion labels read oddly ("pieces of ~1"").
+* **The comparison scroller** shows about 4 labels per screen on desktop, and there is no side-by-side diff highlighting yet.
+

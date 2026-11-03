@@ -4,59 +4,8 @@ import path from 'path';
 
 const dbPath = path.join(process.cwd(), 'nutrition.db');
 
-export interface Food {
-    id: number;
-    fdc_id: number;
-    description: string;
-    data_type: string;
-    food_category: string;
-    brand_owner: string | null;
-    serving_size: number | null;
-    serving_size_unit: string | null;
-    calories: number;
-    protein_g: number;
-    total_fat_g: number;
-    carbohydrate_g: number;
-    fiber_g: number;
-    sugars_g: number;
-    saturated_g: number;
-    monounsaturated_g: number;
-    polyunsaturated_g: number;
-    trans_g: number;
-    cholesterol_mg: number;
-    // Vitamins
-    vitamin_a_ug: number;
-    vitamin_c_mg: number;
-    vitamin_d_ug: number;
-    vitamin_e_mg: number;
-    vitamin_k_ug: number;
-    thiamin_mg: number;
-    riboflavin_mg: number;
-    niacin_mg: number;
-    vitamin_b6_mg: number;
-    folate_ug: number;
-    vitamin_b12_ug: number;
-    pantothenic_acid_mg: number;
-    // Minerals
-    calcium_mg: number;
-    iron_mg: number;
-    magnesium_mg: number;
-    phosphorus_mg: number;
-    potassium_mg: number;
-    sodium_mg: number;
-    zinc_mg: number;
-    copper_mg: number;
-    manganese_mg: number;
-    selenium_ug: number;
-    serving_sizes?: ServingSize[];
-}
-
-export interface ServingSize {
-    id: number;
-    food_id: number;
-    label: string;
-    weight_g: number;
-}
+import type { Food, ServingSize } from './food-types';
+export type { Food, ServingSize } from './food-types';
 
 let db: Database.Database | null = null;
 

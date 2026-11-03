@@ -1,4 +1,4 @@
-import type { Food } from '../db';
+import type { Food } from '../food-types';
 
 /** Every per-100 g nutrient column on the `foods` table. */
 export const NUTRIENT_COLUMNS = [

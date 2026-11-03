@@ -1,204 +1,116 @@
 'use client';
 
-import type { Food } from '@/lib/db';
+import type { Food } from '@/lib/food-types';
+import { amountFor, dailyValue, fmtNumber, hasCoreData, nutrientLabel, nutrientUnit } from '@/components/planner/nutrients';
 
 interface NutritionLabelProps {
     food: Food;
+    /** Amount the label describes, in grams (default 100 g). */
+    grams?: number;
+    /** Text shown as the serving size, e.g. "1 cup, chopped (91 g)". */
+    servingLabel?: string;
 }
 
-// Daily Values based on FDA recommendations for a 2,000 calorie diet (General/Male reference)
-const DAILY_VALUES = {
-    total_fat_g: 78,
-    saturated_g: 20,
-    cholesterol_mg: 300,
-    sodium_mg: 2300,
-    carbohydrate_g: 275,
-    fiber_g: 28,
-    sugars_g: 50, // Added sugars limit, using as proxy
-    protein_g: 50,
-    vitamin_d_ug: 20,
-    calcium_mg: 1300,
-    iron_mg: 18,
-    potassium_mg: 4700,
+const MAIN: { key: string; label?: string; bold?: boolean; indent?: boolean; dv?: boolean }[] = [
+    { key: 'total_fat_g', label: 'Total Fat', bold: true, dv: true },
+    { key: 'saturated_g', label: 'Saturated Fat', indent: true, dv: true },
+    { key: 'trans_g', label: 'Trans Fat', indent: true },
+    { key: 'cholesterol_mg', bold: true, dv: true },
+    { key: 'sodium_mg', bold: true, dv: true },
+    { key: 'carbohydrate_g', label: 'Total Carbohydrate', bold: true, dv: true },
+    { key: 'fiber_g', label: 'Dietary Fiber', indent: true, dv: true },
+    { key: 'sugars_g', label: 'Total Sugars', indent: true },
+    { key: 'protein_g', bold: true },
+];
 
-    // New Vitamins & Minerals
-    vitamin_a_ug: 900,
-    vitamin_c_mg: 90,
-    vitamin_e_mg: 15,
-    vitamin_k_ug: 120,
-    thiamin_mg: 1.2,
-    riboflavin_mg: 1.3,
-    niacin_mg: 16,
-    vitamin_b6_mg: 1.7,
-    folate_ug: 400,
-    vitamin_b12_ug: 2.4,
-    pantothenic_acid_mg: 5,
+const MICROS = [
+    'vitamin_d_ug', 'calcium_mg', 'iron_mg', 'potassium_mg', 'vitamin_a_ug', 'vitamin_c_mg', 'vitamin_e_mg', 'vitamin_k_ug',
+    'thiamin_mg', 'riboflavin_mg', 'niacin_mg', 'vitamin_b6_mg', 'folate_ug', 'vitamin_b12_ug', 'pantothenic_acid_mg',
+    'choline_mg', 'magnesium_mg', 'phosphorus_mg', 'zinc_mg', 'copper_mg', 'manganese_mg', 'selenium_ug',
+];
 
-    magnesium_mg: 420,
-    zinc_mg: 11,
-    copper_mg: 0.9,
-    manganese_mg: 2.3,
-    selenium_ug: 55
-};
+const EXTRA_UNITS: Record<string, string> = { trans_g: 'g', pantothenic_acid_mg: 'mg', phosphorus_mg: 'mg', choline_mg: 'mg' };
 
-export default function NutritionLabel({ food }: NutritionLabelProps) {
-    const servingText = food.serving_size
-        ? `${food.serving_size}${food.serving_size_unit || 'g'}`
-        : '100g';
+function unitOf(key: string) {
+    return EXTRA_UNITS[key] ?? nutrientUnit(key);
+}
 
-    const calculateDV = (value: number, nutrient: keyof typeof DAILY_VALUES) => {
-        if (!value) return 0;
-        const dv = DAILY_VALUES[nutrient];
-        return Math.round((value / dv) * 100);
+/**
+ * FDA-style Nutrition Facts label. Missing values show "—" (no data), never 0.
+ */
+export default function NutritionLabel({ food, grams = 100, servingLabel }: NutritionLabelProps) {
+    const val = (key: string) => amountFor(food, key, grams);
+    const dvPct = (key: string, v: number | null) => {
+        const dv = dailyValue(key);
+        if (v === null || !dv) return null;
+        return Math.round((v / dv) * 100);
     };
+    const kcal = val('calories');
 
     return (
-        <div style={{
-            background: 'var(--bg-card)',
-            color: 'var(--text-primary)',
-            borderRadius: '8px',
-            padding: '16px',
-            fontFamily: 'Helvetica, Arial, sans-serif',
-            border: '2px solid var(--text-primary)'
+        <div className="nutrition-label" style={{
+            background: 'var(--bg-card)', color: 'var(--text-primary)', borderRadius: 8, padding: 14,
+            fontFamily: 'Helvetica, Arial, sans-serif', border: '2px solid var(--text-primary)', fontSize: 13,
         }}>
-            {/* Title */}
-            <div style={{
-                borderBottom: '8px solid var(--text-primary)',
-                paddingBottom: '4px',
-                marginBottom: '8px'
-            }}>
-                <h4 style={{ fontSize: '28px', fontWeight: '900', margin: 0 }}>Nutrition Facts</h4>
-                <p style={{ fontSize: '14px', margin: '4px 0 0 0', fontWeight: 'bold' }}>Serving size <span style={{ float: 'right' }}>{servingText}</span></p>
-            </div>
-
-            {/* Calories */}
-            <div style={{
-                borderBottom: '4px solid var(--text-primary)',
-                paddingBottom: '4px',
-                marginBottom: '8px'
-            }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <div>
-                        <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Amount per serving</div>
-                        <div style={{ fontSize: '24px', fontWeight: '900' }}>Calories</div>
-                    </div>
-                    <span style={{ fontSize: '36px', fontWeight: '900', lineHeight: 1 }}>{Math.round(food.calories)}</span>
+            <div style={{ borderBottom: '8px solid var(--text-primary)', paddingBottom: 4, marginBottom: 6 }}>
+                <h4 style={{ fontSize: 26, fontWeight: 900, margin: 0, letterSpacing: '-0.01em' }}>Nutrition Facts</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontWeight: 700, fontSize: 14, marginTop: 4 }}>
+                    <span>Serving size</span>
+                    <span style={{ textAlign: 'right' }}>{servingLabel ?? `${fmtNumber(grams)} g`}</span>
                 </div>
             </div>
 
-            {/* Macronutrients */}
-            <div style={{ fontSize: '13px', borderBottom: '1px solid var(--text-primary)', paddingBottom: '4px', marginBottom: '4px' }}>
-                <div style={{ fontWeight: '700', textAlign: 'right', marginBottom: '4px' }}>% Daily Value*</div>
+            {!hasCoreData(food) && (
+                <p style={{ fontSize: 11, background: 'var(--warning-bg)', color: 'var(--warning)', padding: '6px 8px', borderRadius: 4, margin: '0 0 6px' }}>
+                    USDA has limited data for this food. &ldquo;—&rdquo; means not measured.
+                </p>
+            )}
+
+            <div style={{ borderBottom: '4px solid var(--text-primary)', paddingBottom: 4, marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <div>
+                    <div style={{ fontSize: 12, fontWeight: 700 }}>Amount per serving</div>
+                    <div style={{ fontSize: 22, fontWeight: 900 }}>Calories</div>
+                </div>
+                <span style={{ fontSize: 34, fontWeight: 900, lineHeight: 1 }}>{fmtNumber(kcal, { decimals: 0 })}</span>
             </div>
 
-            <NutrientRow label="Total Fat" value={food.total_fat_g} unit="g" dv={calculateDV(food.total_fat_g, 'total_fat_g')} bold />
-            <NutrientRow label="Saturated Fat" value={food.saturated_g} unit="g" dv={calculateDV(food.saturated_g, 'saturated_g')} indent />
-            <NutrientRow label="Trans Fat" value={food.trans_g} unit="g" indent />
-            <NutrientRow label="Cholesterol" value={food.cholesterol_mg} unit="mg" dv={calculateDV(food.cholesterol_mg, 'cholesterol_mg')} bold />
-            <NutrientRow label="Sodium" value={food.sodium_mg} unit="mg" dv={calculateDV(food.sodium_mg, 'sodium_mg')} bold />
-            <NutrientRow label="Total Carbohydrate" value={food.carbohydrate_g} unit="g" dv={calculateDV(food.carbohydrate_g, 'carbohydrate_g')} bold />
-            <NutrientRow label="Dietary Fiber" value={food.fiber_g} unit="g" dv={calculateDV(food.fiber_g, 'fiber_g')} indent />
-            <NutrientRow label="Total Sugars" value={food.sugars_g} unit="g" indent />
-            <NutrientRow label="Protein" value={food.protein_g} unit="g" bold noBorder />
+            <div style={{ fontWeight: 700, textAlign: 'right', borderBottom: '1px solid var(--text-primary)', padding: '2px 0' }}>% Daily Value*</div>
 
-            {/* Divider */}
-            <div style={{ borderTop: '8px solid var(--text-primary)', margin: '8px 0' }} />
+            {MAIN.map(row => {
+                const v = val(row.key);
+                const pct = row.dv ? dvPct(row.key, v) : null;
+                return (
+                    <div key={row.key} style={{
+                        display: 'flex', justifyContent: 'space-between', padding: '3px 0',
+                        borderBottom: row.key === 'protein_g' ? 'none' : '1px solid var(--border-strong)',
+                        paddingLeft: row.indent ? 14 : 0, fontWeight: row.bold ? 700 : 400,
+                    }}>
+                        <span>{row.label ?? nutrientLabel(row.key)} <span style={{ fontWeight: 400 }}>{v === null ? '—' : `${fmtNumber(v)} ${unitOf(row.key)}`}</span></span>
+                        {pct !== null && <span style={{ fontWeight: 700 }}>{pct}%</span>}
+                    </div>
+                );
+            })}
 
-            {/* Vitamins & Minerals */}
-            <div style={{ fontSize: '13px' }}>
-                <MicronutrientRow label="Vitamin D" value={food.vitamin_d_ug} unit="mcg" dv={calculateDV(food.vitamin_d_ug, 'vitamin_d_ug')} />
-                <MicronutrientRow label="Calcium" value={food.calcium_mg} unit="mg" dv={calculateDV(food.calcium_mg, 'calcium_mg')} />
-                <MicronutrientRow label="Iron" value={food.iron_mg} unit="mg" dv={calculateDV(food.iron_mg, 'iron_mg')} />
-                <MicronutrientRow label="Potassium" value={food.potassium_mg} unit="mg" dv={calculateDV(food.potassium_mg, 'potassium_mg')} />
+            <div style={{ borderTop: '8px solid var(--text-primary)', margin: '6px 0' }} />
 
-                <MicronutrientRow label="Vitamin A" value={food.vitamin_a_ug} unit="mcg" dv={calculateDV(food.vitamin_a_ug, 'vitamin_a_ug')} />
-                <MicronutrientRow label="Vitamin C" value={food.vitamin_c_mg} unit="mg" dv={calculateDV(food.vitamin_c_mg, 'vitamin_c_mg')} />
-                <MicronutrientRow label="Vitamin E" value={food.vitamin_e_mg} unit="mg" dv={calculateDV(food.vitamin_e_mg, 'vitamin_e_mg')} />
-                <MicronutrientRow label="Vitamin K" value={food.vitamin_k_ug} unit="mcg" dv={calculateDV(food.vitamin_k_ug, 'vitamin_k_ug')} />
-
-                <MicronutrientRow label="Thiamin" value={food.thiamin_mg} unit="mg" dv={calculateDV(food.thiamin_mg, 'thiamin_mg')} />
-                <MicronutrientRow label="Riboflavin" value={food.riboflavin_mg} unit="mg" dv={calculateDV(food.riboflavin_mg, 'riboflavin_mg')} />
-                <MicronutrientRow label="Niacin" value={food.niacin_mg} unit="mg" dv={calculateDV(food.niacin_mg, 'niacin_mg')} />
-                <MicronutrientRow label="Vitamin B6" value={food.vitamin_b6_mg} unit="mg" dv={calculateDV(food.vitamin_b6_mg, 'vitamin_b6_mg')} />
-                <MicronutrientRow label="Folate" value={food.folate_ug} unit="mcg" dv={calculateDV(food.folate_ug, 'folate_ug')} />
-                <MicronutrientRow label="Vitamin B12" value={food.vitamin_b12_ug} unit="mcg" dv={calculateDV(food.vitamin_b12_ug, 'vitamin_b12_ug')} />
-
-                <MicronutrientRow label="Magnesium" value={food.magnesium_mg} unit="mg" dv={calculateDV(food.magnesium_mg, 'magnesium_mg')} />
-                <MicronutrientRow label="Zinc" value={food.zinc_mg} unit="mg" dv={calculateDV(food.zinc_mg, 'zinc_mg')} />
-                <MicronutrientRow label="Copper" value={food.copper_mg} unit="mg" dv={calculateDV(food.copper_mg, 'copper_mg')} />
-                <MicronutrientRow label="Manganese" value={food.manganese_mg} unit="mg" dv={calculateDV(food.manganese_mg, 'manganese_mg')} />
-                <MicronutrientRow label="Selenium" value={food.selenium_ug} unit="mcg" dv={calculateDV(food.selenium_ug, 'selenium_ug')} />
+            <div style={{ fontSize: 12 }}>
+                {MICROS.map(key => {
+                    const raw = (food as unknown as Record<string, unknown>)[key];
+                    if (raw === undefined) return null; // column not in this DB
+                    const v = val(key);
+                    const pct = dvPct(key, v);
+                    return (
+                        <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                            <span>{nutrientLabel(key)} <span style={{ color: 'var(--text-secondary)' }}>{v === null ? '—' : `${fmtNumber(v)} ${unitOf(key)}`}</span></span>
+                            {pct !== null && <span style={{ fontWeight: 700 }}>{pct}%</span>}
+                        </div>
+                    );
+                })}
             </div>
 
-            {/* Footer */}
-            <div style={{
-                borderTop: '4px solid var(--text-primary)',
-                marginTop: '8px',
-                paddingTop: '4px',
-                fontSize: '10px',
-                lineHeight: '1.3'
-            }}>
-                * The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice.
+            <div style={{ borderTop: '4px solid var(--text-primary)', marginTop: 6, paddingTop: 4, fontSize: 10, lineHeight: 1.35 }}>
+                * The % Daily Value tells you how much a nutrient in a serving contributes to a daily diet. 2,000 calories a day is used for general nutrition advice. &ldquo;—&rdquo; = no data.
             </div>
-        </div>
-    );
-}
-
-function NutrientRow({
-    label,
-    value,
-    unit,
-    dv,
-    bold = false,
-    indent = false,
-    noBorder = false
-}: {
-    label: string;
-    value: number;
-    unit: string;
-    dv?: number;
-    bold?: boolean;
-    indent?: boolean;
-    noBorder?: boolean;
-}) {
-    return (
-        <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '4px 0',
-            borderBottom: noBorder ? 'none' : '1px solid var(--text-muted)',
-            fontSize: '13px',
-            paddingLeft: indent ? '16px' : '0',
-            fontWeight: bold ? '700' : '400'
-        }}>
-            <span>{label} <span style={{ fontWeight: '400' }}>{value?.toFixed(1)}{unit}</span></span>
-            {dv !== undefined && <span style={{ fontWeight: '700' }}>{dv}%</span>}
-        </div>
-    );
-}
-
-function MicronutrientRow({
-    label,
-    value,
-    unit,
-    dv
-}: {
-    label: string;
-    value: number;
-    unit: string;
-    dv?: number;
-}) {
-    if (!value) return null;
-
-    return (
-        <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '2px 0',
-            fontSize: '11px'
-        }}>
-            <span>{label} <span style={{ color: 'var(--text-secondary)' }}>{value.toFixed(1)}{unit}</span></span>
-            {dv !== undefined && <span style={{ fontWeight: '700' }}>{dv}%</span>}
         </div>
     );
 }

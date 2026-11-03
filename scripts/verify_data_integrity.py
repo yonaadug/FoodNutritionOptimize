@@ -393,7 +393,12 @@ def run(db_path: Path, sample_n: int, seed: int, skip_raw: bool) -> Checker:
 
 
 def api_compare(db_path: Path, fdc_id: int) -> int:
-    key = os.environ.get("USDA_API_KEY", "DEMO_KEY")
+    # Never hard-code keys: env var, then gitignored config/api_keys.txt, then DEMO_KEY.
+    key = os.environ.get("USDA_API_KEY", "").strip()
+    cfg = PROJECT_ROOT / "config" / "api_keys.txt"
+    if not key and cfg.exists():
+        key = cfg.read_text(encoding="utf-8").strip()
+    key = key or "DEMO_KEY"
     url = f"https://api.nal.usda.gov/fdc/v1/food/{fdc_id}?api_key={key}"
     with urllib.request.urlopen(url, timeout=60) as resp:
         data = json.load(resp)

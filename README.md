@@ -1,10 +1,10 @@
 # NutriCompare - Intelligent Nutrition Optimizer
 
-> **Find the healthiest, most cost-effective food combinations that meet all your daily nutritional needs.**
+> **Eat the foods you like and still hit your nutrition goals.**
 
-NutriCompare is a smart nutrition planning application that uses mathematical optimization to help you create the perfect diet. Simply tell it what nutrients you need, and it finds the optimal combination of foods to meet your goals while minimizing calories or cost.
+NutriCompare is a nutrition planner built on mathematical optimization. Pick foods you'd happily eat and choose your goals (or a preset). It works out how much of each food to eat, in grams and everyday servings, so you hit every goal for the day.
 
-![NutriCompare Top Foods Explorer](screenshots/show_foods_based_on_selenium.png)
+![NutriCompare daily plan](docs/ux/after-desktop-plan-full.png)
 
 ---
 
@@ -14,16 +14,16 @@ Imagine you want to meet all your daily nutritional requirements (protein, vitam
 
 ### How It Works (Simple Explanation)
 
-1. **Search for Foods**: Type "chicken", "broccoli", or any food name
-2. **Select Foods**: Pick the foods you want to include in your diet
-3. **Set Your Goals**: Tell the app your nutritional targets (e.g., "I need 50g of protein")
-4. **Optimize**: Click "Optimize Diet" and let the app calculate the perfect amounts
-5. **Get Results**: See exactly how many grams of each food to eat
+1. **Pick foods**: Search "salmon", "oats", "black beans", or tap **Try a sample day** to start from 15 everyday staples
+2. **Set goals**: Pick a preset (*Everyday essentials*, *FDA Daily Values*, *High protein*, *Lower carb*) or turn individual goals on or off
+3. **Your plan**: Tap **Make my plan** to see how much of each food to eat, with progress bars for every goal
 
-The app uses **Linear Programming** (a mathematical technique) to find the best combination that:
-- ✅ Meets all your nutritional requirements
-- ✅ Minimizes total calories (or cost, if you add prices)
-- ✅ Respects food quantity limits (e.g., max 3 servings per food)
+The app uses **Linear Programming** (a mathematical technique) to find the combination that:
+- ✅ Meets every goal you turned on
+- ✅ Uses as few calories as possible to get there
+- ✅ Keeps portions realistic (each food is capped at a sensible amount; you can change per-food limits)
+
+If the goals can't all be met, it tells you which ones fall short and suggests foods to add.
 
 ### Real-World Example
 
@@ -31,7 +31,7 @@ The app uses **Linear Programming** (a mathematical technique) to find the best 
 
 **You Select:** Chicken breast, Broccoli, Rice, Oranges
 
-**NutriCompare Calculates:**
+**NutriCompare Calculates (illustrative):**
 - 120g Chicken breast = 30g protein, 132 cal
 - 200g Broccoli = 5.6g protein, 68mg Vitamin C, 68 cal
 - 150g Rice = 4.5g protein, 195 cal
@@ -39,27 +39,30 @@ The app uses **Linear Programming** (a mathematical technique) to find the best 
 
 **Total:** 41.1g protein, 115mg Vitamin C, 442 calories ✅
 
-The app shows you if you're over/under your targets with progress bars and suggests adjustments.
+The app shows how close you are to each goal with progress bars, and suggests what to change when a goal can't be met.
 
 ---
 
 ## Features
 
 ### Core Features
-- 🔍 **Search 9,400+ Foods** from USDA FoodData Central (Foundation Foods, SR Legacy, and FNDDS mixed dishes)
-- 📊 **30+ Nutrients Tracked** (protein, vitamins A-K, minerals, fats, fiber, etc.)
-- ⚙️ **Automatic Optimization** using linear programming solver
-- 🎯 **Custom Constraints** for each nutrient (min/max limits)
-- 🍽️ **Guaranteed Foods** - lock in specific foods with fixed amounts
-- 🌙 **Dark/Light Mode** for comfortable viewing
-- 💾 **LocalStorage** persistence - your selections are saved
+- 🔍 **Search 9,400+ Foods** from USDA FoodData Central (Foundation Foods, SR Legacy, and FNDDS mixed dishes). Everyday forms rank first: "egg" finds whole eggs, not dried yolk.
+- 🧭 **Guided 3-step flow**: Pick foods → Set goals → Your plan, with a one-click sample day
+- 🎯 **Goal presets** (Everyday essentials, FDA Daily Values, High protein, Lower carb) plus per-goal on/off and custom min/max
+- 📊 **30+ Nutrients** (macros, vitamins A–K, minerals, choline, omega-3s), with FDA Daily Values and upper limits cited in code
+- 🍽️ **Plans that read like a meal plan**: grams plus household servings ("≈ ½ fillet"), and goal progress bars
+- 🆘 **Helpful "can't meet" screen**: tells you which goal falls short, by how much, with one-click foods to add
+- ❔ **Honest about missing data**: nutrients USDA didn't measure show as "—", not 0, and the plan flags them
+- 🌙 **Dark/Light Mode** (follows your OS), responsive down to phone width, keyboard and screen-reader friendly
+- 💾 **Saved automatically** in your browser (no account needed)
 
-### Advanced Features
-- 📈 **Top Foods Explorer** - find foods highest in specific nutrients
-- 🔬 **Nutrition Facts Labels** - FDA-style nutrition display
-- 🧮 **Constraint Analysis** - see exactly how each requirement is met
-- 🐛 **Debug Mode** - view the underlying mathematical equations
-- 🎨 **Serving Size Support** - convert between grams and servings
+### Advanced Options
+- 🔒 **Fixed amounts**: lock in foods you'll definitely eat ("plan the rest of my day")
+- ↕️ **Per-food limits** and a "keep portions realistic" cap
+- 🛡️ **Respect safe upper limits** (opt-in; only limits that apply to food, not supplement-only limits)
+- 📈 **Best sources of…**: foods highest in a nutrient
+- 🔬 **Nutrition Facts labels** and side-by-side comparison
+- 🧮 **Show the math**: the underlying LP model
 
 ---
 
@@ -207,14 +210,17 @@ FoodNutritionOptimize/
 │   │   ├── page.tsx             # Main UI page
 │   │   └── layout.tsx           # Root layout
 │   ├── components/              # React components
-│   │   ├── SearchBar.tsx
-│   │   ├── FoodCard.tsx
-│   │   ├── TopFoods.tsx
-│   │   └── ...
-│   ├── lib/                     # Business logic
-│   │   ├── db.ts                # SQLite database access
-│   │   ├── optimizer.ts         # Linear programming solver
-│   │   └── nutrient-defaults.ts # Nutrient configurations
+│   │   ├── foods/               # Step 1: search, results, your foods
+│   │   ├── goals/               # Step 2: presets and goal editor
+│   │   ├── plan/                # Step 3: plan, progress, "can't meet" help
+│   │   ├── planner/             # Presets, nutrient metadata, sample day
+│   │   └── shell/, ui/          # Layout, footer, shared controls
+│   ├── hooks/                   # Persisted planner store, search, plan, top foods
+│   ├── lib/                     # Business logic (+ *.test.ts, run with npm test)
+│   │   ├── db.ts                # Read-only SQLite access, ranked FTS5 search
+│   │   ├── optimizer.ts         # Linear programming model, diagnostics, warnings
+│   │   ├── nutrient-defaults.ts # FDA Daily Values and upper limits (cited)
+│   │   └── api.ts               # Request validation and JSON errors
 │   ├── nutrition.db             # SQLite database (9,435 USDA foods, Git LFS)
 │   └── package.json
 │
@@ -237,8 +243,12 @@ FoodNutritionOptimize/
 │
 ├── docs/                        # Documentation
 │   ├── README_API.md            # API documentation
-│   ├── KEY_NUTRIENTS.md         # Nutrient reference
-│   └── VERIFICATION_INSTRUCTIONS.md
+│   ├── KEY_NUTRIENTS.md         # Nutrient definitions, units, data provenance
+│   ├── VERIFICATION_INSTRUCTIONS.md # Rebuilding and validating the DB
+│   ├── UX_AUDIT.md              # Usability audit with before/after screenshots
+│   ├── FEATURE_ROADMAP.md       # Prioritized roadmap (recipes, personalization, ...)
+│   └── aws/                     # AWS hosting + monetization design
+├── TODO.md                      # Backlog from the Nov 2026 review
 │
 ├── data/                        # Data files
 │   └── raw/                     # Downloaded USDA releases (gitignored)
@@ -266,9 +276,9 @@ FoodNutritionOptimize/
 - **Node.js** - Runtime environment
 
 ### Data Pipeline
-- **Python 3** - Data ingestion scripts
-- **USDA FoodData Central API** - Official nutrition data source
-- **CSV parsing** - Bulk data import
+- **Python 3 (standard library only)** - `scripts/build_db.py` builds the DB from pinned, sha256-verified USDA bulk downloads
+- **USDA FoodData Central** - Foundation Foods, SR Legacy, FNDDS
+- **SQLite FTS5** - Full-text search index
 
 ### Desktop
 - **Electron 45** - Cross-platform desktop framework
@@ -296,8 +306,8 @@ Protein:    Σ(protein_i × x_i) ≥ 50g       (minimum requirement)
 Vitamin C:  Σ(vitC_i × x_i) ≥ 90mg         (minimum requirement)
 Sodium:     Σ(sodium_i × x_i) ≤ 2300mg     (maximum limit)
 Calories:   Σ(calories_i × x_i) ≤ 2000     (calorie cap)
-Food 1:     0 ≤ x₁ ≤ 3                      (max 3 servings)
-Food 2:     0 ≤ x₂ ≤ 3
+Food 1:     0 ≤ x₁ ≤ cap₁                   (default cap: 3 typical household servings)
+Food 2:     0 ≤ x₂ ≤ cap₂
 ...
 ```
 
@@ -319,60 +329,18 @@ Instead of manually trying thousands of food combinations, the algorithm mathema
 
 ### Basic Workflow
 
-1. **Search for Foods**
-   - Type food name in search bar
-   - Browse paginated results
-   - Click cards to select foods
+1. **Pick foods**: search and tap **Add**, use a "Popular starting point", or tap **Try a sample day**. Switch to **Best sources of…** to find foods rich in a nutrient.
+2. **Set goals**: choose a preset, then switch individual goals on or off or edit their min/max. Total sugars is off by default because the FDA's 50 g Daily Value is for *added* sugars.
+3. **Your plan**: tap **Make my plan** (the sticky bar at the bottom). You'll see what to eat, the calorie and macro split, and progress for every goal.
+4. **Iterate**: if a goal can't be met, each "Not enough …" card offers **Drop this minimum** or one-click foods to add. Change anything and an "Update plan" banner appears.
 
-2. **Set Nutrient Constraints**
-   - Expand "Customize Constraints" section
-   - Enter min/max for each nutrient
-   - Set calorie limits (min/max)
+### Advanced Options
 
-3. **Optional: Guaranteed Foods**
-   - Click "Add to Guaranteed" for must-have foods
-   - Enter exact amounts (in grams)
-   - These amounts are fixed, not optimized
-
-4. **Optimize**
-   - Click "Optimize Diet" button
-   - View results:
-     - Diet plan (foods + amounts)
-     - Total calories and nutrients
-     - Constraint analysis (progress bars)
-     - Nutrient breakdown per food
-
-5. **Iterate**
-   - Adjust constraints if infeasible
-   - Add/remove foods
-   - Re-optimize
-
-### Advanced Features
-
-#### Food Constraints
-Set per-food min/max amounts:
-- Click on food card in comparison view
-- Enter min/max grams
-- Optimizer respects these limits
-
-#### Diversity Mode
-Limit max amount per food globally:
-- Enable "Diversity Mode"
-- Set "Max Food Amount" (grams)
-- Encourages variety
-
-#### Top Foods Explorer
-Find nutrient-dense foods:
-- Select nutrient from dropdown
-- View top 50 foods ranked by that nutrient
-- Click to add to selection
-
-#### Debug Mode
-View optimization equations:
-- Click "Debug" button (top-right)
-- Expand "Optimization Equations"
-- See mathematical formulation
-- Inspect LP solver model (JSON)
+- **Fixed amounts**: open a food in *Your foods* to fix how much you'll eat (e.g. what you've already had today). The planner fills in the rest.
+- **Per-food limits**: set a min/max in grams for any food. *Keep portions realistic* caps each food at 300 g by default.
+- **Respect safe upper limits**: also caps nutrients at their Tolerable Upper Intake Level. Only limits that apply to total intake from food are used; supplement-only limits (magnesium, niacin, folic acid, vitamin E) are not.
+- **Where each nutrient comes from**: a per-food breakdown under the plan.
+- **Show the math**: the LP model behind the plan.
 
 ---
 
@@ -396,18 +364,17 @@ python3 -I scripts/build_db.py --download
 
 ### Optimization Fails (Infeasible)
 
-**Problem:** "No feasible solution found"
+**Problem:** "We can't hit every goal with these foods"
 
 **Causes:**
-1. Constraints are too strict (impossible to satisfy)
-2. Not enough foods selected
-3. Guaranteed foods already violate max constraints
+1. Goals are too strict for the foods you picked (the *FDA Daily Values* preset is demanding)
+2. Not enough variety: a handful of foods rarely covers ~25 nutrients
+3. Fixed amounts or per-food limits already break a maximum
 
 **Solutions:**
-- Relax some constraints (lower mins or raise maxes)
-- Add more food options
-- Remove guaranteed foods temporarily
-- Check debug output for which constraint is problematic
+- Use the quick fixes on each "Not enough …" card (add a suggested food, or drop that minimum)
+- Switch to the *Everyday essentials* preset
+- Add more foods, or loosen per-food limits / *Keep portions realistic*
 
 ### Search Returns No Results
 
@@ -416,7 +383,7 @@ python3 -I scripts/build_db.py --download
 **Solutions:**
 - Check database has foods: `sqlite3 food-nutrition-app/nutrition.db "SELECT COUNT(*) FROM foods;"`
 - Try simpler search terms ("carrot" not "organic baby carrots")
-- Re-run data ingestion if database is corrupt
+- If the database is corrupt, run `git lfs pull` or rebuild it (`python3 -I scripts/build_db.py --download`)
 
 ### "file is not a database" / the database is a few hundred bytes
 
@@ -468,26 +435,11 @@ node -e "console.log(new (require('better-sqlite3'))('nutrition.db',{readonly:tr
 
 Contributions welcome! Here are some ideas:
 
-### High-Priority Features
-- **Cost Optimization** - Add food prices, minimize cost instead of calories
-- **Multi-Day Planning** - Plan entire weeks of meals
-- **Save/Load Diet Plans** - Bookmark successful optimizations
-- **Dietary Restrictions** - Filters for vegan, gluten-free, allergens
-- **Shopping List Export** - Generate grocery lists from diet plans
-- **PDF Reports** - Export nutrition labels and meal plans
+- **What to build next:** [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md). Top items: personalized targets, cost optimization with food prices, dietary patterns and allergens, recipes (manual, by link, by photo), saved plans, and a week planner with a grocery list.
+- **Open issues and cleanup:** [TODO.md](TODO.md)
+- **Hosting and paid tier:** [docs/aws/AWS_HOSTING_DESIGN.md](docs/aws/AWS_HOSTING_DESIGN.md)
 
-### Code Quality
-- Add unit tests (Jest, Vitest)
-- E2E tests (Playwright)
-- Release pipeline (signed desktop builds, container publishing)
-
-### Data Enhancements
-- Add branded foods (cereals, yogurt, etc.)
-- Restaurant menu items
-- Recipe builder (combine foods into meals)
-- Meal timing optimization (pre/post-workout)
-
-See `docs/` for API documentation and technical details.
+Before opening a PR, run `npm run lint && npm run typecheck && npm test && npm run build` in `food-nutrition-app/`. CI runs the same checks.
 
 ---
 
@@ -516,20 +468,25 @@ MIT License - see LICENSE file
 
 ## Screenshots
 
-### Top Foods Explorer
-Discover foods highest in specific nutrients. Select any nutrient (protein, vitamins, minerals, etc.) and instantly see the top-ranked foods. Click to add foods to your optimization or comparison.
+### Start
+A welcome screen with a one-click sample day and the three steps.
 
-![Top Foods Explorer - Selenium ranking](screenshots/show_foods_based_on_selenium.png)
+![Landing page](docs/ux/after-desktop-landing.png)
 
-### Nutrition Facts Comparison
-Compare nutrition facts labels side-by-side for multiple foods. View detailed nutrient breakdowns in FDA-style nutrition labels, making it easy to see how different foods stack up.
+### Your plan
+What to eat in grams and household servings, the calorie and macro split, and progress for every goal.
 
-![Food comparison with nutrition facts](screenshots/food_selection_comparison.png)
+![Daily plan](docs/ux/after-desktop-plan-full.png)
 
-### Optimization Settings
-Set your nutritional goals with customizable constraints. Define minimum and maximum values for calories, macronutrients, vitamins, and minerals. Toggle diversity mode to encourage variety in your diet plan.
+### When goals can't all be met
+Each problem goal gets its own card with the shortfall and one-click fixes.
 
-![Optimization settings panel](screenshots/optimize_nutrition_based_on_requirements.png)
+![Can't meet every goal](docs/ux/after-desktop-infeasible.png)
+
+### Goals (dark mode)
+Presets plus per-goal switches, with the reference value and upper limit shown for each.
+
+![Goals in dark mode](docs/ux/after-desktop-dark-goals.png)
 
 ---
 

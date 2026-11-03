@@ -1,0 +1,94 @@
+# TODO
+
+Backlog from the November 2026 repo review (data, engine/API, UX, platform, AWS, roadmap).
+Items are deduplicated and grouped by area. **P0** = do before anything public, **P1** = next, **P2** = later.
+Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md). This file only links to it.
+
+## P0: owner actions
+
+- [ ] **Rotate the USDA FoodData Central API key** that was committed in `ece4cbb8`
+      (`scripts/check_portions.py`, since deleted). That commit is on GitHub, so treat the key as public.
+      Get a new key at https://fdc.nal.usda.gov/api-key-signup.html and keep it in `config/api_keys.txt`
+      or `USDA_API_KEY`, both gitignored. Optional: purge it from history with `git filter-repo` plus a
+      force-push. That rewrites history for every clone, so it's your call.
+- [ ] **Push and confirm CI is green on GitHub.** Nothing has been pushed. `git push` also uploads the
+      new ~7 MB LFS database. Watch the first `ci.yml` run, which needs the LFS checkout.
+- [ ] **Delete stale local files** outside git: `data/nutrition_download.db` (unreferenced old DB copy),
+      plus the agent worktrees under `.claude/worktrees/` once you no longer need them
+      (`git worktree list`; their branches are merged into `main`).
+
+## P1: product and UX
+
+- [ ] **Personalized targets.** Defaults are FDA *label* Daily Values (e.g. potassium 4,700 mg, iron 18 mg),
+      the highest adult values, which over-constrain most people. Build a profile (age, sex, weight,
+      activity, pregnancy) → DRI targets. Roadmap #1. Check DRI table licensing (National Academies copyright)
+      before redistributing a compiled table.
+- [ ] **Cost objective.** It isn't implemented: the optimizer always minimizes calories, and there is no price
+      data. Add seed prices (USDA ERS) plus user overrides. Roadmap #2. Ship realistic-portion guards first:
+      cost-minimized diets collapse onto a few foods.
+- [ ] **Better "Best sources of…" and infeasibility suggestions.** Ranking per 100 g surfaces specialty items
+      (liver, acerola, fortified cereals), and one Vitamin A card showed no suggestions. Rank per serving or per
+      100 kcal, exclude specialty and fortified items by default, and always return suggestions.
+      (`lib/db.ts` `getTopFoodsByNutrientIn`, `/api/foods/top`)
+- [ ] **Structured diagnostics.** Return `issues: [{nutrient, kind: 'short'|'excess', amount}]` from
+      `/api/optimize` for every unmet goal. The UI currently parses `message`, which lists at most 5.
+      The UI already uses `issues` if it's present.
+- [ ] **Minimum meaningful portion.** Avoid plans with 4 g of a food: allow either 0 or at least X g,
+      using a binary variable or a two-pass solve.
+- [ ] **Missing-data warnings show on most plans.** Foundation foods are sparse (vitamin D is reported for ~20%).
+      Options: factor data completeness into search ranking, offer the equivalent SR Legacy row, or fill gaps
+      from the superseded SR row with provenance.
+- [ ] **Household serving labels** are heuristic and some read oddly ("≈ 12½ cups, pieces of ~1\"").
+- [ ] **Save multiple plans/days; print, share and export (CSV).** Roadmap "Now" phase.
+- [ ] **Carbohydrate default minimum** is the 275 g DV. Consider the 130 g RDA in the Everyday essentials preset.
+- [ ] **Dedupe near-identical Foundation rows** (e.g. "Peanut butter, creamy" vs "Peanut butter, Creamy").
+
+## P1: launch (see [docs/aws/AWS_HOSTING_DESIGN.md](docs/aws/AWS_HOSTING_DESIGN.md))
+
+- [ ] Verify the design's unverified assumptions before building:
+  - Lambda arm64 price
+  - OpenNext support for Next 16
+  - CloudFront flat-rate plan eligibility for a CDK-created distribution
+  - IAM and spend limits for Claude Platform on AWS
+  - Competitor prices (mostly third-party sources)
+- [ ] Build better-sqlite3 for the deploy target. Prebuilt binaries match the build OS and CPU, so use a Linux
+      arm64 container image for Lambda. The example is `docs/aws/infra-example/Dockerfile.lambda` (untested).
+- [ ] App changes from the design:
+  - Auth middleware (Cognito)
+  - A local-first store with a sync API, replacing localStorage-only state
+  - Stripe Checkout, Customer Portal and a webhook worker → entitlements
+  - AI import job API and worker with per-user quotas and a global spend breaker
+  - Account export and delete
+  - Origin access control: `x-amz-content-sha256` on POST bodies, auth token in `X-Auth-Token`
+- [ ] Legal and compliance:
+  - Privacy policy, terms and medical disclaimer
+  - Washington MHMDA consent and a consumer health data policy
+  - No ad or analytics pixels on health data (FTC Health Breach Notification Rule)
+
+## P1: platform and code quality
+
+- [ ] Enable `eslint-config-next/typescript` rules. There are about 44 `any` / ts-comment errors in `lib/` and `types/`.
+- [ ] Add API route tests for `lib/api.ts` (today only the CI smoke test covers it).
+- [ ] Wire `python3 -I scripts/verify_data_integrity.py --skip-raw` into CI.
+- [ ] Electron: macOS signing and notarization, a release workflow with per-arch runners, and CSP nonces to
+      drop `'unsafe-inline'`.
+
+## P2
+
+- [ ] **Data:**
+  - Review USDA anomalies (e.g. SR 173174 SlimFast lists manganese at 269 mg).
+  - Add added sugars (FPED).
+  - Switch Foundation ingestion back to CSV once USDA ships a complete CSV release.
+  - Re-check FDC releases each April and October (update `SOURCES` in `scripts/build_db.py`).
+- [ ] **UX:**
+  - Highlight differences in the comparison view.
+  - Group plans into meals.
+  - Run automated accessibility checks (axe) in CI.
+- [ ] **Platform:**
+  - Self-host the Inter font (`next/font/google` needs network at build time).
+  - Add a Windows `.ico`, auto-update and Dependabot.
+  - Fix the 16 moderate dev-only `npm audit` findings (minimatch via typescript-eslint).
+- [ ] **Solver:** evaluate javascript-lp-solver 1.x or HiGHS (WASM) before the week planner, which needs integer
+      and variety constraints.
+- [ ] **Repo:** `screenshots/` shows the old UI and is no longer referenced (the README uses `docs/ux/after-*.png`).
+      Replace or remove it. Decide whether `graphify-out/` should be gitignored.

@@ -4,7 +4,19 @@ Backlog from the November 2026 repo review (data, engine/API, UX, platform, AWS,
 Items are deduplicated and grouped by area. **P0** = do before anything public, **P1** = next, **P2** = later.
 Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md). This file only links to it.
 
+## Waiting on a decision
+
+- [ ] **USDA data updates with admin approval and change tracking.** Design is pending one choice: approve on a
+      page of the website (needs an admin login), or email + GitHub pull request (free, history built in).
+      Foods are matched across USDA releases by NDB number, because USDA gives updated foods new FDC IDs.
+- [ ] **Stripe implementation plan** (Payments, Billing, Invoicing; free tier + monthly/annual subscription).
+      Blocked until the Stripe MCP connection is re-authenticated (`/mcp` → `plugin:stripe:stripe`).
+
 ## P0: owner actions
+
+- [ ] **Register micronutrientdiary.com.** It was unregistered as of 2026-11-04. Route 53 is $16/yr, Porkbun $11.81/yr
+      ([docs/aws/DOMAIN.md](docs/aws/DOMAIN.md)). Run a USPTO search for "Micronutrient Diary" first. The name is
+      descriptive, so conflict risk is low, but it may be hard to register as a trademark.
 
 - [ ] **Rotate the USDA FoodData Central API key** that was committed in `ece4cbb8`
       (`scripts/check_portions.py`, since deleted). That commit is on GitHub, so treat the key as public.
@@ -72,6 +84,14 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] Wire `python3 -I scripts/verify_data_integrity.py --skip-raw` into CI.
 - [ ] Electron: macOS signing and notarization, a release workflow with per-arch runners, and CSP nonces to
       drop `'unsafe-inline'`.
+
+- [ ] Re-check **ESLint 10** and **TypeScript 7** for the web app. Both are held back because eslint-config-next's plugins
+      and typescript-eslint don't support them yet. The CDK example already uses TypeScript 7.
+- [ ] Compare **AWS Lambda Web Functions** (launched Oct 2026; the Lambda Web Adapter README now recommends them for
+      new Node apps) against the current Lambda + Web Adapter design before deploying.
+- [ ] Test the real Lambda invoke path in a dev AWS account. The local Runtime Interface Emulator run was blocked,
+      but the container itself was tested with `make lambda-local`. The AI-worker and Stripe-webhook handlers in
+      `docs/aws/infra-example/cdk/workers/` are placeholders.
 
 ## P2
 

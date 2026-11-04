@@ -1,6 +1,6 @@
 # Vital Nutrition
 
-> **Eat the foods you like and still hit your nutrition goals.** · [vital-nutrition.com](https://vital-nutrition.com) *(planned domain)*
+> **Eat the foods you like and still hit your nutrition goals.** · [vitalnutrition.com](https://vitalnutrition.com) *(planned domain)*
 
 *Formerly "NutriCompare".*
 

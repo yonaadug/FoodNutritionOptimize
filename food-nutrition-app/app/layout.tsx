@@ -4,7 +4,7 @@ import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vital-nutrition.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vitalnutrition.com';
 const DESCRIPTION = 'Pick foods you like, choose your nutrition goals, and get a day of eating, in grams and household servings, that meets them.';
 
 export const metadata: Metadata = {

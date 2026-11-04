@@ -30,6 +30,12 @@ const nextConfig = {
     // Don't let `next dev` write an AGENTS.md into the repo on every run.
     agentRules: false,
 
+    // `next dev` blocks dev resources (HMR, dev chunks) requested from any
+    // origin other than localhost, so the page never hydrates when opened as
+    // http://127.0.0.1:3000, which is what the Electron dev shell and the
+    // local-testing docs use. Dev-only; no effect on production builds.
+    allowedDevOrigins: ['127.0.0.1'],
+
     outputFileTracingExcludes: {
         // 'next-server' is the key Next uses for the server runtime's own trace.
         'next-server': ['**/node_modules/sharp/**/*', '**/node_modules/@img/**/*'],

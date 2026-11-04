@@ -1,7 +1,7 @@
 {
-  "name": "nutricompare-infra-example",
+  "name": "vital-nutrition-infra-example",
   "private": true,
-  "description": "UNTESTED EXAMPLE — AWS CDK app for NutriCompare (see docs/aws/AWS_HOSTING_DESIGN.md). Pin exact versions before use.",
+  "description": "UNTESTED EXAMPLE — AWS CDK app for Vital Nutrition (see docs/aws/AWS_HOSTING_DESIGN.md). Pin exact versions before use.",
   "scripts": {
     "synth": "cdk synth",
     "diff": "cdk diff",

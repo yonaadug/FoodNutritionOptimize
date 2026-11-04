@@ -1,16 +1,18 @@
-# NutriCompare - Intelligent Nutrition Optimizer
+# Vital Nutrition
 
-> **Eat the foods you like and still hit your nutrition goals.**
+> **Eat the foods you like and still hit your nutrition goals.** · [vital-nutrition.com](https://vital-nutrition.com) *(planned domain)*
 
-NutriCompare is a nutrition planner built on mathematical optimization. Pick foods you'd happily eat and choose your goals (or a preset). It works out how much of each food to eat, in grams and everyday servings, so you hit every goal for the day.
+*Formerly "NutriCompare".*
 
-![NutriCompare daily plan](docs/ux/after-desktop-plan-full.png)
+Vital Nutrition is a nutrition planner built on mathematical optimization. Pick foods you'd happily eat and choose your goals (or a preset). It works out how much of each food to eat, in grams and everyday servings, so you hit every goal for the day.
+
+![Vital Nutrition daily plan](docs/ux/after-desktop-plan-full.png)
 
 ---
 
 ## What Does This App Do?
 
-Imagine you want to meet all your daily nutritional requirements (protein, vitamins, minerals, etc.) but you're not sure which foods to eat or how much. **NutriCompare solves this problem for you automatically.**
+Imagine you want to meet all your daily nutritional requirements (protein, vitamins, minerals, etc.) but you're not sure which foods to eat or how much. **Vital Nutrition solves this problem for you automatically.**
 
 ### How It Works (Simple Explanation)
 
@@ -31,7 +33,7 @@ If the goals can't all be met, it tells you which ones fall short and suggests f
 
 **You Select:** Chicken breast, Broccoli, Rice, Oranges
 
-**NutriCompare Calculates (illustrative):**
+**Vital Nutrition Calculates (illustrative):**
 - 120g Chicken breast = 30g protein, 132 cal
 - 200g Broccoli = 5.6g protein, 68mg Vitamin C, 68 cal
 - 150g Rice = 4.5g protein, 195 cal
@@ -125,15 +127,15 @@ Or build the container image from the repo root. It is multi-stage, runs as a no
 
 ```bash
 git lfs pull
-docker build -t nutricompare .
-docker run --rm -p 3000:3000 nutricompare
+docker build -t vital-nutrition .
+docker run --rm -p 3000:3000 vital-nutrition
 ```
 
 ---
 
 ### Desktop App (Electron)
 
-Run NutriCompare as a **native desktop application** that works completely offline. The
+Run Vital Nutrition as a **native desktop application** that works completely offline. The
 app runs its own server on `127.0.0.1` with a random port, and its window is locked down:
 it is sandboxed, has a CSP, and cannot load remote content. End users don't need Node.js.
 See [electron-app/README.md](electron-app/README.md) for details.
@@ -288,7 +290,7 @@ FoodNutritionOptimize/
 
 ## How the Optimization Works (Technical)
 
-NutriCompare uses **Linear Programming**, specifically the **Simplex Algorithm**, to solve this problem:
+Vital Nutrition uses **Linear Programming**, specifically the **Simplex Algorithm**, to solve this problem:
 
 ### Mathematical Formulation
 
@@ -424,7 +426,7 @@ node -e "console.log(new (require('better-sqlite3'))('nutrition.db',{readonly:tr
 **Problem:** The Electron window doesn't open, or an error dialog appears
 
 **Solutions:**
-- Read the log at `~/Library/Logs/NutriCompare/main.log` (macOS), `%APPDATA%\NutriCompare\logs\main.log` (Windows), or `~/.config/NutriCompare/logs/main.log` (Linux).
+- Read the log at `~/Library/Logs/Vital Nutrition/main.log` (macOS), `%APPDATA%\Vital Nutrition\logs\main.log` (Windows), or `~/.config/Vital Nutrition/logs/main.log` (Linux).
 - In dev mode, make sure `food-nutrition-app` is installed (`npm ci --ignore-scripts`) and the LFS database is pulled.
 - If `electron .` acts like plain Node, unset `ELECTRON_RUN_AS_NODE` (some IDE terminals set it). The npm scripts already unset it.
 - The app picks a random free port, so you never need to free port 3000.

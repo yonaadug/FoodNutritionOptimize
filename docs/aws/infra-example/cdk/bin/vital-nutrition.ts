@@ -3,25 +3,25 @@
  * UNTESTED EXAMPLE — see docs/aws/AWS_HOSTING_DESIGN.md §3.11.
  * Usage (from this cdk/ folder, with credentials for the target account):
  *   npx cdk bootstrap aws://<ACCOUNT>/us-east-1
- *   npx cdk deploy -c stage=dev  NutriCompare-dev
- *   npx cdk deploy -c stage=prod NutriCompare-prod GithubOidc-prod   (prod account)
+ *   npx cdk deploy -c stage=dev  VitalNutrition-dev
+ *   npx cdk deploy -c stage=prod VitalNutrition-prod GithubOidc-prod   (prod account)
  */
 import { App, Stack, StackProps, Duration } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { NutriCompareStack } from '../lib/nutricompare-stack';
+import { VitalNutritionStack } from '../lib/vital-nutrition-stack';
 
 const app = new App();
 const stage = (app.node.tryGetContext('stage') ?? 'dev') as 'dev' | 'prod';
 const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'us-east-1' };
 
-new NutriCompareStack(app, `NutriCompare-${stage}`, {
+new VitalNutritionStack(app, `VitalNutrition-${stage}`, {
   env,
   stage,
-  siteUrl: stage === 'prod' ? 'https://nutricompare.app' : 'https://REPLACE_WITH_DEV_CLOUDFRONT_DOMAIN',
+  siteUrl: stage === 'prod' ? 'https://vital-nutrition.com' : 'https://REPLACE_WITH_DEV_CLOUDFRONT_DOMAIN',
   alertEmail: 'REPLACE_ME@example.com',
   monthlyBudgetUsd: stage === 'prod' ? 25 : 5,
-  sesDomain: stage === 'prod' ? 'nutricompare.app' : undefined,
+  sesDomain: stage === 'prod' ? 'vital-nutrition.com' : undefined,
 });
 
 /**

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# NutriCompare setup: checks prerequisites, fetches the LFS database and
+# Vital Nutrition setup: checks prerequisites, fetches the LFS database and
 # installs the web app. Safe to re-run.
 #
 # Usage: ./setup.sh [--with-electron] [--with-python]
@@ -27,7 +27,7 @@ ok()   { echo "${GREEN}✔${NC} $*"; }
 warn() { echo "${YELLOW}!${NC} $*"; }
 die()  { echo "${RED}✘${NC} $*" >&2; exit 1; }
 
-echo "== NutriCompare setup =="
+echo "== Vital Nutrition setup =="
 
 # --- Prerequisites ---------------------------------------------------------
 command -v node >/dev/null 2>&1 || die "Node.js is not installed. Install Node.js ${MIN_NODE}+ (LTS) from https://nodejs.org/"

@@ -70,11 +70,11 @@ jobs:
         working-directory: docs/aws/infra-example/cdk   # move to infra/ when adopting
         run: |
           npm ci || npm install
-          npx cdk deploy "NutriCompare-${STAGE}" -c stage="${STAGE}" --require-approval never
+          npx cdk deploy "VitalNutrition-${STAGE}" -c stage="${STAGE}" --require-approval never
 
       - name: Smoke test
         run: |
-          URL="$(aws cloudformation describe-stacks --stack-name "NutriCompare-${STAGE}" \
+          URL="$(aws cloudformation describe-stacks --stack-name "VitalNutrition-${STAGE}" \
                  --query "Stacks[0].Outputs[?OutputKey=='SiteUrl'].OutputValue" --output text)"
           curl -fsS "${URL}/api/health"
           curl -fsS "${URL}/api/search?q=apple&limit=5" | head -c 300

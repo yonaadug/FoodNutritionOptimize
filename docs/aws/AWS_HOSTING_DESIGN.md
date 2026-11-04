@@ -1,4 +1,4 @@
-# NutriCompare: AWS Hosting and Monetization Design
+# Vital Nutrition: AWS Hosting and Monetization Design
 
 **Status:** proposal, not implemented · **Prepared:** 2026-11-03 · **Scope:** `food-nutrition-app/` (web). `electron-app/` stays offline-first and is unaffected.
 **Priority:** lowest possible cost for a solo developer, with hard limits so neither abuse nor AI usage can cost more than the app earns.
@@ -36,7 +36,7 @@ All prices are USD, us-east-1, and were taken from official pricing pages on **2
 
 ### Proposed price
 
-**Free** (no account required, works offline) + **NutriCompare Plus: $5.99/month or $39.99/year** (the annual plan works out to $3.33/mo, 44% off). New accounts get a **14-day "reverse trial" of Plus without a card**, with a capped AI quota. For comparison: Cronometer Gold is $10.99/mo or $59.99/yr, MacroFactor is ~$11.99/mo or $71.99/yr, Eat This Much is ~$59.99/yr, and MyFitnessPal Premium is $19.99/mo or $79.99/yr ([§4](#4-monetization)).
+**Free** (no account required, works offline) + **Vital Nutrition Plus: $5.99/month or $39.99/year** (the annual plan works out to $3.33/mo, 44% off). New accounts get a **14-day "reverse trial" of Plus without a card**, with a capped AI quota. For comparison: Cronometer Gold is $10.99/mo or $59.99/yr, MacroFactor is ~$11.99/mo or $71.99/yr, Eat This Much is ~$59.99/yr, and MyFitnessPal Premium is $19.99/mo or $79.99/yr ([§4](#4-monetization)).
 
 ### The five things that matter most
 
@@ -210,7 +210,7 @@ flowchart LR
 - Aurora Serverless v2 costs $0.12/ACU-hr: about $43/mo at a 0.5 ACU floor. Scaling to 0 means multi-second resumes, so it's ruled out.
 - DynamoDB is $0 when idle, needs no connection management, and every access pattern below is a single-partition Query.
 
-**Table `nutricompare-<stage>`**: `PK` (S), `SK` (S), `GSI1PK`/`GSI1SK`, TTL attribute `expiresAt`, on-demand, PITR in prod, deletion protection in prod.
+**Table `vital-nutrition-<stage>`**: `PK` (S), `SK` (S), `GSI1PK`/`GSI1SK`, TTL attribute `expiresAt`, on-demand, PITR in prod, deletion protection in prod.
 
 | Entity | PK | SK | Key attributes | Notes |
 |---|---|---|---|---|
@@ -325,7 +325,7 @@ To keep output tokens down, set `output_config.effort: "low"`. Haiku 5.5 also al
 | Plus, per month | 60 URL + 20 photo imports **and** $0.75 AI spend (~100 Haiku or ~30 Sonnet ops) | Conditional update on `USAGE#yyyy-mm` |
 | **Global, per day** | `$1 + $0.025 × activePayers` (that is, a Plus user's $0.75/mo cap ÷ 30) | Conditional update on `GLOBAL/AISPEND#day`. When the cap is hit, return "AI imports are busy, try again tomorrow" |
 | Infra rate | Worker reserved concurrency 2, SQS `maxConcurrency 2` | Limits how fast spend can happen |
-| Kill switch | AWS Budget (ACTUAL > 150% of the monthly budget) → separate SNS topic → Lambda sets SSM `/nutricompare/prod/ai-enabled=false` and the worker's reserved concurrency to 0 | Budgets data lags hours, so this is the backstop. The DynamoDB caps are the real-time control |
+| Kill switch | AWS Budget (ACTUAL > 150% of the monthly budget) → separate SNS topic → Lambda sets SSM `/vital-nutrition/prod/ai-enabled=false` and the worker's reserved concurrency to 0 | Budgets data lags hours, so this is the backstop. The DynamoDB caps are the real-time control |
 | Provider-side | If available, set a spend limit on the Claude workspace **(unverified for Claude Platform on AWS)** | |
 
 **Worst case:** every payer maxes out their cap, which costs $0.75 vs at least $3.17 net revenue per payer (annual plan, after Stripe). Free usage is capped at $1/day ≈ **$30/mo** total.
@@ -347,7 +347,7 @@ To keep output tokens down, set `output_config.effort: "low"`. Haiku 5.5 also al
   5. DLQ `ApproximateNumberOfMessagesVisible` > 0
   6. DynamoDB `ThrottledRequests` > 0
   7. webhook `Errors` > 0
-  8. custom `NutriCompare/AiSpendMicroUsd` daily > 80% of cap
+  8. custom `VitalNutrition/AiSpendMicroUsd` daily > 80% of cap
 - **Frontend errors:** start with a `window.onerror` beacon to `/api/telemetry`, which costs $0. Consider Sentry's free tier later **(unverified limits)**.
 - **Cost guardrails:**
   - AWS Budgets is free. Set a monthly cost budget with alerts at 50% ACTUAL and 100% FORECASTED, plus a 150% ACTUAL threshold that fires the kill switch.
@@ -365,7 +365,7 @@ To keep output tokens down, set `output_config.effort: "low"`. Haiku 5.5 also al
 ### 3.11 Environments, CI/CD, IaC
 
 - **Accounts:**
-  - Use an AWS Organization (free) with a management account (billing only), plus `nutricompare-dev` and `nutricompare-prod` accounts.
+  - Use an AWS Organization (free) with a management account (billing only), plus `vital-nutrition-dev` and `vital-nutrition-prod` accounts.
   - Use IAM Identity Center for console access, MFA on all root users, and CloudTrail event history (90 days, free).
   - Two accounts give separate blast radius, separate budgets, and separate CloudFront Free-plan quotas (3 per account).
 - **Stages:** `dev` deploys automatically on every push to `main`. `prod` deploys on a tag or manual dispatch with GitHub Environment approval. Each stage has its own Cognito pool, table, and Stripe mode.
@@ -379,7 +379,7 @@ To keep output tokens down, set `output_config.effort: "low"`. Haiku 5.5 also al
   - SST v3 is the alternative if you choose Option B.
   - See **`docs/aws/infra-example/` (UNTESTED)**.
 
-Key config (excerpt from `infra-example/cdk/lib/nutricompare-stack.ts`):
+Key config (excerpt from `infra-example/cdk/lib/vital-nutrition-stack.ts`):
 
 ```ts
 const web = new lambda.DockerImageFunction(this, 'Web', {
@@ -430,7 +430,7 @@ new cloudfront.Distribution(this, 'Cdn', {
 
 - The optimizer is the hook and costs almost nothing to run, so it stays free and unlimited.
 - Plus charges for the things that have ongoing cost or recurring value: sync, AI imports, and planning over time.
-- At $5.99/$39.99, NutriCompare undercuts every comparable app while still clearing 88–91% net margin per payer.
+- At $5.99/$39.99, Vital Nutrition undercuts every comparable app while still clearing 88–91% net margin per payer.
 
 **Pricing details:**
 

@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
-# NutriCompare web app: Next.js standalone server with the SQLite DB bundled read-only.
+# Vital Nutrition web app: Next.js standalone server with the SQLite DB bundled read-only.
 #
 #   git lfs pull                       # the DB must be the real file, not an LFS pointer
-#   docker build -t nutricompare .
-#   docker run --rm -p 3000:3000 nutricompare
+#   docker build -t vital-nutrition .
+#   docker run --rm -p 3000:3000 vital-nutrition
 #
 # Build on (or with --platform for) the target arch: the better-sqlite3 binary
 # traced into the standalone bundle is the one for the build platform.

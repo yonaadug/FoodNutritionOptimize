@@ -1,9 +1,9 @@
 /**
- * NutriCompare desktop shell.
+ * Vital Nutrition desktop shell.
  *
  * Starts the Next.js server on 127.0.0.1 with a random free port and shows it
  * in a locked-down BrowserWindow:
- *   - packaged (or NUTRICOMPARE_USE_STAGED=1): the standalone server staged by
+ *   - packaged (or VITAL_NUTRITION_USE_STAGED=1): the standalone server staged by
  *     scripts/stage-web.js, run with Electron's own Node via utilityProcess,
  *     so users don't need Node installed;
  *   - development: `next dev` from ../food-nutrition-app using the system Node.
@@ -16,7 +16,7 @@ const net = require('net');
 const path = require('path');
 
 const HOST = '127.0.0.1';
-const useStaged = app.isPackaged || process.env.NUTRICOMPARE_USE_STAGED === '1';
+const useStaged = app.isPackaged || process.env.VITAL_NUTRITION_USE_STAGED === '1';
 const isDev = !useStaged;
 
 const webDir = app.isPackaged
@@ -132,14 +132,14 @@ async function startServer() {
       cwd: webDir,
       env,
       stdio: 'pipe',
-      serviceName: 'NutriCompare Server',
+      serviceName: 'Vital Nutrition Server',
     });
   }
   pipeOutput(serverProcess);
   serverProcess.on('exit', (code) => {
     log(`Server exited with code ${code}`);
     serverProcess = null;
-    if (!quitting) fatal('NutriCompare server stopped', `The internal server exited unexpectedly (code ${code}).`);
+    if (!quitting) fatal('Vital Nutrition server stopped', `The internal server exited unexpectedly (code ${code}).`);
   });
 
   await waitForServer(`${origin}/`, isDev ? 120000 : 30000);
@@ -240,7 +240,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
-    title: 'NutriCompare',
+    title: 'Vital Nutrition',
     icon: path.join(__dirname, 'assets', 'icon.png'),
     show: false,
     webPreferences: {
@@ -271,11 +271,11 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(async () => {
-    log(`NutriCompare ${app.getVersion()} (Electron ${process.versions.electron}, packaged=${app.isPackaged}, dev=${isDev})`);
+    log(`Vital Nutrition ${app.getVersion()} (Electron ${process.versions.electron}, packaged=${app.isPackaged}, dev=${isDev})`);
     try {
       await startServer();
     } catch (err) {
-      fatal('NutriCompare failed to start', err.message);
+      fatal('Vital Nutrition failed to start', err.message);
       return;
     }
     hardenSession(session.defaultSession);

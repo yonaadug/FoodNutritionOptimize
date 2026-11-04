@@ -90,7 +90,7 @@ interface Connection {
     schema: SchemaInfo;
 }
 
-const globalKey = Symbol.for('nutricompare.db');
+const globalKey = Symbol.for('vital-nutrition.db');
 type GlobalWithDb = typeof globalThis & { [globalKey]?: Connection };
 
 export function openDatabase(file: string): Connection {

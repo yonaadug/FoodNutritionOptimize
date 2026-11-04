@@ -308,7 +308,7 @@ export function ShowTheMath({ result }: { result: PlanResult }) {
             <summary>Show the math <span className="tiny muted" style={{ fontWeight: 400 }}>(advanced)</span></summary>
             <div className="disclosure-body stack">
                 <p className="small secondary">
-                    NutriCompare uses linear programming: it finds the amounts of your foods with the fewest calories that satisfy every goal.
+                    Vital Nutrition uses linear programming: it finds the amounts of your foods with the fewest calories that satisfy every goal.
                 </p>
                 {result.debugEquations?.length ? (
                     <pre className="code-block">{result.debugEquations.join('\n')}</pre>

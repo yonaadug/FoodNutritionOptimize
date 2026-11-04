@@ -184,14 +184,21 @@ To check by hand while it runs (`docker run ... -p 9000:3000 micronutrient-diary
 curl -s http://127.0.0.1:9000/api/meta                       # {"meta":{...},"searchMode":"fts","foodCount":9435}
 curl -s 'http://127.0.0.1:9000/api/search?q=salmon&limit=3'  # {"foods":[{"description":"Fish, salmon, sockeye, ...
 curl -s -X POST http://127.0.0.1:9000/api/optimize -H 'content-type: application/json' \
-  -d '{"foods":[{"id":<an id from the search>}],"minCalories":200,"maxCalories":2000,"customConstraints":{}}'
+  -d '{"foods":[{"id":147}],"minCalories":200,"maxCalories":2000}'
+# {"success":false,"message":"Optimization Failed:\n• Cannot meet Fiber target ...  (one food can't meet
+# every default goal; a diagnosis means the solver ran. 147 = the salmon from the search above)
+docker exec <container> ls /opt/extensions                   # lambda-adapter
 ```
+
+`docker images` shows about 356 MB for the Lambda image and 305 MB for the plain one.
 
 **arm64 vs x86_64.** The CDK example deploys an **arm64** function (cheaper per ms). On an
 Apple-silicon Mac `linux/arm64` runs natively. To test an x86_64 build, run
 `make lambda-local LAMBDA_PLATFORM=linux/amd64`. Docker Desktop emulates it (Rosetta when
 "Use Rosetta for x86_64/amd64 emulation" is on in Settings > General, otherwise QEMU).
-Expect a slower build and startup. If you switch the function to x86_64, change both
+Expect a slower build and startup: with Rosetta and a warm cache, the amd64 build plus
+smoke test took about 70 seconds on an M-series Mac.
+`docker image inspect -f '{{.Architecture}}' micronutrient-diary-lambda` shows which one you built. If you switch the function to x86_64, change both
 `ecrAssets.Platform.LINUX_AMD64` and `lambda.Architecture.X86_64` in the stack. Always build
 the image for the target platform: the better-sqlite3 binary in the bundle is the build
 stage's.
@@ -218,6 +225,13 @@ The CLI also prints `85 feature flags are not configured` (informational) and ma
 "AI agent detected" (harmless). To read the generated CloudFormation:
 `cd docs/aws/infra-example/cdk && npx cdk synth MicronutrientDiary-dev | less`. The stacks
 are `MicronutrientDiary-{dev,prod}` and `GithubOidc-{dev,prod}`.
+
+To check that the staged image context builds, as `cdk deploy` will build it:
+
+```bash
+cd docs/aws/infra-example/cdk/cdk.out/asset.<hash>    # the dockerImages entry in MicronutrientDiary-dev.assets.json
+docker build --platform linux/arm64 -f docs/aws/infra-example/Dockerfile.lambda .
+```
 
 The AI-worker and Stripe-webhook handlers in `cdk/workers/` are **placeholders** so the
 example bundles. They need real implementations before anything uses them.
@@ -282,9 +296,10 @@ and Linux.
 command**: Docker Desktop is still starting or its VM has no network. Wait until
 `docker version` shows a `Server:` section. If it stays broken, check
 `~/Library/Containers/com.docker.docker/Data/log/vm/init.log`. Repeated
-`still waiting for eth0` / `DHCPv4 failure` lines mean the VM has no network: quit Docker
-Desktop, temporarily disconnect VPNs (e.g. Tailscale), finish any pending Docker Desktop
-update, and start it again. Troubleshoot > Restart in the Docker Desktop UI also helps.
+`still waiting for eth0` / `DHCPv4 failure` lines mean the VM has no network. This
+happened on Docker Desktop 4.58.1 and went away once Docker Desktop updated itself to
+4.98.0. Update Docker Desktop first. If that doesn't help, quit it, temporarily disconnect
+VPNs (e.g. Tailscale) and start it again.
 
 **amd64 builds are very slow**: that's emulation. Turn on Rosetta in Docker Desktop
 (Settings > General) or build arm64.

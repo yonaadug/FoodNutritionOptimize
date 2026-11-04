@@ -15,10 +15,9 @@
     "build:linux": "npm run stage && electron-builder --linux"
   },
   "build": {
-    "appId": "com.vital-nutrition.com",
+    "appId": "com.vitalnutrition.app",
     "productName": "Vital Nutrition",
     "directories": {
-      "app": ".",
       "output": "dist"
     },
     "files": [
@@ -71,7 +70,7 @@
   "author": "Yonathan Kebede <primeyonathan@gmail.com>",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^45.2.1",
+    "electron": "^45.2.2",
     "electron-builder": "^26.18.0"
   }
 }

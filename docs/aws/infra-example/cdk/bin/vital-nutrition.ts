@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * UNTESTED EXAMPLE — see docs/aws/AWS_HOSTING_DESIGN.md §3.11.
+ * EXAMPLE (synth-tested, never deployed) — see docs/aws/AWS_HOSTING_DESIGN.md §3.11.
  * Usage (from this cdk/ folder, with credentials for the target account):
  *   npx cdk bootstrap aws://<ACCOUNT>/us-east-1
  *   npx cdk deploy -c stage=dev  VitalNutrition-dev
@@ -18,10 +18,10 @@ const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'us-east-1' };
 new VitalNutritionStack(app, `VitalNutrition-${stage}`, {
   env,
   stage,
-  siteUrl: stage === 'prod' ? 'https://vital-nutrition.com' : 'https://REPLACE_WITH_DEV_CLOUDFRONT_DOMAIN',
+  siteUrl: stage === 'prod' ? 'https://vitalnutrition.com' : 'https://REPLACE_WITH_DEV_CLOUDFRONT_DOMAIN',
   alertEmail: 'REPLACE_ME@example.com',
   monthlyBudgetUsd: stage === 'prod' ? 25 : 5,
-  sesDomain: stage === 'prod' ? 'vital-nutrition.com' : undefined,
+  sesDomain: stage === 'prod' ? 'vitalnutrition.com' : undefined,
 });
 
 /**

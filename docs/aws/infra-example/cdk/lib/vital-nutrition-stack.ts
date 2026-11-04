@@ -1,8 +1,9 @@
 /**
  * ============================================================================
- *  UNTESTED EXAMPLE — NOT DEPLOYED, NOT TYPE-CHECKED AGAINST A PINNED CDK VERSION.
- *  Reference for docs/aws/AWS_HOSTING_DESIGN.md (Option A). Review every line,
- *  run `cdk synth` and `cdk diff` in a DEV account before using it anywhere.
+ *  EXAMPLE — SYNTH-TESTED, NEVER DEPLOYED. Type-checks and `cdk synth`s against
+ *  the pinned aws-cdk-lib in package.json (no AWS credentials or lookups needed).
+ *  Reference for docs/aws/AWS_HOSTING_DESIGN.md (Option A). Review every line and
+ *  run `cdk diff` / deploy in a DEV account first (see docs/LOCAL_TESTING.md).
  * ============================================================================
  *
  * Vital Nutrition stack (one per stage: dev | prod):
@@ -11,10 +12,10 @@
  *   Lambda "ai-worker" (Claude via Claude Platform on AWS) · Lambda "stripe-webhook" (public URL)
  *   Lambda "kill-switch" · CloudWatch alarms · AWS Budget · SNS alerts
  *
- * Assumes the app repo layout:
- *   food-nutrition-app/Dockerfile.lambda          (see ../Dockerfile.lambda)
- *   food-nutrition-app/workers/import.ts          (AI worker handler, to be written)
- *   food-nutrition-app/workers/stripe-webhook.ts  (webhook handler, to be written)
+ * Paths (relative to the repository root):
+ *   docs/aws/infra-example/Dockerfile.lambda          web image; build context = repo root
+ *   docs/aws/infra-example/cdk/workers/import.ts      AI worker handler (placeholder stub)
+ *   docs/aws/infra-example/cdk/workers/stripe-webhook.ts  webhook handler (placeholder stub)
  */
 import * as path from 'path';
 import { Duration, RemovalPolicy, Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
@@ -40,12 +41,12 @@ import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
 export interface VitalNutritionStackProps extends StackProps {
   stage: 'dev' | 'prod';
-  /** e.g. "https://vital-nutrition.com" (prod) or the CloudFront URL (dev). Used for CORS + Stripe redirects. */
+  /** e.g. "https://vitalnutrition.com" (prod) or the CloudFront URL (dev). Used for CORS + Stripe redirects. */
   siteUrl: string;
   alertEmail: string;
   /** Monthly AWS cost budget in USD (start small; raise with revenue). */
   monthlyBudgetUsd: number;
-  /** Verified SES domain for Cognito emails, e.g. "vital-nutrition.com". Optional in dev. */
+  /** Verified SES domain for Cognito emails, e.g. "vitalnutrition.com". Optional in dev. */
   sesDomain?: string;
 }
 
@@ -53,7 +54,9 @@ export class VitalNutritionStack extends Stack {
   constructor(scope: Construct, id: string, props: VitalNutritionStackProps) {
     super(scope, id, props);
     const isProd = props.stage === 'prod';
-    const appDir = path.join(__dirname, '../../../../../food-nutrition-app');
+    // lib/ -> cdk/ -> infra-example/ -> aws/ -> docs/ -> repo root
+    const repoRoot = path.join(__dirname, '../../../../..');
+    const workersDir = path.join(__dirname, '../workers');
     const paramPrefix = `/vital-nutrition/${props.stage}`;
 
     // ---------------------------------------------------------------- alerts
@@ -146,8 +149,10 @@ export class VitalNutritionStack extends Stack {
       PARAM_PREFIX: paramPrefix,
     };
     const web = new lambda.DockerImageFunction(this, 'Web', {
-      code: lambda.DockerImageCode.fromImageAsset(appDir, {
-        file: 'Dockerfile.lambda',
+      // Build context = repo root; the root .dockerignore limits it to
+      // food-nutrition-app/ (plus this Dockerfile, which it re-includes).
+      code: lambda.DockerImageCode.fromImageAsset(repoRoot, {
+        file: 'docs/aws/infra-example/Dockerfile.lambda',
         platform: ecrAssets.Platform.LINUX_ARM64,
       }),
       architecture: lambda.Architecture.ARM_64,
@@ -239,7 +244,7 @@ export class VitalNutritionStack extends Stack {
       stringValue: 'true',
     });
     const aiWorker = new nodejs.NodejsFunction(this, 'AiWorker', {
-      entry: path.join(appDir, 'workers/import.ts'),
+      entry: path.join(workersDir, 'import.ts'),
       runtime: lambda.Runtime.NODEJS_24_X,
       architecture: lambda.Architecture.ARM_64,
       memorySize: 512,
@@ -275,7 +280,7 @@ export class VitalNutritionStack extends Stack {
     // Separate function with a PUBLIC Function URL: Stripe cannot add the sha256 header OAC requires.
     // Authenticity comes from verifying the Stripe-Signature header against the webhook secret.
     const stripeWebhook = new nodejs.NodejsFunction(this, 'StripeWebhook', {
-      entry: path.join(appDir, 'workers/stripe-webhook.ts'),
+      entry: path.join(workersDir, 'stripe-webhook.ts'),
       runtime: lambda.Runtime.NODEJS_24_X,
       architecture: lambda.Architecture.ARM_64,
       memorySize: 256,

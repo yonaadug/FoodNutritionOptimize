@@ -1,4 +1,4 @@
-import solver from 'javascript-lp-solver';
+import solver, { type SolveResult } from 'javascript-lp-solver';
 import type { Food, ServingSize } from '@/lib/food-types';
 import { nutrientValue } from '@/lib/food-types';
 import { ALL_NUTRIENT_CONFIG, isFoodSafeUpperLimit } from '@/lib/nutrient-defaults';
@@ -93,6 +93,13 @@ interface LpModel {
     opType: 'min' | 'max';
     constraints: Record<string, ConstraintLimit>;
     variables: Record<string, Record<string, number>>;
+}
+
+// javascript-lp-solver >= 1.0 ships its own types, but Solve() is typed as
+// returning `unknown` (it can also return a full Solution object). We always
+// call it in the default "simplified result" mode, which yields a SolveResult.
+function solveLp(model: LpModel): SolveResult {
+    return solver.Solve(model) as SolveResult;
 }
 
 export class OptimizationInputError extends Error {}
@@ -401,7 +408,7 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
 
     // 4. Solve a row-scaled copy.
     const { scaled, scale } = scaleModel(model);
-    const results = solver.Solve(scaled);
+    const results = solveLp(scaled);
 
     if (!results.feasible || results.bounded === false) {
         const message = results.feasible
@@ -519,7 +526,7 @@ function diagnoseInfeasibility(
         if (c.min !== undefined) elastic.variables[`shortage_${row}`] = { [row]: 1, penalty };
         if (c.max !== undefined) elastic.variables[`excess_${row}`] = { [row]: -1, penalty };
     }
-    const diag = solver.Solve(elastic);
+    const diag = solveLp(elastic);
 
     if (diag.feasible) {
         for (const [name, val] of Object.entries(diag)) {

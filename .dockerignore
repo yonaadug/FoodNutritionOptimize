@@ -1,6 +1,9 @@
-# Only the web app is needed to build the image (allowlist).
+# Only the web app is needed to build the images (allowlist). Used by both
+# ./Dockerfile and docs/aws/infra-example/Dockerfile.lambda (repo-root context).
 *
 !food-nutrition-app/
+# The CDK example stages this context as an asset and must keep the Lambda Dockerfile.
+!docs/aws/infra-example/Dockerfile.lambda
 
 # ...minus local build output, deps, secrets and dev-only files
 food-nutrition-app/node_modules

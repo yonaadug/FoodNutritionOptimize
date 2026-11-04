@@ -71,8 +71,9 @@ The app shows how close you are to each goal with progress bars, and suggests wh
 ## Installation & Setup
 
 ### Prerequisites
-- **Node.js 22+** (current LTS recommended; CI and Docker use the latest LTS). [Download](https://nodejs.org/) or `nvm install --lts`
+- **Node.js 26** (current LTS; `.nvmrc` pins it, so `nvm install` picks it up). Node 24 also works. CI, Docker and the Lambda image use 26. [Download](https://nodejs.org/)
 - **Git LFS**: the food database (`food-nutrition-app/nutrition.db`) is stored with [Git LFS](https://git-lfs.com/). Install it with `brew install git-lfs` or `sudo apt install git-lfs`, then run `git lfs install` once.
+- **Docker Desktop**: only for testing the container and Lambda images locally
 - **Python 3.8+**: only needed to rebuild the database with the scripts in `scripts/`
 
 ### Quick Start (Web App)
@@ -88,6 +89,20 @@ npm run dev
 ```
 
 Then open **http://localhost:3000** 🎉
+
+**Before deploying, test every deployment shape on your laptop:** dev server, production
+build, Docker image, Lambda image, AWS CDK synth and the desktop app. The step-by-step
+checklist with expected output is in **[docs/LOCAL_TESTING.md](docs/LOCAL_TESTING.md)**.
+The root `Makefile` wraps each step (`make help` lists them):
+
+```bash
+make check          # lint + typecheck + tests + build (same as CI)
+make preview        # production build, run the standalone server on :3000
+make docker-test    # build the Docker image, wait for its health check, smoke test it
+make lambda-local   # build + smoke test the Lambda (arm64) image on :9000
+make cdk-synth      # type-check and synthesize the AWS CDK example (no AWS account needed)
+make desktop        # Electron app in dev mode
+```
 
 <details>
 <summary>Manual setup (what <code>setup.sh</code> does)</summary>
@@ -105,37 +120,49 @@ npm run dev
 | Command | What it does |
 |---|---|
 | `npm run dev` | Dev server with hot reload (http://localhost:3000) |
+| `npm run check` | Everything CI checks: lint, typecheck, tests, build |
 | `npm run lint` | ESLint (flat config in `eslint.config.mjs`) |
 | `npm run typecheck` | `next typegen` + `tsc --noEmit` |
 | `npm test` | Unit tests |
 | `npm run build` | Production build, including a self-contained server in `.next/standalone/` |
-| `npm start` | Serve the production build (`npm start -- -p 3300` picks a different port) |
+| `npm run preview` | Build, then run the standalone server the way Docker, Lambda and Electron do (http://127.0.0.1:3000) |
+| `npm run start:standalone` | Run an existing build's standalone server (`PORT=4000` to change the port) |
+| `npm run smoke -- <url>` | HTTP smoke test of any running server (page, `/api/meta`, `/api/search`, `POST /api/optimize`) |
+| `npm start` | `next start` (works, but warns that `output: standalone` expects `preview`) |
 
 Configuration lives in `food-nutrition-app/.env.example`. `NUTRITION_DB_PATH` points the server at a different database file.
 
 ### Production / Self-Hosting
 
-`npm run build` writes a standalone server, about 24 MB, with `nutrition.db` bundled. It can run from any directory:
+`npm run build` writes a standalone server, about 28 MB, with `nutrition.db` bundled. It can run from any directory:
 
 ```bash
 cd food-nutrition-app && npm run build
 cp -r .next/static .next/standalone/.next/static     # Next.js does not copy static assets for you
-PORT=3000 node .next/standalone/server.js
+PORT=3000 node .next/standalone/server.js           # or simply: npm run preview
 ```
 
-Or build the container image from the repo root. It is multi-stage, runs as a non-root user, and the database is read-only:
+Or build the container image from the repo root. It is multi-stage, uses Node 26, runs as a
+non-root user, and the database is read-only. Its `HEALTHCHECK` polls `/api/meta`:
 
 ```bash
 git lfs pull
-docker build -t vital-nutrition .
-docker run --rm -p 3000:3000 vital-nutrition
+docker build -t micronutrient-diary .
+docker run --rm -p 3000:3000 micronutrient-diary      # or: make docker-test
 ```
+
+For AWS, the planned shape is the Lambda container in
+[`docs/aws/infra-example/Dockerfile.lambda`](docs/aws/infra-example/Dockerfile.lambda) (same server plus
+Lambda Web Adapter), deployed by the CDK example in `docs/aws/infra-example/cdk/`. The CDK
+example passes `cdk synth` but has never been deployed. See
+[docs/aws/AWS_HOSTING_DESIGN.md](docs/aws/AWS_HOSTING_DESIGN.md), and
+[docs/LOCAL_TESTING.md](docs/LOCAL_TESTING.md) for testing it locally first.
 
 ---
 
 ### Desktop App (Electron)
 
-Run Vital Nutrition as a **native desktop application** that works completely offline. The
+Run Micronutrient Diary as a **native desktop application** that works completely offline. The
 app runs its own server on `127.0.0.1` with a random port, and its window is locked down:
 it is sandboxed, has a CSP, and cannot load remote content. End users don't need Node.js.
 See [electron-app/README.md](electron-app/README.md) for details.
@@ -143,16 +170,16 @@ See [electron-app/README.md](electron-app/README.md) for details.
 #### Development Mode
 
 ```bash
-./setup.sh --with-electron     # or: (cd food-nutrition-app && npm ci) && (cd electron-app && npm ci)
+./setup.sh --with-electron     # or: (cd food-nutrition-app && npm ci --ignore-scripts) && (cd electron-app && npm ci)
 cd electron-app
-npm start                      # starts `next dev` and opens the app window
+npm start                      # starts `next dev` and opens the app window (or: make desktop)
 ```
 
 #### Build Installers
 
 ```bash
 cd electron-app
-npm run pack        # quick check: unpacked app in dist/<platform>/
+npm run pack        # quick check: unpacked app in dist/<platform>/ (or: make desktop-pack)
 npm run build:mac   # .dmg + .zip
 npm run build:win   # NSIS installer + portable .exe
 npm run build:linux # .AppImage + .deb
@@ -162,9 +189,15 @@ Each build runs the web app's production build first. Installers end up in `elec
 
 ### Continuous Integration
 
-`.github/workflows/ci.yml` runs on every push to `main` and on every pull request. It runs
-`npm ci`, lint, typecheck, tests, and the production build, then smoke-tests the
-standalone server against the real (LFS) database.
+`.github/workflows/ci.yml` runs on every push to `main` and on every pull request, on Node 26
+(from `.nvmrc`). It has three jobs:
+
+- **web**: `npm ci`, lint, typecheck, tests and the production build, then a smoke test
+  (`scripts/smoke.mjs`) of the standalone server against the real (LFS) database
+- **docker**: builds the image, waits for its `HEALTHCHECK`, and smoke-tests it
+- **cdk-synth**: type-checks and synthesizes the AWS CDK example (no AWS credentials)
+
+`make check` runs the **web** job's checks locally.
 
 ---
 

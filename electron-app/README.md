@@ -31,7 +31,7 @@ The app has no preload script and does no IPC. The renderer is ordinary web cont
 
 ## Prerequisites
 
-- Node.js 22+ (only for development and building; the packaged app doesn't need it)
+- Node.js 26 LTS, or 24 (only for development and building; the packaged app runs the server on Electron 45's bundled Node 24)
 - The web app installed and its database present:
   `cd ../food-nutrition-app && git lfs pull && npm install`
 

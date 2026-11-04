@@ -9,9 +9,9 @@ export function SiteHeader({ onHome }: { onHome: () => void }) {
     return (
         <header className="site-header">
             <div className="container site-header-inner">
-                <a href="#" className="brand" onClick={e => { e.preventDefault(); onHome(); }} aria-label="Vital Nutrition home">
+                <a href="#" className="brand" onClick={e => { e.preventDefault(); onHome(); }} aria-label="Micronutrient Diary home">
                     <span className="brand-mark"><Icon name="leaf" size={17} strokeWidth={2.4} /></span>
-                    Vital Nutrition
+                    Micronutrient Diary
                 </a>
                 <span className="brand-tagline">Plan a day of food that meets your nutrition goals</span>
                 <span className="spacer" />
@@ -27,7 +27,7 @@ export function Welcome({ onSample, onScratch, loading, error }: { onSample: () 
             <p className="eyebrow">Free · No sign-up · Uses USDA nutrition data</p>
             <h1 id="welcome-title" style={{ marginTop: 8 }}>Eat the foods you like and still hit your nutrition goals.</h1>
             <p>
-                Pick some foods, choose what you&apos;re aiming for, and Vital Nutrition works out how much of each to eat,
+                Pick some foods, choose what you&apos;re aiming for, and Micronutrient Diary works out how much of each to eat,
                 in grams and everyday servings.
             </p>
             <div className="hero-actions">

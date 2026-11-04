@@ -4,18 +4,18 @@ import { Inter } from 'next/font/google';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://vitalnutrition.com';
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://micronutrientdiary.com';
 const DESCRIPTION = 'Pick foods you like, choose your nutrition goals, and get a day of eating, in grams and household servings, that meets them.';
 
 export const metadata: Metadata = {
     metadataBase: new URL(SITE_URL),
-    title: 'Vital Nutrition: plan a day that meets your nutrition goals',
-    applicationName: 'Vital Nutrition',
+    title: 'Micronutrient Diary: plan a day that meets your nutrition goals',
+    applicationName: 'Micronutrient Diary',
     description: DESCRIPTION,
     openGraph: {
         type: 'website',
-        siteName: 'Vital Nutrition',
-        title: 'Vital Nutrition',
+        siteName: 'Micronutrient Diary',
+        title: 'Micronutrient Diary',
         description: DESCRIPTION,
         url: '/',
     },

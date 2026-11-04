@@ -1,4 +1,29 @@
-# Vital Nutrition: Domain Options and Costs
+# Micronutrient Diary: Domain Options and Costs
+
+## Current decision (2026-11-04): micronutrientdiary.com
+
+The product is now **Micronutrient Diary**, at **micronutrientdiary.com**. This replaces the "Vital Nutrition" names researched below.
+
+**Availability.** Verisign RDAP returned no record (HTTP 404) on 2026-11-04 for micronutrientdiary.com and micronutrient-diary.com. Google Registry RDAP returned none for micronutrientdiary.app either. All three are very likely unregistered and available at the standard price. Confirm at checkout; registrar search is authoritative.
+
+| Option | Year 1 | Each later year | Notes |
+|---|---|---|---|
+| **micronutrientdiary.com at Route 53** (recommended) | **$16** | **$16** | Same price for registration, renewal and transfer. Privacy is on by default. One AWS bill, and CDK can manage DNS |
+| micronutrientdiary.com at Porkbun, with DNS on Route 53 | $11.81 | $11.81 | Cheapest registrar that lets you keep Route 53 DNS. Saves about $4/yr |
+| micronutrientdiary.com at Cloudflare Registrar | $11.17 | $11.17 | At cost, but **requires Cloudflare nameservers**, so it conflicts with Route 53 DNS |
+| Optional: micronutrient-diary.com (typo/redirect guard) at Route 53 | $16 | $16 | Not needed at launch |
+| Route 53 hosted zone | $0–6 | $0–6 | $0.50/mo, or included in the CloudFront flat-rate plan. Alias queries to CloudFront are free, and so are ACM certificates |
+
+**Recommendation:** register micronutrientdiary.com at Route 53 for **$16/yr**, plus at most $6/yr of DNS. Total: about **$16–22 per year**, with no one-time purchase. Prices come from the registrar comparison in §4 below, verified 2026-11-04 (.com at Route 53 went from $15 to $16 on 2026-07-01).
+
+**Name check (not legal advice):** web searches on 2026-11-04 found no app and no US trademark named "Micronutrient Diary". The closest hits were differently named micronutrient trackers ("Micronutrient: Vitamin Tracker", "Micro Ai - Micronutrient Log"). The name is largely descriptive. That lowers the risk of conflicting with someone else's mark, but it may also make the name hard to register as a trademark yourself. Run a USPTO search (tmsearch.uspto.gov) before investing in branding.
+
+---
+
+## Earlier research: "Vital Nutrition" names (superseded)
+
+The sections below are kept for reference. They cover the earlier candidate names vitalnutrition.com ($70,995 aftermarket Buy Now) and vital-nutrition.com ($7,499).
+
 
 Researched 2026-11-04. Target: **vitalnutrition.com** (no hyphen). Hosting is CloudFront + Lambda with Route 53 DNS ([AWS_HOSTING_DESIGN.md](AWS_HOSTING_DESIGN.md)). Prices are USD, before sales tax. Anything I could not confirm from a primary page is marked **(unverified)**.
 

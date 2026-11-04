@@ -1,4 +1,4 @@
-# Vital Nutrition: AWS Hosting and Monetization Design
+# Micronutrient Diary: AWS Hosting and Monetization Design
 
 **Status:** proposal, not implemented · **Prepared:** 2026-11-03 · **Scope:** `food-nutrition-app/` (web). `electron-app/` stays offline-first and is unaffected.
 **Priority:** lowest possible cost for a solo developer, with hard limits so neither abuse nor AI usage can cost more than the app earns.
@@ -36,7 +36,7 @@ All prices are USD, us-east-1, and were taken from official pricing pages on **2
 
 ### Proposed price
 
-**Free** (no account required, works offline) + **Vital Nutrition Plus: $5.99/month or $39.99/year** (the annual plan works out to $3.33/mo, 44% off). New accounts get a **14-day "reverse trial" of Plus without a card**, with a capped AI quota. For comparison: Cronometer Gold is $10.99/mo or $59.99/yr, MacroFactor is ~$11.99/mo or $71.99/yr, Eat This Much is ~$59.99/yr, and MyFitnessPal Premium is $19.99/mo or $79.99/yr ([§4](#4-monetization)).
+**Free** (no account required, works offline) + **Micronutrient Diary Plus: $5.99/month or $39.99/year** (the annual plan works out to $3.33/mo, 44% off). New accounts get a **14-day "reverse trial" of Plus without a card**, with a capped AI quota. For comparison: Cronometer Gold is $10.99/mo or $59.99/yr, MacroFactor is ~$11.99/mo or $71.99/yr, Eat This Much is ~$59.99/yr, and MyFitnessPal Premium is $19.99/mo or $79.99/yr ([§4](#4-monetization)).
 
 ### The five things that matter most
 
@@ -100,7 +100,7 @@ The costs below cover **hosting only** (compute + CDN + static). Auth, DynamoDB,
 | A9 | AI ops: 15/mo per payer, 0.4/mo per free signed-in user, at a blended **$0.0074/op** (§3.7) | |
 | A10 | Logs | ~1 KB per invocation, 14-day retention |
 
-**Unit prices used:** Lambda $0.20/M req, $0.0000133334/GB-s (arm, **implied** from the official page's example), 1M req + 400k GB-s free. CloudFront PAYG: first 10M req + 1 TB free, then $0.01/10k req and $0.085/GB. DynamoDB: $0.625/M writes, $0.125/M reads, $0.25/GB storage (25 GB free), PITR $0.20/GB-mo. Cognito Essentials: 10k free, then $0.015. Cognito Lite: $0.0055 (first 90k billed). SES: $0.10/1k. CloudWatch logs: $0.50/GB after 5 GB free; custom metrics $0.30. Route 53 zone: $0.50 (included if attached to a flat-rate plan). WAF: $5/ACL + $1/rule + $0.60/M req. Domain: $16/yr for .com at Route 53 (registration, renewal, and transfer; $20/yr for .app), verified 2026-11-04. The target vitalnutrition.com is an aftermarket listing at a one-time $70,995 (not included in the monthly figures); see [DOMAIN.md](DOMAIN.md).
+**Unit prices used:** Lambda $0.20/M req, $0.0000133334/GB-s (arm, **implied** from the official page's example), 1M req + 400k GB-s free. CloudFront PAYG: first 10M req + 1 TB free, then $0.01/10k req and $0.085/GB. DynamoDB: $0.625/M writes, $0.125/M reads, $0.25/GB storage (25 GB free), PITR $0.20/GB-mo. Cognito Essentials: 10k free, then $0.015. Cognito Lite: $0.0055 (first 90k billed). SES: $0.10/1k. CloudWatch logs: $0.50/GB after 5 GB free; custom metrics $0.30. Route 53 zone: $0.50 (included if attached to a flat-rate plan). WAF: $5/ACL + $1/rule + $0.60/M req. Domain: $16/yr for .com at Route 53 (registration, renewal, and transfer; $20/yr for .app), verified 2026-11-04. The target micronutrientdiary.com is unregistered (RDAP, 2026-11-04), so it costs the standard .com price; see [DOMAIN.md](DOMAIN.md).
 
 | Line item | 0 | 100 | 1k | 10k | 100k | Math at 100k |
 |---|---|---|---|---|---|---|
@@ -112,7 +112,7 @@ The costs below cover **hosting only** (compute + CDN + static). Auth, DynamoDB,
 | SES | $0 | $0.01 | $0.08 | $0.80 | **$8.00** | 80k emails × $0.10/1k |
 | CloudWatch | $0 | $0 | $0 | $0.90 | **$1.40** | 6 GB logs − 5 free = $0.50, plus 3 custom metrics $0.90 |
 | S3 (uploads, artifacts) + ECR | $0.03 | $0.03 | $0.03 | $0.05 | $0.13 | Under 1 GB |
-| Route 53 + domain | $1.33 | $1.33 | $1.33 | $1.33 | $1.83 | $16/yr .com renewal at Route 53 ÷ 12. Zone included in the flat plan until 100k (PAYG there). Excludes the one-time vitalnutrition.com purchase ($70,995 Buy Now); see [DOMAIN.md](DOMAIN.md). Totals in this table still use the earlier $1.25 (+$0.08/mo) |
+| Route 53 + domain | $1.33 | $1.33 | $1.33 | $1.33 | $1.83 | $16/yr .com renewal at Route 53 ÷ 12. Zone included in the flat plan until 100k (PAYG there). micronutrientdiary.com is available at the standard price; see [DOMAIN.md](DOMAIN.md). Totals in this table still use the earlier $1.25 (+$0.08/mo) |
 | **Infra subtotal** | **$1.28** | **$1.29** | **$1.38** | **$18.17** | **$490** / $205 | |
 | AI (Claude) | $0 | $0.44 | $4.43 | $44.25 | **$442.50** | 3,000 payers × 15 × $0.0074 = $333, plus 37,000 free × 0.4 × $0.0074 = $109.50 |
 | **Total** | **$1.28** | **$1.73** | **$5.81** | **$62.42** | **$933** / **$648** | |
@@ -210,7 +210,7 @@ flowchart LR
 - Aurora Serverless v2 costs $0.12/ACU-hr: about $43/mo at a 0.5 ACU floor. Scaling to 0 means multi-second resumes, so it's ruled out.
 - DynamoDB is $0 when idle, needs no connection management, and every access pattern below is a single-partition Query.
 
-**Table `vital-nutrition-<stage>`**: `PK` (S), `SK` (S), `GSI1PK`/`GSI1SK`, TTL attribute `expiresAt`, on-demand, PITR in prod, deletion protection in prod.
+**Table `micronutrient-diary-<stage>`**: `PK` (S), `SK` (S), `GSI1PK`/`GSI1SK`, TTL attribute `expiresAt`, on-demand, PITR in prod, deletion protection in prod.
 
 | Entity | PK | SK | Key attributes | Notes |
 |---|---|---|---|---|
@@ -325,7 +325,7 @@ To keep output tokens down, set `output_config.effort: "low"`. Haiku 5.5 also al
 | Plus, per month | 60 URL + 20 photo imports **and** $0.75 AI spend (~100 Haiku or ~30 Sonnet ops) | Conditional update on `USAGE#yyyy-mm` |
 | **Global, per day** | `$1 + $0.025 × activePayers` (that is, a Plus user's $0.75/mo cap ÷ 30) | Conditional update on `GLOBAL/AISPEND#day`. When the cap is hit, return "AI imports are busy, try again tomorrow" |
 | Infra rate | Worker reserved concurrency 2, SQS `maxConcurrency 2` | Limits how fast spend can happen |
-| Kill switch | AWS Budget (ACTUAL > 150% of the monthly budget) → separate SNS topic → Lambda sets SSM `/vital-nutrition/prod/ai-enabled=false` and the worker's reserved concurrency to 0 | Budgets data lags hours, so this is the backstop. The DynamoDB caps are the real-time control |
+| Kill switch | AWS Budget (ACTUAL > 150% of the monthly budget) → separate SNS topic → Lambda sets SSM `/micronutrient-diary/prod/ai-enabled=false` and the worker's reserved concurrency to 0 | Budgets data lags hours, so this is the backstop. The DynamoDB caps are the real-time control |
 | Provider-side | If available, set a spend limit on the Claude workspace **(unverified for Claude Platform on AWS)** | |
 
 **Worst case:** every payer maxes out their cap, which costs $0.75 vs at least $3.17 net revenue per payer (annual plan, after Stripe). Free usage is capped at $1/day ≈ **$30/mo** total.
@@ -347,7 +347,7 @@ To keep output tokens down, set `output_config.effort: "low"`. Haiku 5.5 also al
   5. DLQ `ApproximateNumberOfMessagesVisible` > 0
   6. DynamoDB `ThrottledRequests` > 0
   7. webhook `Errors` > 0
-  8. custom `VitalNutrition/AiSpendMicroUsd` daily > 80% of cap
+  8. custom `MicronutrientDiary/AiSpendMicroUsd` daily > 80% of cap
 - **Frontend errors:** start with a `window.onerror` beacon to `/api/telemetry`, which costs $0. Consider Sentry's free tier later **(unverified limits)**.
 - **Cost guardrails:**
   - AWS Budgets is free. Set a monthly cost budget with alerts at 50% ACTUAL and 100% FORECASTED, plus a 150% ACTUAL threshold that fires the kill switch.
@@ -365,7 +365,7 @@ To keep output tokens down, set `output_config.effort: "low"`. Haiku 5.5 also al
 ### 3.11 Environments, CI/CD, IaC
 
 - **Accounts:**
-  - Use an AWS Organization (free) with a management account (billing only), plus `vital-nutrition-dev` and `vital-nutrition-prod` accounts.
+  - Use an AWS Organization (free) with a management account (billing only), plus `micronutrient-diary-dev` and `micronutrient-diary-prod` accounts.
   - Use IAM Identity Center for console access, MFA on all root users, and CloudTrail event history (90 days, free).
   - Two accounts give separate blast radius, separate budgets, and separate CloudFront Free-plan quotas (3 per account).
 - **Stages:** `dev` deploys automatically on every push to `main`. `prod` deploys on a tag or manual dispatch with GitHub Environment approval. Each stage has its own Cognito pool, table, and Stripe mode.
@@ -379,7 +379,7 @@ To keep output tokens down, set `output_config.effort: "low"`. Haiku 5.5 also al
   - SST v3 is the alternative if you choose Option B.
   - See **`docs/aws/infra-example/` (UNTESTED)**.
 
-Key config (excerpt from `infra-example/cdk/lib/vital-nutrition-stack.ts`):
+Key config (excerpt from `infra-example/cdk/lib/micronutrient-diary-stack.ts`):
 
 ```ts
 const web = new lambda.DockerImageFunction(this, 'Web', {
@@ -430,7 +430,7 @@ new cloudfront.Distribution(this, 'Cdn', {
 
 - The optimizer is the hook and costs almost nothing to run, so it stays free and unlimited.
 - Plus charges for the things that have ongoing cost or recurring value: sync, AI imports, and planning over time.
-- At $5.99/$39.99, Vital Nutrition undercuts every comparable app while still clearing 88–91% net margin per payer.
+- At $5.99/$39.99, Micronutrient Diary undercuts every comparable app while still clearing 88–91% net margin per payer.
 
 **Pricing details:**
 
@@ -526,7 +526,7 @@ International cards cost +1.5% and currency conversion +1%. Disputes cost $15 ea
 | 0.1 | AWS Organization with dev and prod accounts. Upgrade to the **Paid plan** (needed for CloudFront flat-rate). Root MFA, IAM Identity Center | 1 |
 | 0.2 | Budgets ($10/mo with 50/100% alerts), Cost Anomaly Detection, billing alerts email | 0.5 |
 | 0.3 | Request quota increases: Lambda concurrency → 1,000, SES production access | 0.5 |
-| 0.4 | Acquire the domain: buy vitalnutrition.com on Afternic/GoDaddy, or register the vitalnutrition.app fallback at Route 53 (see [DOMAIN.md](DOMAIN.md)). Stripe account activation (business details, bank). Subscribe to Claude Platform on AWS in prod | 2 |
+| 0.4 | Register micronutrientdiary.com at Route 53 (see [DOMAIN.md](DOMAIN.md)). Stripe account activation (business details, bank). Subscribe to Claude Platform on AWS in prod | 2 |
 | **1. Make the app deployable** | | **10** |
 | 1.1 | `lib/db.ts`, route clamps, cache headers, `/api/health`, remove `sqlite3`, `node:sqlite` adapter (§5) | 5 |
 | 1.2 | `Dockerfile.lambda`, DB artifact publishing (S3 + version pin), local `docker run` test with LWA | 3 |

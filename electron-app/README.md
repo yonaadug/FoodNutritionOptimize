@@ -1,4 +1,4 @@
-# Vital Nutrition Desktop (Electron)
+# Micronutrient Diary Desktop (Electron)
 
 A thin Electron shell around the Next.js app in `../food-nutrition-app`. Everything
 runs locally, and the app works offline.
@@ -64,8 +64,8 @@ certificate and notarization; see https://www.electron.build/code-signing.
 ## Troubleshooting
 
 - **Logs:** the main and server output goes to the console and to
-  `~/Library/Logs/Vital Nutrition/main.log` on macOS (`%APPDATA%\Vital Nutrition\logs` on
-  Windows, `~/.config/Vital Nutrition/logs` on Linux).
+  `~/Library/Logs/Micronutrient Diary/main.log` on macOS (`%APPDATA%\Micronutrient Diary\logs` on
+  Windows, `~/.config/Micronutrient Diary/logs` on Linux).
 - **"Database not found" or "not a SQLite file":** run `git lfs pull` in the repo root,
   then rebuild.
 - **`electron .` behaves like plain Node:** your shell has `ELECTRON_RUN_AS_NODE` set

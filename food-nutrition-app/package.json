@@ -1,8 +1,8 @@
 {
-    "name": "vital-nutrition",
+    "name": "micronutrient-diary",
     "version": "0.1.0",
     "private": true,
-    "description": "Vital Nutrition - Intelligent Nutrition Optimizer",
+    "description": "Micronutrient Diary - Intelligent Nutrition Optimizer",
     "author": "Yonathan Kebede <primeyonathan@gmail.com>",
     "license": "MIT",
     "repository": {

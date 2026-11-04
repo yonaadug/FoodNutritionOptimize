@@ -1,12 +1,12 @@
 {
-  "name": "vital-nutrition-desktop",
-  "productName": "Vital Nutrition",
+  "name": "micronutrient-diary-desktop",
+  "productName": "Micronutrient Diary",
   "version": "1.0.0",
-  "description": "Vital Nutrition - Desktop nutrition optimization application",
+  "description": "Micronutrient Diary - Desktop nutrition optimization application",
   "main": "main.js",
   "scripts": {
     "start": "unset ELECTRON_RUN_AS_NODE && electron .",
-    "start:prod": "npm run stage && unset ELECTRON_RUN_AS_NODE && VITAL_NUTRITION_USE_STAGED=1 electron .",
+    "start:prod": "npm run stage && unset ELECTRON_RUN_AS_NODE && MICRONUTRIENT_DIARY_USE_STAGED=1 electron .",
     "stage": "npm --prefix ../food-nutrition-app run build && node scripts/stage-web.js",
     "pack": "npm run stage && electron-builder --dir",
     "build": "npm run stage && electron-builder",
@@ -15,8 +15,8 @@
     "build:linux": "npm run stage && electron-builder --linux"
   },
   "build": {
-    "appId": "com.vitalnutrition.app",
-    "productName": "Vital Nutrition",
+    "appId": "com.micronutrientdiary.app",
+    "productName": "Micronutrient Diary",
     "directories": {
       "output": "dist"
     },

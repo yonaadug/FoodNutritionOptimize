@@ -100,7 +100,7 @@ The costs below cover **hosting only** (compute + CDN + static). Auth, DynamoDB,
 | A9 | AI ops: 15/mo per payer, 0.4/mo per free signed-in user, at a blended **$0.0074/op** (§3.7) | |
 | A10 | Logs | ~1 KB per invocation, 14-day retention |
 
-**Unit prices used:** Lambda $0.20/M req, $0.0000133334/GB-s (arm, **implied** from the official page's example), 1M req + 400k GB-s free. CloudFront PAYG: first 10M req + 1 TB free, then $0.01/10k req and $0.085/GB. DynamoDB: $0.625/M writes, $0.125/M reads, $0.25/GB storage (25 GB free), PITR $0.20/GB-mo. Cognito Essentials: 10k free, then $0.015. Cognito Lite: $0.0055 (first 90k billed). SES: $0.10/1k. CloudWatch logs: $0.50/GB after 5 GB free; custom metrics $0.30. Route 53 zone: $0.50 (included if attached to a flat-rate plan). WAF: $5/ACL + $1/rule + $0.60/M req. Domain: ~$15/yr **(unverified, varies by TLD)**.
+**Unit prices used:** Lambda $0.20/M req, $0.0000133334/GB-s (arm, **implied** from the official page's example), 1M req + 400k GB-s free. CloudFront PAYG: first 10M req + 1 TB free, then $0.01/10k req and $0.085/GB. DynamoDB: $0.625/M writes, $0.125/M reads, $0.25/GB storage (25 GB free), PITR $0.20/GB-mo. Cognito Essentials: 10k free, then $0.015. Cognito Lite: $0.0055 (first 90k billed). SES: $0.10/1k. CloudWatch logs: $0.50/GB after 5 GB free; custom metrics $0.30. Route 53 zone: $0.50 (included if attached to a flat-rate plan). WAF: $5/ACL + $1/rule + $0.60/M req. Domain: $16/yr for .com at Route 53 (registration, renewal, and transfer; $20/yr for .app), verified 2026-11-04. The target vitalnutrition.com is an aftermarket listing at a one-time $70,995 (not included in the monthly figures); see [DOMAIN.md](DOMAIN.md).
 
 | Line item | 0 | 100 | 1k | 10k | 100k | Math at 100k |
 |---|---|---|---|---|---|---|
@@ -112,7 +112,7 @@ The costs below cover **hosting only** (compute + CDN + static). Auth, DynamoDB,
 | SES | $0 | $0.01 | $0.08 | $0.80 | **$8.00** | 80k emails × $0.10/1k |
 | CloudWatch | $0 | $0 | $0 | $0.90 | **$1.40** | 6 GB logs − 5 free = $0.50, plus 3 custom metrics $0.90 |
 | S3 (uploads, artifacts) + ECR | $0.03 | $0.03 | $0.03 | $0.05 | $0.13 | Under 1 GB |
-| Route 53 + domain | $1.25 | $1.25 | $1.25 | $1.25 | $1.75 | Zone included in the flat plan until 100k (PAYG there) |
+| Route 53 + domain | $1.33 | $1.33 | $1.33 | $1.33 | $1.83 | $16/yr .com renewal at Route 53 ÷ 12. Zone included in the flat plan until 100k (PAYG there). Excludes the one-time vitalnutrition.com purchase ($70,995 Buy Now); see [DOMAIN.md](DOMAIN.md). Totals in this table still use the earlier $1.25 (+$0.08/mo) |
 | **Infra subtotal** | **$1.28** | **$1.29** | **$1.38** | **$18.17** | **$490** / $205 | |
 | AI (Claude) | $0 | $0.44 | $4.43 | $44.25 | **$442.50** | 3,000 payers × 15 × $0.0074 = $333, plus 37,000 free × 0.4 × $0.0074 = $109.50 |
 | **Total** | **$1.28** | **$1.73** | **$5.81** | **$62.42** | **$933** / **$648** | |
@@ -526,7 +526,7 @@ International cards cost +1.5% and currency conversion +1%. Disputes cost $15 ea
 | 0.1 | AWS Organization with dev and prod accounts. Upgrade to the **Paid plan** (needed for CloudFront flat-rate). Root MFA, IAM Identity Center | 1 |
 | 0.2 | Budgets ($10/mo with 50/100% alerts), Cost Anomaly Detection, billing alerts email | 0.5 |
 | 0.3 | Request quota increases: Lambda concurrency → 1,000, SES production access | 0.5 |
-| 0.4 | Register the domain (Route 53). Stripe account activation (business details, bank). Subscribe to Claude Platform on AWS in prod | 2 |
+| 0.4 | Acquire the domain: buy vitalnutrition.com on Afternic/GoDaddy, or register the vitalnutrition.app fallback at Route 53 (see [DOMAIN.md](DOMAIN.md)). Stripe account activation (business details, bank). Subscribe to Claude Platform on AWS in prod | 2 |
 | **1. Make the app deployable** | | **10** |
 | 1.1 | `lib/db.ts`, route clamps, cache headers, `/api/health`, remove `sqlite3`, `node:sqlite` adapter (§5) | 5 |
 | 1.2 | `Dockerfile.lambda`, DB artifact publishing (S3 + version pin), local `docker run` test with LWA | 3 |
@@ -581,7 +581,7 @@ If you'd rather run a server, a $4–7/mo VPS (Lightsail $7, or similar) running
 5. **Claude Platform on AWS:** the IAM action names, regional availability, and whether a hard workspace spend limit exists. Bedrock pricing for Haiku 5.5/Sonnet 5.5 wasn't listed on the Bedrock pricing page when checked.
 6. **Usage assumptions A1–A10**, the **3% conversion**, and the **80/20 Haiku/Sonnet split** are estimates. Instrument `aiMicroUsd` and recompute after the first month.
 7. **Competitor prices** for MyFitnessPal (monthly), MacroFactor, Eat This Much, and Lose It! come from third-party sites, because the official pricing pages returned 404 or redirects to the fetcher.
-8. ALB, public IPv4, S3 storage, and domain prices were not re-fetched (they're marked in the tables).
+8. ALB, public IPv4, and S3 storage prices were not re-fetched (they're marked in the tables). Domain prices were re-checked on 2026-11-04 in [DOMAIN.md](DOMAIN.md).
 9. `node:sqlite` stability in Node 24 and Lambda Web Adapter behavior with Next 16 standalone (the `.next/cache` write path on a read-only FS) are untested.
 10. EU VAT treatment and Stripe Managed Payments availability for your account need confirming in the Stripe dashboard.
 

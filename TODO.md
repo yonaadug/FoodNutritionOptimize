@@ -9,8 +9,9 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **USDA data updates with admin approval and change tracking.** Design is pending one choice: approve on a
       page of the website (needs an admin login), or email + GitHub pull request (free, history built in).
       Foods are matched across USDA releases by NDB number, because USDA gives updated foods new FDC IDs.
-- [ ] **Stripe implementation plan** (Payments, Billing, Invoicing; free tier + monthly/annual subscription).
-      Blocked until the Stripe MCP connection is re-authenticated (`/mcp` → `plugin:stripe:stripe`).
+- [ ] **Stripe subscriptions.** The plan is done ([docs/STRIPE_PLAN.md](docs/STRIPE_PLAN.md)). Before building, decide:
+      what Plus unlocks first, the trial style, and the sign-in method. Local dev currently uses LIVE keys
+      (`STRIPE_MODE=live`); switch to `test` before trying Checkout.
 
 ## P0: owner actions
 

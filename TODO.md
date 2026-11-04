@@ -42,6 +42,15 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
       (liver, acerola, fortified cereals), and one Vitamin A card showed no suggestions. Rank per serving or per
       100 kcal, exclude specialty and fortified items by default, and always return suggestions.
       (`lib/db.ts` `getTopFoodsByNutrientIn`, `/api/foods/top`)
+- [ ] **Upper-limits toggle shows goals as met when they aren't** (walkthrough §7.7): with "Respect safe upper limits"
+      on, the ring shows 17/17 and vitamin D reads "On target" at 0.26 mcg. Investigate the minimum/upper-limit merge
+      in the goals → optimize request path.
+- [ ] **Portion controls often do nothing** (walkthrough §6.2). The optimizer always caps each food at about 3 reference
+      servings, so turning off "Keep portions realistic" or choosing "Allow bigger portions" rarely changes the plan.
+- [ ] **Explain unused foods** ("6 of your 15 foods weren't needed: …"), and give visible confirmation after
+      "Drop this minimum" and the one-click add buttons.
+- [ ] **Keep the plan across reloads** and reopen on the last step. Today a reload drops the plan and starts at step 1.
+- [ ] Remaining polish items: see [docs/WEBSITE_WALKTHROUGH.md §16](docs/WEBSITE_WALKTHROUGH.md#16-rough-edges-noticed-while-touring).
 - [ ] **Structured diagnostics.** Return `issues: [{nutrient, kind: 'short'|'excess', amount}]` from
       `/api/optimize` for every unmet goal. The UI currently parses `message`, which lists at most 5.
       The UI already uses `issues` if it's present.

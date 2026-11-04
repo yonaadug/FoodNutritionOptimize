@@ -281,6 +281,7 @@ FoodNutritionOptimize/
 │   ├── KEY_NUTRIENTS.md         # Nutrient definitions, units, data provenance
 │   ├── VERIFICATION_INSTRUCTIONS.md # Rebuilding and validating the DB
 │   ├── UX_AUDIT.md              # Usability audit with before/after screenshots
+│   ├── WEBSITE_WALKTHROUGH.md   # Guided tour of every screen (+ walkthrough/ screenshots)
 │   ├── FEATURE_ROADMAP.md       # Prioritized roadmap (recipes, personalization, ...)
 │   └── aws/                     # AWS hosting + monetization design
 ├── TODO.md                      # Backlog from the Nov 2026 review

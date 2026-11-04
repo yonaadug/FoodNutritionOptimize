@@ -1,9 +1,9 @@
 /**
- * Vital Nutrition desktop shell.
+ * Micronutrient Diary desktop shell.
  *
  * Starts the Next.js server on 127.0.0.1 with a random free port and shows it
  * in a locked-down BrowserWindow:
- *   - packaged (or VITAL_NUTRITION_USE_STAGED=1): the standalone server staged by
+ *   - packaged (or MICRONUTRIENT_DIARY_USE_STAGED=1): the standalone server staged by
  *     scripts/stage-web.js, run with Electron's own Node via utilityProcess,
  *     so users don't need Node installed;
  *   - development: `next dev` from ../food-nutrition-app using the system Node.
@@ -16,7 +16,7 @@ const net = require('net');
 const path = require('path');
 
 const HOST = '127.0.0.1';
-const useStaged = app.isPackaged || process.env.VITAL_NUTRITION_USE_STAGED === '1';
+const useStaged = app.isPackaged || process.env.MICRONUTRIENT_DIARY_USE_STAGED === '1';
 const isDev = !useStaged;
 
 const webDir = app.isPackaged
@@ -132,14 +132,14 @@ async function startServer() {
       cwd: webDir,
       env,
       stdio: 'pipe',
-      serviceName: 'Vital Nutrition Server',
+      serviceName: 'Micronutrient Diary Server',
     });
   }
   pipeOutput(serverProcess);
   serverProcess.on('exit', (code) => {
     log(`Server exited with code ${code}`);
     serverProcess = null;
-    if (!quitting) fatal('Vital Nutrition server stopped', `The internal server exited unexpectedly (code ${code}).`);
+    if (!quitting) fatal('Micronutrient Diary server stopped', `The internal server exited unexpectedly (code ${code}).`);
   });
 
   await waitForServer(`${origin}/`, isDev ? 120000 : 30000);
@@ -240,7 +240,7 @@ function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
-    title: 'Vital Nutrition',
+    title: 'Micronutrient Diary',
     icon: path.join(__dirname, 'assets', 'icon.png'),
     show: false,
     webPreferences: {
@@ -271,11 +271,11 @@ if (!app.requestSingleInstanceLock()) {
   });
 
   app.whenReady().then(async () => {
-    log(`Vital Nutrition ${app.getVersion()} (Electron ${process.versions.electron}, packaged=${app.isPackaged}, dev=${isDev})`);
+    log(`Micronutrient Diary ${app.getVersion()} (Electron ${process.versions.electron}, packaged=${app.isPackaged}, dev=${isDev})`);
     try {
       await startServer();
     } catch (err) {
-      fatal('Vital Nutrition failed to start', err.message);
+      fatal('Micronutrient Diary failed to start', err.message);
       return;
     }
     hardenSession(session.defaultSession);

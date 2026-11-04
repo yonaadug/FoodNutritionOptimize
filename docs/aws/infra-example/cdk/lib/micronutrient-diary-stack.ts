@@ -1,20 +1,21 @@
 /**
  * ============================================================================
- *  UNTESTED EXAMPLE — NOT DEPLOYED, NOT TYPE-CHECKED AGAINST A PINNED CDK VERSION.
- *  Reference for docs/aws/AWS_HOSTING_DESIGN.md (Option A). Review every line,
- *  run `cdk synth` and `cdk diff` in a DEV account before using it anywhere.
+ *  EXAMPLE — SYNTH-TESTED, NEVER DEPLOYED. Type-checks and `cdk synth`s against
+ *  the pinned aws-cdk-lib in package.json (no AWS credentials or lookups needed).
+ *  Reference for docs/aws/AWS_HOSTING_DESIGN.md (Option A). Review every line and
+ *  run `cdk diff` / deploy in a DEV account first (see docs/LOCAL_TESTING.md).
  * ============================================================================
  *
- * Vital Nutrition stack (one per stage: dev | prod):
+ * Micronutrient Diary stack (one per stage: dev | prod):
  *   CloudFront (OAC) -> Lambda "web" (Next.js standalone in an arm64 container via Lambda Web Adapter)
  *   DynamoDB single table · Cognito user pool · S3 uploads · SQS imports + DLQ
  *   Lambda "ai-worker" (Claude via Claude Platform on AWS) · Lambda "stripe-webhook" (public URL)
  *   Lambda "kill-switch" · CloudWatch alarms · AWS Budget · SNS alerts
  *
- * Assumes the app repo layout:
- *   food-nutrition-app/Dockerfile.lambda          (see ../Dockerfile.lambda)
- *   food-nutrition-app/workers/import.ts          (AI worker handler, to be written)
- *   food-nutrition-app/workers/stripe-webhook.ts  (webhook handler, to be written)
+ * Paths (relative to the repository root):
+ *   docs/aws/infra-example/Dockerfile.lambda          web image; build context = repo root
+ *   docs/aws/infra-example/cdk/workers/import.ts      AI worker handler (placeholder stub)
+ *   docs/aws/infra-example/cdk/workers/stripe-webhook.ts  webhook handler (placeholder stub)
  */
 import * as path from 'path';
 import { Duration, RemovalPolicy, Stack, StackProps, CfnOutput } from 'aws-cdk-lib';
@@ -38,23 +39,25 @@ import * as budgets from 'aws-cdk-lib/aws-budgets';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
-export interface VitalNutritionStackProps extends StackProps {
+export interface MicronutrientDiaryStackProps extends StackProps {
   stage: 'dev' | 'prod';
-  /** e.g. "https://vital-nutrition.com" (prod) or the CloudFront URL (dev). Used for CORS + Stripe redirects. */
+  /** e.g. "https://micronutrientdiary.com" (prod) or the CloudFront URL (dev). Used for CORS + Stripe redirects. */
   siteUrl: string;
   alertEmail: string;
   /** Monthly AWS cost budget in USD (start small; raise with revenue). */
   monthlyBudgetUsd: number;
-  /** Verified SES domain for Cognito emails, e.g. "vital-nutrition.com". Optional in dev. */
+  /** Verified SES domain for Cognito emails, e.g. "micronutrientdiary.com". Optional in dev. */
   sesDomain?: string;
 }
 
-export class VitalNutritionStack extends Stack {
-  constructor(scope: Construct, id: string, props: VitalNutritionStackProps) {
+export class MicronutrientDiaryStack extends Stack {
+  constructor(scope: Construct, id: string, props: MicronutrientDiaryStackProps) {
     super(scope, id, props);
     const isProd = props.stage === 'prod';
-    const appDir = path.join(__dirname, '../../../../../food-nutrition-app');
-    const paramPrefix = `/vital-nutrition/${props.stage}`;
+    // lib/ -> cdk/ -> infra-example/ -> aws/ -> docs/ -> repo root
+    const repoRoot = path.join(__dirname, '../../../../..');
+    const workersDir = path.join(__dirname, '../workers');
+    const paramPrefix = `/micronutrient-diary/${props.stage}`;
 
     // ---------------------------------------------------------------- alerts
     const alerts = new sns.Topic(this, 'Alerts');
@@ -69,7 +72,7 @@ export class VitalNutritionStack extends Stack {
 
     // ------------------------------------------------------------ data store
     const table = new dynamodb.TableV2(this, 'Table', {
-      tableName: `vital-nutrition-${props.stage}`,
+      tableName: `micronutrient-diary-${props.stage}`,
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       billing: dynamodb.Billing.onDemand(),
@@ -86,7 +89,7 @@ export class VitalNutritionStack extends Stack {
 
     // ------------------------------------------------------------------ auth
     const userPool = new cognito.UserPool(this, 'Users', {
-      userPoolName: `vital-nutrition-${props.stage}`,
+      userPoolName: `micronutrient-diary-${props.stage}`,
       featurePlan: cognito.FeaturePlan.ESSENTIALS, // 10k MAU free; switch to LITE later if needed
       selfSignUpEnabled: true,
       signInAliases: { email: true },
@@ -97,7 +100,7 @@ export class VitalNutritionStack extends Stack {
       email: props.sesDomain
         ? cognito.UserPoolEmail.withSES({
             fromEmail: `no-reply@${props.sesDomain}`,
-            fromName: 'Vital Nutrition',
+            fromName: 'Micronutrient Diary',
             sesRegion: this.region,
             sesVerifiedDomain: props.sesDomain,
           })
@@ -146,8 +149,10 @@ export class VitalNutritionStack extends Stack {
       PARAM_PREFIX: paramPrefix,
     };
     const web = new lambda.DockerImageFunction(this, 'Web', {
-      code: lambda.DockerImageCode.fromImageAsset(appDir, {
-        file: 'Dockerfile.lambda',
+      // Build context = repo root; the root .dockerignore limits it to
+      // food-nutrition-app/ (plus this Dockerfile, which it re-includes).
+      code: lambda.DockerImageCode.fromImageAsset(repoRoot, {
+        file: 'docs/aws/infra-example/Dockerfile.lambda',
         platform: ecrAssets.Platform.LINUX_ARM64,
       }),
       architecture: lambda.Architecture.ARM_64,
@@ -206,7 +211,7 @@ export class VitalNutritionStack extends Stack {
 
     // 5 behaviors total = the flat-rate Free plan's limit.
     const distribution = new cloudfront.Distribution(this, 'Cdn', {
-      comment: `vital-nutrition-${props.stage}`,
+      comment: `micronutrient-diary-${props.stage}`,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100, // irrelevant on flat-rate plans; cheaper on PAYG
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
       defaultBehavior: {
@@ -239,7 +244,7 @@ export class VitalNutritionStack extends Stack {
       stringValue: 'true',
     });
     const aiWorker = new nodejs.NodejsFunction(this, 'AiWorker', {
-      entry: path.join(appDir, 'workers/import.ts'),
+      entry: path.join(workersDir, 'import.ts'),
       runtime: lambda.Runtime.NODEJS_24_X,
       architecture: lambda.Architecture.ARM_64,
       memorySize: 512,
@@ -275,7 +280,7 @@ export class VitalNutritionStack extends Stack {
     // Separate function with a PUBLIC Function URL: Stripe cannot add the sha256 header OAC requires.
     // Authenticity comes from verifying the Stripe-Signature header against the webhook secret.
     const stripeWebhook = new nodejs.NodejsFunction(this, 'StripeWebhook', {
-      entry: path.join(appDir, 'workers/stripe-webhook.ts'),
+      entry: path.join(workersDir, 'stripe-webhook.ts'),
       runtime: lambda.Runtime.NODEJS_24_X,
       architecture: lambda.Architecture.ARM_64,
       memorySize: 256,
@@ -294,8 +299,8 @@ export class VitalNutritionStack extends Stack {
     }));
     const webhookUrl = stripeWebhook.addFunctionUrl({ authType: lambda.FunctionUrlAuthType.NONE });
     // Create SecureString params out-of-band (CloudFormation can't create SecureString):
-    //   aws ssm put-parameter --type SecureString --name /vital-nutrition/prod/stripe/secret-key --value sk_live_...
-    //   aws ssm put-parameter --type SecureString --name /vital-nutrition/prod/stripe/webhook-secret --value whsec_...
+    //   aws ssm put-parameter --type SecureString --name /micronutrient-diary/prod/stripe/secret-key --value sk_live_...
+    //   aws ssm put-parameter --type SecureString --name /micronutrient-diary/prod/stripe/webhook-secret --value whsec_...
 
     // --------------------------------------------------------- kill switch
     const killSwitch = new lambda.Function(this, 'KillSwitch', {
@@ -352,16 +357,16 @@ export class VitalNutritionStack extends Stack {
         w: table.metric('WriteThrottleEvents', { statistic: 'Sum', period: Duration.minutes(5) }),
       },
     }), 0);
-    // App emits VitalNutrition/AiSpendMicroUsd via Embedded Metric Format; alert at ~80% of the daily cap.
+    // App emits MicronutrientDiary/AiSpendMicroUsd via Embedded Metric Format; alert at ~80% of the daily cap.
     alarm('AiSpendDaily', new cw.Metric({
-      namespace: 'VitalNutrition', metricName: 'AiSpendMicroUsd',
+      namespace: 'MicronutrientDiary', metricName: 'AiSpendMicroUsd',
       dimensionsMap: { Stage: props.stage }, statistic: 'Sum', period: Duration.days(1),
     }), 4_000_000 /* $4 */);
 
     // ---------------------------------------------------------------- budget
     new budgets.CfnBudget(this, 'MonthlyBudget', {
       budget: {
-        budgetName: `vital-nutrition-${props.stage}-monthly`,
+        budgetName: `micronutrient-diary-${props.stage}-monthly`,
         budgetType: 'COST',
         timeUnit: 'MONTHLY',
         budgetLimit: { amount: props.monthlyBudgetUsd, unit: 'USD' },

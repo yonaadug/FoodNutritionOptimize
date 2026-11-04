@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
-# Vital Nutrition web app: Next.js standalone server with the SQLite DB bundled read-only.
+# Micronutrient Diary web app: Next.js standalone server with the SQLite DB bundled read-only.
 #
 #   git lfs pull                       # the DB must be the real file, not an LFS pointer
-#   docker build -t vital-nutrition .
-#   docker run --rm -p 3000:3000 vital-nutrition
+#   docker build -t micronutrient-diary .
+#   docker run --rm -p 3000:3000 micronutrient-diary
 #
 # Build on (or with --platform for) the target arch: the better-sqlite3 binary
 # traced into the standalone bundle is the one for the build platform.
@@ -45,5 +45,5 @@ COPY --from=build /app/public ./public
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD ["node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/api/search?q=apple').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+    CMD ["node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/api/meta').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
 CMD ["node", "server.js"]

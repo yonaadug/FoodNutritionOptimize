@@ -1,21 +1,25 @@
 {
-  "name": "vital-nutrition-infra-example",
+  "name": "micronutrient-diary-infra-example",
   "private": true,
-  "description": "UNTESTED EXAMPLE — AWS CDK app for Vital Nutrition (see docs/aws/AWS_HOSTING_DESIGN.md). Pin exact versions before use.",
+  "description": "EXAMPLE (synth-tested, never deployed): AWS CDK app for Micronutrient Diary (see docs/aws/AWS_HOSTING_DESIGN.md and docs/LOCAL_TESTING.md).",
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
-    "synth": "cdk synth",
+    "typecheck": "tsc --noEmit",
+    "synth": "cdk synth --quiet",
     "diff": "cdk diff",
     "deploy": "cdk deploy"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2",
-    "constructs": "^10"
+    "aws-cdk-lib": "2.275.0",
+    "constructs": "10.8.1"
   },
   "devDependencies": {
-    "aws-cdk": "^2",
-    "esbuild": "*",
-    "tsx": "*",
-    "typescript": "^5",
-    "@types/node": "^24"
+    "@types/node": "^26.6.6",
+    "aws-cdk": "2.1147.0",
+    "esbuild": "0.28.2",
+    "tsx": "4.23.15",
+    "typescript": "^7.0.2"
   }
 }

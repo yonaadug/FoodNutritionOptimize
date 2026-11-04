@@ -1,53 +1,80 @@
+# syntax=docker/dockerfile:1
 # =============================================================================
-# UNTESTED EXAMPLE — Lambda (arm64) container for the Next.js standalone server.
-# Intended location: food-nutrition-app/Dockerfile.lambda (next to the regular Dockerfile).
-# See docs/aws/AWS_HOSTING_DESIGN.md §2.2 Option A and §3.3.
+# EXAMPLE (built and run locally; never deployed to AWS): AWS Lambda container
+# image for the Next.js standalone server, fronted by AWS Lambda Web Adapter.
+# See docs/aws/AWS_HOSTING_DESIGN.md §2.2 Option A and docs/LOCAL_TESTING.md.
 #
-# Build context: food-nutrition-app/. CI must place the pinned nutrition.db (from S3,
-# checksum-verified) at food-nutrition-app/nutrition.db before building — *.db is gitignored.
+# Build context = the REPOSITORY ROOT (same as ./Dockerfile; the root
+# .dockerignore keeps the context to food-nutrition-app/ only):
+#
+#   git lfs pull
+#   docker build --platform linux/arm64 -f docs/aws/infra-example/Dockerfile.lambda -t micronutrient-diary-lambda .
+#   docker run --rm -p 3000:3000 micronutrient-diary-lambda       # plain HTTP, adapter idle
+#
+# Lambda Web Adapter only activates inside the Lambda execution environment.
+# Run as a plain container it is inert and the Next.js server answers HTTP
+# directly, which is how we test the image locally.
+#
+# The image's architecture is whatever you build for: Lambda arm64 needs
+# --platform linux/arm64 (native on Apple silicon); x86_64 Lambdas need
+# --platform linux/amd64 (emulated on Apple silicon). Build on the target
+# platform: the better-sqlite3 binary traced into the standalone bundle is
+# the one for the build stage's platform.
 # =============================================================================
 
-FROM --platform=linux/arm64 node:24-bookworm-slim AS deps
-WORKDIR /app
-# Toolchain only needed if better-sqlite3 has no prebuilt binary for this Node/arch
-# (not needed at all if you switch the web build to node:sqlite).
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
- && rm -rf /var/lib/apt/lists/*
-COPY package.json package-lock.json ./
-RUN npm ci
+ARG NODE_VERSION=26
 
-FROM deps AS build
-COPY . .
+# ---- deps --------------------------------------------------------------------
+FROM node:${NODE_VERSION}-slim AS deps
+WORKDIR /app
+COPY food-nutrition-app/package.json food-nutrition-app/package-lock.json ./
+# better-sqlite3 ships N-API prebuilds for linux-x64/arm64; --ignore-scripts
+# stops npm from attempting a node-gyp source build (no toolchain needed).
+RUN npm ci --no-audit --no-fund --ignore-scripts
+
+# ---- build -------------------------------------------------------------------
+FROM node:${NODE_VERSION}-slim AS build
+WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
-RUN npm run build
+COPY --from=deps /app/node_modules ./node_modules
+COPY food-nutrition-app/ ./
+# In CI the pinned, checksum-verified DB from S3 is placed at
+# food-nutrition-app/nutrition.db before the build; locally it is the Git LFS file.
+RUN [ "$(head -c 15 nutrition.db)" = "SQLite format 3" ] \
+    || { echo "nutrition.db is not a SQLite file (Git LFS pointer?). Run 'git lfs pull' first." >&2; exit 1; }
+RUN npm run build && mkdir -p public
 
-FROM --platform=linux/arm64 node:24-bookworm-slim AS runtime
-# AWS Lambda Web Adapter runs as a Lambda extension and proxies invocations to the HTTP server.
-# Pin to the latest released tag (check https://github.com/awslabs/aws-lambda-web-adapter/releases).
-COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
+# ---- runtime -----------------------------------------------------------------
+FROM node:${NODE_VERSION}-slim AS runtime
+# Lambda Web Adapter runs as a Lambda extension and proxies invocations to the
+# HTTP server. Pinned; check https://github.com/awslabs/aws-lambda-web-adapter/releases
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.1.0 /lambda-adapter /opt/extensions/lambda-adapter
 
 WORKDIR /app
+# HOSTNAME=0.0.0.0: on Lambda the adapter connects over loopback (any bind
+# works); as a plain container the port must be reachable via `docker run -p`.
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
     PORT=3000 \
-    HOSTNAME=127.0.0.1 \
+    HOSTNAME=0.0.0.0 \
     AWS_LWA_PORT=3000 \
-    AWS_LWA_READINESS_CHECK_PATH=/api/health \
+    AWS_LWA_READINESS_CHECK_PATH=/api/meta \
+    AWS_LWA_READINESS_CHECK_HEALTHY_STATUS=200-299 \
     NUTRITION_DB_PATH=/app/data/nutrition.db
 
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
-# (no public/ directory in the app today; add `COPY --from=build /app/public ./public` if one is added)
+COPY --from=build /app/public ./public
+# Read-only nutrition DB at a fixed path (the standalone bundle also carries a
+# traced copy at /app/nutrition.db; this one is what NUTRITION_DB_PATH uses).
+COPY --from=build /app/nutrition.db /app/data/nutrition.db
 
-# Read-only nutrition DB baked into the image (journal_mode=DELETE, VACUUMed).
-COPY nutrition.db /app/data/nutrition.db
-
-# Lambda's filesystem is read-only except /tmp. If Next writes to .next/cache
-# (image optimization / ISR — not used today), redirect it. The app must `mkdir -p /tmp/next-cache`
-# at startup (the symlink target does not exist on a fresh environment):
-RUN rm -rf /app/.next/cache && ln -s /tmp/next-cache /app/.next/cache
-
-# Lambda runs the container as a non-root user; files must be world-readable.
+# Lambda's filesystem is read-only except /tmp. Next only writes .next/cache
+# for image optimization / ISR / the fetch cache, none of which this app uses;
+# `docker run --read-only --tmpfs /tmp` (see docs/LOCAL_TESTING.md) checks that.
+# Lambda runs the image as an arbitrary non-root user; files must be world-readable.
 RUN chmod -R a+rX /app
+USER node
 
+EXPOSE 3000
 CMD ["node", "server.js"]

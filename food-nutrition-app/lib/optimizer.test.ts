@@ -42,7 +42,7 @@ describe('optimizeDiet: calorie bounds', () => {
 
     it('honours minCalories', () => {
         const result = optimizeDiet({ foods: mockFoods, minCalories: 1000, customConstraints: relaxed() });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.ok(result.totalCalories! >= 999, `got ${result.totalCalories}`);
     });
 });
@@ -53,7 +53,7 @@ describe('optimizeDiet: per-food bounds', () => {
             foods: mockFoods, minCalories: 1500, customConstraints: relaxed(),
             diversityMode: true, maxFoodAmount: 1000,
         });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.ok(Math.max(...result.diet!.map(d => d.grams)) <= 1000);
     });
 
@@ -62,7 +62,7 @@ describe('optimizeDiet: per-food bounds', () => {
             foods: mockFoods, minCalories: 2000, customConstraints: relaxed(),
             diversityMode: true, maxFoodAmount: 200,
         });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.ok(result.diet!.length > 1);
     });
 
@@ -71,7 +71,7 @@ describe('optimizeDiet: per-food bounds', () => {
             foods: mockFoods, minCalories: 500, customConstraints: relaxed(),
             foodConstraints: { [broccoli.id]: { min: 200 } },
         });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         const b = result.diet!.find(d => d.food.id === broccoli.id);
         assert.ok(b && b.grams >= 200, `broccoli ${b?.grams}`);
     });
@@ -82,7 +82,7 @@ describe('optimizeDiet: per-food bounds', () => {
             // Default cap is 300 g/food; let chicken go higher so 2000 kcal is reachable.
             foodConstraints: { [oliveOil.id]: { max: 50 }, [chicken.id]: { max: 1500 } },
         });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         const oil = result.diet!.find(d => d.food.id === oliveOil.id);
         assert.ok(!oil || oil.grams <= 50);
     });
@@ -96,7 +96,7 @@ describe('optimizeDiet: per-food bounds', () => {
             foods: [withServing], minCalories: 1000, customConstraints: relaxed(),
             foodConstraints: { [chicken.id]: { max: 2000 } },
         });
-        assert.equal(overridden.success, true, overridden.message);
+        assert.equal(overridden.success, true, overridden.message ?? 'expected success');
         assert.ok(overridden.diet!.find(d => d.food.id === chicken.id)!.grams > 300);
     });
 });
@@ -109,7 +109,7 @@ describe('optimizeDiet: guaranteed foods', () => {
             foods: mockFoods, customConstraints: constraints,
             guaranteedFoods: [{ food: chicken, grams: 100 }],
         });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.ok(result.totalNutrients!.protein_g >= 49.9);
         const added = result.diet!.reduce((s, d) => s + d.nutrients.protein_g, 0);
         assert.ok(added > 0 && added < 40, `added protein ${added}`);
@@ -135,7 +135,7 @@ describe('optimizeDiet: constraint parsing regressions', () => {
         constraints.vitamin_d_ug = {};
         constraints.vitamin_b12_ug = { max: 100 };
         const result = optimizeDiet({ foods: [broccoli], customConstraints: constraints });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.equal(result.constraintLimits!.vitamin_d_ug, undefined);
         assert.deepEqual(result.constraintLimits!.vitamin_b12_ug, { min: undefined, max: 100 });
     });
@@ -144,7 +144,7 @@ describe('optimizeDiet: constraint parsing regressions', () => {
         const constraints: Record<string, unknown> = relaxed();
         constraints.vitamin_d_ug = { min: null, max: null };
         const result = optimizeDiet({ foods: [broccoli], customConstraints: constraints });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.equal(result.constraintLimits!.vitamin_d_ug, undefined);
     });
 
@@ -160,7 +160,7 @@ describe('optimizeDiet: constraint parsing regressions', () => {
         const constraints: Record<string, unknown> = relaxed();
         constraints.vitamin_d_ug = 0;
         const result = optimizeDiet({ foods: [broccoli], customConstraints: constraints });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
     });
 
     it('rejects negative or non-finite nutrient data', () => {
@@ -183,7 +183,7 @@ describe('optimizeDiet: per-food bound regressions', () => {
             foods: mockFoods, customConstraints: relaxed(),
             foodConstraints: { [broccoli.id]: { min: 400 } },
         });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.ok(result.diet!.find(d => d.food.id === broccoli.id)!.grams >= 400);
     });
 
@@ -194,7 +194,7 @@ describe('optimizeDiet: per-food bound regressions', () => {
             foods: mockFoods, customConstraints: constraints,
             foodConstraints: { [chicken.id]: { max: 0 }, [broccoli.id]: { max: 2000 } },
         });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.equal(result.diet!.find(d => d.food.id === chicken.id), undefined);
     });
 
@@ -237,7 +237,7 @@ describe('optimizeDiet: result regressions', () => {
             foods: mockFoods, customConstraints: constraints,
             guaranteedFoods: [{ food: chicken, grams: 100 }],
         });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.ok(Math.abs(result.totalNutrients!.calories - result.totalCalories!) <= 1);
     });
 
@@ -252,7 +252,7 @@ describe('optimizeDiet: result regressions', () => {
             foods: [herb, lettuce], customConstraints: constraints,
             foodConstraints: { [lettuce.id]: { max: 100 } },
         });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.ok(result.totalNutrients!.vitamin_k_ug >= 119.99, `vitamin K ${result.totalNutrients!.vitamin_k_ug}`);
         const h = result.diet!.find(d => d.food.id === herb.id);
         assert.ok(h && h.grams > 0 && h.grams < 1, `herb grams ${h?.grams}`);
@@ -264,7 +264,7 @@ describe('optimizeDiet: result regressions', () => {
         const constraints = relaxed();
         constraints.phosphorus_mg = { min: 500 };
         const result = optimizeDiet({ foods: mockFoods, customConstraints: constraints });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.ok(result.totalNutrients!.phosphorus_mg >= 499.9, `phosphorus ${result.totalNutrients!.phosphorus_mg}`);
     });
 });
@@ -320,7 +320,7 @@ describe('optimizeDiet: missing data (null nutrients)', () => {
         const constraints = relaxed();
         constraints.vitamin_c_mg = { min: 50 };
         const result = optimizeDiet({ foods: [noVitC, broccoli], customConstraints: constraints });
-        assert.equal(result.success, true, result.message);
+        assert.equal(result.success, true, result.message ?? 'expected success');
         assert.ok(result.diet!.some(d => d.food.id === broccoli.id));
         assert.ok(result.totalNutrients!.vitamin_c_mg >= 49.9);
     });
@@ -367,7 +367,7 @@ describe('optimizeDiet: tolerable upper intake levels', () => {
         for (const k of Object.keys(constraints)) constraints[k] = {};
         constraints.protein_g = { min: 20 };
         const capped = optimizeDiet({ foods: [ironBomb, chicken], customConstraints: constraints, applyUpperLimits: true });
-        assert.equal(capped.success, true, capped.message);
+        assert.equal(capped.success, true, capped.message ?? 'expected success');
         assert.ok(capped.totalNutrients!.iron_mg <= 45 + 1e-6, `iron ${capped.totalNutrients!.iron_mg}`);
         assert.equal(capped.constraintLimits!.iron_mg.max, 45);
         assert.equal(capped.constraintLimits!.magnesium_mg, undefined);

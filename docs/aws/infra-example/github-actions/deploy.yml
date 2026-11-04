@@ -1,5 +1,6 @@
 # =============================================================================
-# UNTESTED EXAMPLE — copy to .github/workflows/deploy.yml and adapt.
+# EXAMPLE — never run. Copy to .github/workflows/deploy.yml and adapt.
+# The CDK app it deploys is synth-tested only (see docs/LOCAL_TESTING.md).
 # GitHub OIDC -> AWS (no long-lived keys). See docs/aws/AWS_HOSTING_DESIGN.md §3.11.
 #
 # Repo settings required:
@@ -33,32 +34,32 @@ jobs:
     runs-on: ubuntu-latest
     defaults: { run: { working-directory: food-nutrition-app } }
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 24, cache: npm, cache-dependency-path: food-nutrition-app/package-lock.json }
-      - run: npm ci
-      - run: npx tsc --noEmit
-      - run: npm test --if-present
+      - uses: actions/checkout@v7
+        with: { lfs: true }
+      - uses: actions/setup-node@v7
+        with: { node-version-file: .nvmrc, cache: npm, cache-dependency-path: food-nutrition-app/package-lock.json }
+      - run: npm ci --no-audit --no-fund --ignore-scripts
+      - run: npm run check   # lint + typecheck + test + build, same as CI
 
   deploy:
     needs: test
     # arm64 runner so the image builds natively for Lambda arm64.
-    # (Verify arm runner availability/pricing for your repo; fallback: ubuntu-latest + docker/setup-qemu-action.)
+    # (Fallback: ubuntu-latest + docker/setup-qemu-action@v4, much slower.)
     runs-on: ubuntu-24.04-arm
     environment: ${{ (github.event.inputs.stage || 'dev') == 'prod' && 'production' || 'dev' }}
     env:
       STAGE: ${{ github.event.inputs.stage || 'dev' }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 24 }
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version-file: .nvmrc, cache: npm, cache-dependency-path: docs/aws/infra-example/cdk/package-lock.json }
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Fetch pinned nutrition DB artifact (gitignored)
+      - name: Fetch pinned nutrition DB artifact
         working-directory: food-nutrition-app
         run: |
           VERSION="$(cat nutrition-db.version)"
@@ -69,12 +70,14 @@ jobs:
       - name: CDK deploy
         working-directory: docs/aws/infra-example/cdk   # move to infra/ when adopting
         run: |
-          npm ci || npm install
-          npx cdk deploy "VitalNutrition-${STAGE}" -c stage="${STAGE}" --require-approval never
+          npm ci --no-audit --no-fund
+          npx cdk deploy "MicronutrientDiary-${STAGE}" -c stage="${STAGE}" --require-approval never
 
       - name: Smoke test
         run: |
-          URL="$(aws cloudformation describe-stacks --stack-name "VitalNutrition-${STAGE}" \
+          URL="$(aws cloudformation describe-stacks --stack-name "MicronutrientDiary-${STAGE}" \
                  --query "Stacks[0].Outputs[?OutputKey=='SiteUrl'].OutputValue" --output text)"
-          curl -fsS "${URL}/api/health"
-          curl -fsS "${URL}/api/search?q=apple&limit=5" | head -c 300
+          # GET-only checks: through CloudFront OAC, POST /api/optimize needs the
+          # x-amz-content-sha256 header (see the stack's Function URL notes).
+          curl -fsS "${URL}/api/meta"
+          curl -fsS "${URL}/api/search?q=salmon&limit=5" | head -c 300

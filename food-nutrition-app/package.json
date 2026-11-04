@@ -1,8 +1,8 @@
 {
-    "name": "vital-nutrition",
+    "name": "micronutrient-diary",
     "version": "0.1.0",
     "private": true,
-    "description": "Vital Nutrition - Intelligent Nutrition Optimizer",
+    "description": "Micronutrient Diary - Intelligent Nutrition Optimizer",
     "author": "Yonathan Kebede <primeyonathan@gmail.com>",
     "license": "MIT",
     "repository": {
@@ -14,30 +14,39 @@
         "url": "https://github.com/yonaadug/FoodNutritionOptimize/issues"
     },
     "engines": {
-        "node": ">=22"
+        "node": ">=24"
     },
     "scripts": {
         "dev": "next dev",
         "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ./lib/testing/register.mjs --test \"lib/**/*.test.ts\"",
         "build": "next build",
         "start": "next start",
+        "start:standalone": "node scripts/standalone.mjs",
+        "preview": "next build && node scripts/standalone.mjs",
+        "smoke": "node scripts/smoke.mjs",
+        "check": "npm run lint && npm run typecheck && npm test && npm run build",
         "lint": "eslint .",
         "typecheck": "next typegen && tsc --noEmit"
     },
     "dependencies": {
         "better-sqlite3": "^13.0.3",
-        "javascript-lp-solver": "^0.4.24",
-        "next": "^16.4.4",
+        "javascript-lp-solver": "^1.0.3",
+        "next": "^16.4.5",
         "react": "^19.3.1",
         "react-dom": "^19.3.1"
     },
     "devDependencies": {
-        "@types/better-sqlite3": "^7.6.13",
-        "@types/node": "^22",
-        "@types/react": "^19",
-        "@types/react-dom": "^19",
-        "eslint": "^9.39.1",
-        "eslint-config-next": "^16.4.4",
-        "typescript": "^5"
+        "@types/better-sqlite3": "^9.6.0",
+        "@types/node": "^26.6.6",
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "eslint": "^9.39.5",
+        "eslint-config-next": "^16.4.5",
+        "typescript": "^6.0.3"
+    },
+    "overrides": {
+        "@typescript-eslint/typescript-estree": {
+            "minimatch": "^11.0.4"
+        }
     }
 }

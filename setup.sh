@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Vital Nutrition setup: checks prerequisites, fetches the LFS database and
+# Micronutrient Diary setup: checks prerequisites, fetches the LFS database and
 # installs the web app. Safe to re-run.
 #
 # Usage: ./setup.sh [--with-electron] [--with-python]
@@ -9,7 +9,10 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WEB="$ROOT/food-nutrition-app"
-MIN_NODE=22
+# Node policy: 26 is the current LTS (.nvmrc, CI, Docker, Lambda image);
+# 24 (maintenance LTS) still works, and it is what Electron 45 embeds.
+MIN_NODE=24
+RECOMMENDED_NODE=26
 
 WITH_ELECTRON=0
 WITH_PYTHON=0
@@ -27,13 +30,14 @@ ok()   { echo "${GREEN}✔${NC} $*"; }
 warn() { echo "${YELLOW}!${NC} $*"; }
 die()  { echo "${RED}✘${NC} $*" >&2; exit 1; }
 
-echo "== Vital Nutrition setup =="
+echo "== Micronutrient Diary setup =="
 
 # --- Prerequisites ---------------------------------------------------------
 command -v node >/dev/null 2>&1 || die "Node.js is not installed. Install Node.js ${MIN_NODE}+ (LTS) from https://nodejs.org/"
 NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]')"
 [ "$NODE_MAJOR" -ge "$MIN_NODE" ] || die "Node.js ${MIN_NODE}+ required, found $(node -v). Upgrade (e.g. 'nvm install --lts')."
 ok "Node.js $(node -v)"
+[ "$NODE_MAJOR" -ge "$RECOMMENDED_NODE" ] || warn "Node.js ${RECOMMENDED_NODE} (current LTS) is recommended; CI and the Docker images use it ('nvm install' reads .nvmrc)."
 command -v npm >/dev/null 2>&1 || die "npm is not installed"
 ok "npm $(npm -v)"
 
@@ -81,6 +85,9 @@ cat <<EOF
 ${GREEN}Setup complete.${NC}
 
   Web app (dev):     cd food-nutrition-app && npm run dev     -> http://localhost:3000
-  Production build:  cd food-nutrition-app && npm run build && npm start
+  Everything CI does: cd food-nutrition-app && npm run check
+  Production build:  cd food-nutrition-app && npm run preview -> http://127.0.0.1:3000
   Desktop app:       ./setup.sh --with-electron, then: cd electron-app && npm start
+
+  Full local test checklist (Docker, Lambda image, CDK synth): docs/LOCAL_TESTING.md
 EOF

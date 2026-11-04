@@ -42,9 +42,10 @@ jobs:
         run: |
           test "$(head -c 15 nutrition.db)" = "SQLite format 3" || { echo "::error::nutrition.db is an LFS pointer"; exit 1; }
 
+      # Node 26 (current LTS), from .nvmrc; Dockerfile, Dockerfile.lambda use the same.
       - uses: actions/setup-node@v7
         with:
-          node-version: lts/*
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: food-nutrition-app/package-lock.json
 
@@ -57,13 +58,55 @@ jobs:
       - name: Build (standalone)
         run: npm run build
 
+      # Same smoke test the local guide uses (docs/LOCAL_TESTING.md): page,
+      # /api/meta, /api/search, POST /api/optimize. Run from another cwd.
       - name: Smoke test standalone server
         run: |
           cp -r .next/static .next/standalone/.next/static
           cd /tmp
           PORT=3300 HOSTNAME=127.0.0.1 node "$GITHUB_WORKSPACE/food-nutrition-app/.next/standalone/server.js" &
-          for i in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:3300/ && break; sleep 1; done
-          out="$(curl -fsS "http://127.0.0.1:3300/api/search?q=apple")"
-          echo "${out:0:300}"
-          grep -q '"foods"' <<< "$out"
+          node "$GITHUB_WORKSPACE/food-nutrition-app/scripts/smoke.mjs" http://127.0.0.1:3300 --wait 30
           du -sh "$GITHUB_WORKSPACE/food-nutrition-app/.next/standalone"
+
+  docker:
+    name: Docker image (build, health check, smoke test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          lfs: true
+      - name: Build image
+        run: docker build -t micronutrient-diary:ci .
+      - name: Run and wait for HEALTHCHECK
+        run: |
+          docker run -d --name mdiary -p 3000:3000 --health-interval 2s micronutrient-diary:ci
+          for i in $(seq 1 30); do
+            s="$(docker inspect -f '{{.State.Health.Status}}' mdiary)"; echo "health: $s"
+            [ "$s" = healthy ] && break; sleep 2
+          done
+          [ "$(docker inspect -f '{{.State.Health.Status}}' mdiary)" = healthy ] || { docker logs mdiary; exit 1; }
+      - name: Smoke test
+        run: node food-nutrition-app/scripts/smoke.mjs http://127.0.0.1:3000 --wait 30
+      - if: always()
+        run: docker rm -f mdiary || true
+
+  cdk-synth:
+    name: AWS CDK example (typecheck + synth, no AWS account)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: docs/aws/infra-example/cdk
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: docs/aws/infra-example/cdk/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      # Synth only stages the Docker build context; it doesn't need Docker,
+      # credentials or the LFS database.
+      - run: npx cdk synth --quiet && npx cdk synth --quiet -c stage=prod

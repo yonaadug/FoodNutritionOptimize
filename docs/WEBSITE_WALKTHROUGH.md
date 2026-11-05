@@ -200,7 +200,7 @@ The stepper's middle card always shows the active preset and goal count.
 ![Calories, portion and upper-limit settings](walkthrough/13-goals-calories-portions-limits.png)
 
 - **Daily calories, Between ___ and ___ kcal.** The plan uses the fewest calories that still meet your goals, within this range. In practice it almost always lands on the lower number. Leave a box empty for no limit.
-- **Keep portions realistic** (on by default, **At most 300 g per food**) stops the planner from piling on one food, such as a kilo of spinach. Per-food limits from step 1 still apply on top. _Note:_ the planner also has a built-in cap of about 3 standard servings per food that stays on even when this switch is off (see [rough edges](#16-rough-edges-noticed-while-touring)).
+- **Keep portions realistic** (on by default, **At most 300 g per food**) stops the planner from piling on one food, such as a kilo of spinach. Per-food limits from step 1 still apply on top. _Update:_ this switch now sets the whole cap, "at most 3 servings or 300 g of each food", and off means no general cap (see [rough edges](#16-rough-edges-noticed-while-touring)).
 - **Respect safe upper limits** (optional, off by default) also keeps nutrients such as iron, zinc and selenium under the adult Tolerable Upper Intake Level. Only limits that apply to food are used. Supplement-only limits, such as magnesium's, are skipped.
 
 ### 6.3 Fine-tune individual goals
@@ -283,7 +283,7 @@ If you change foods or goals after making a plan, the old plan stays on screen i
 ![Summary with safe upper limits on](walkthrough/22-upper-limits-summary.png)
 ![Goal progress with safe upper limits on](walkthrough/23-upper-limits-progress.png)
 
-With **Respect safe upper limits** on, every nutrient that has a food-relevant upper limit gets an "at most" bar. Some goals become ranges ("Calcium 1,300 mg / 1,300–2,500 mg"), and new ceiling-only rows appear (vitamin D, B6, zinc, copper, manganese, selenium, phosphorus, choline). The ring then counts these limits as goals, which is why it jumps from 9/9 to **17/17**.
+With **Respect safe upper limits** on, every nutrient that has a food-relevant upper limit gets an "at most" bar. Some goals become ranges ("Calcium 1,300 mg / 1,300–2,500 mg"), and new ceiling-only rows appear (vitamin D, B6, zinc, copper, manganese, selenium, phosphorus, choline). Before the polish pass the ring counted these limits as goals (9/9 became **17/17**); they now sit in a separate "Safe upper limits" list and the ring stays 9/9 (see [rough edges](#16-rough-edges-noticed-while-touring)).
 
 ---
 
@@ -404,36 +404,45 @@ Severity: **High** = undermines the core job or misleads; **Medium** = confusing
 
 Things that worked well and need no action: every page action was fast (API calls took under 40 ms locally, and the sample day took about 0.4 s), there were no console errors in any journey, there was no sideways scrolling on phones, and the skip link, focus rings and dark mode all work.
 
+> **Status after the November 2026 polish pass.** Every item below is marked **Fixed** (with a one-line note) or **Still open**. The fixes were checked with `npm run check` (139 unit tests), `npm run smoke` against the standalone build, and a headless Playwright 1.64.1 run through the sample day, my own foods, the FDA preset with one-click fixes, the upper-limits and portion switches, a reload, a 390×844 phone and dark mode. The `polish-*.png` screenshots in [walkthrough/](walkthrough/) show the result; the numbered screenshots above still show the site *before* the pass.
+
 **High**
 
-- [ ] **Fix-it suggestions are often obscure.** With a small food list, the "Good sources" chips offered cod liver oil, imported beef variety meats, veal liver, acerola, wild rose hips ("Northern Plains Indians"), rennin dessert tablets and dried acid whey ([screenshot 27](walkthrough/27-infeasible-few-foods.png)). For vitamin E they offered a fortified Ralston cereal and fortified peanut butter. The "everyday food" filter falls back to whatever ranks highest per 100 g when it finds nothing else. This is the main rescue path for new users, so it matters.
+- [x] **Fix-it suggestions are often obscure.** **Fixed:** suggestions and *Best sources of…* now rank by a realistic serving (3 oz fish, 1 oz nuts, 1 cup beans), put familiar, well-measured single foods first, keep supplements, tablets, baby food, powders, dried concentrates, organ meats and spices last, show one entry per food, and always fill up so a card is never empty. Vitamin D now suggests UV mushrooms, halibut, salmon and trout; the tab has an *Everyday foods only* switch to see everything ([polish-best-sources](walkthrough/polish-best-sources.png), [polish-infeasible](walkthrough/polish-infeasible.png)).
 
 **Medium**
 
-- [ ] **Data gaps quietly undermine goals.** The sample day's salmon has no vitamin D recorded, and its milk is the version "without added vitamin A and vitamin D". So the FDA preset fails on vitamin D while salmon is on the list ([screenshot 19](walkthrough/19-nutrient-breakdown-vitamin-d.png)). The search result "Bananas, overripe, raw" has no potassium, calcium or iron. For *limits*, missing values count as 0 too: saturated fat was unmeasured for 7 of the 9 foods in the sample plan, so "7.5 g / at most 20 g" is a floor, not a total. The callout's wording ("real totals may be a little higher") is honest, but the sample day could prefer better-documented entries.
-- [ ] **"Keep portions realistic" off often changes nothing.** The planner always caps each food at about 3 USDA reference servings (300 g when there's no reference serving). With the sample foods, the plan was identical with the switch on or off (kale, spinach and carrots all stop at 255 g). The **Allow bigger portions** quick fix therefore often doesn't help. The switch's description doesn't mention the hidden cap.
-- [ ] **The plan doesn't explain unused foods.** The sample day picks 15 foods and the plan uses 9, with no mention of the other 6. Users may think something went wrong.
-- [ ] **One-click fixes give no feedback.** After **Drop this minimum**, the card stays exactly as it was. After clicking a suggestion chip, the chip vanishes and another takes its place, with no "Added" confirmation ([screenshot 25](walkthrough/25-after-one-click-fixes.png)). It's easy to click twice or wonder whether anything happened.
-- [ ] **Upper limits inflate the "goals met" count.** Turning on safe upper limits turns 9/9 into 17/17 and lists vitamin D as "✓ On target" at 0.26 mcg (1 % of the Daily Value), because only the ceiling applies ([screenshot 23](walkthrough/23-upper-limits-progress.png)).
-- [ ] **The plan is lost on reload,** and the site always reopens on step 1. The steps also aren't part of the page address, so the plan step can't be bookmarked or shared.
-- [ ] **Sample-day plans look odd for "Everyday essentials".** 173 g protein (3.5× the target) and 38 % fat from 237 g salmon plus 258 g chicken. "Broccoli raab" stands in for broccoli, and "pita" for whole-wheat bread. That's mathematically fine (low calories, high nutrients) but not a typical day.
+- [x] **Data gaps quietly undermine goals.** **Fixed:** the sample day only picks entries that measured what each staple is known for (salmon and fortified milk with vitamin D, oats with saturated fat), so it now has one gap (vitamin A and D in raw almonds). Plans count only foods actually used, totals that include unmeasured foods show "≥", and a limit that looks met but includes unmeasured foods says "Could be over", all under the same single callout ([polish-sample-plan](walkthrough/polish-sample-plan.png)).
+- [x] **"Keep portions realistic" off often changes nothing.** **Fixed:** the setting now *is* the cap: "At most 3 servings or 300 g of each food", explained in plain words; switched off there is no general cap (the sample plan goes from a 300 g maximum to 426 g). **Allow bigger portions** doubles the cap, says so in a toast, and is highlighted when it alone would make the plan work ([polish-goals](walkthrough/polish-goals.png)).
+- [x] **The plan doesn't explain unused foods.** **Fixed:** "3 of your 15 foods weren't needed for these goals", each with a short reason ("Your protein goal was already met by other foods") and an **Include it** button ([polish-unused-foods](walkthrough/polish-unused-foods.png)).
+- [x] **One-click fixes give no feedback.** **Fixed:** every quick fix shows a toast (announced through an `aria-live` region) with an **Update plan** button; a dropped goal's card shows "✓ Minimum dropped" with **Undo**, and added suggestions stay on the card as green "Added" chips ([polish-one-click-fixes](walkthrough/polish-one-click-fixes.png)).
+- [x] **Upper limits inflate the "goals met" count.** **Fixed (root cause):** the optimizer added each upper limit as an "at most" bound and the plan counted every bound as a goal. It now reports which bounds are upper limits; they appear in a separate "Safe upper limits" list and the ring stays 9/9 ([polish-upper-limits](walkthrough/polish-upper-limits.png)).
+- [x] **The plan is lost on reload,** and the site always reopens on step 1. **Fixed:** the last plan (or "can't hit every goal" result) is saved on the device and restored without re-running, the site reopens on the step you were on, and the step is in the address (`#plan`), so it can be bookmarked and Back works ([polish-after-reload](walkthrough/polish-after-reload.png)).
+- [x] **Sample-day plans look odd for "Everyday essentials".** **Fixed:** with better-measured foods the sample plan is 12 foods, 94 g protein, 17 % protein / 40 % carbs / 43 % fat, with real broccoli and whole-wheat bread. *Still open:* fat is on the high side because nuts and seeds are the cheapest source of several minerals in calories.
 
 **Low**
 
-- [ ] **Stale plans show the new preset name.** After switching to High protein, the old Everyday-essentials plan is headed "Your day · High protein" until you update it ([screenshot 21](walkthrough/21-update-plan-banner.png)).
-- [ ] **Household amounts can read oddly.** "≈ 12½ cups, pieces of ~1"" for kale, "≈ 1¼ bananas, Peeled" (capital P), "≈ 1 cup, chopped" for 150 g of hard-boiled egg (3 eggs would be clearer), "≈ ¾ oz" for 19 g of salmon, and no household amount for spinach, carrots or oats.
-- [ ] **"RACC" jargon** appears in serving hints ("For reference: 1 RACC = 40 g") and in the label serving menu ("1 RACC (50 g)").
-- [ ] **"Limited data" badge on genuinely zero-calorie foods.** Plain tea, bottled water and table salt are flagged, although 0 kcal is correct for them.
-- [ ] **The bold "short name" is sometimes the USDA category word,** not the food: "**Beverages**, tea, green…", "**Fish**, salmon…", "**Seeds**, sunflower…". On the phone plan this leaves "Chicken, broilers or…".
-- [ ] **The error message is run together:** "Couldn't reach the planner: Failed to fetch Your foods and goals are saved…" is missing a full stop and shows the browser's raw error text.
-- [ ] **"…and 1 more goal that can't be met yet"** doesn't say which goal.
-- [ ] **"Too much sodium" has no "over by" amount,** unlike the shortfall cards.
-- [ ] **Switching on a "No official target" goal** (EPA, DHA) sets "at least 0", which constrains nothing but still counts toward "goals met".
-- [ ] **The phone search box has two clear (×) buttons:** the browser's own and the site's ([screenshot 34](walkthrough/34-phone-search.png)).
-- [ ] **The bottom action bar covers content.** On the welcome screen it fades out the "Popular starting points" chips. At 1440×900 it sat on top of the "Respect safe upper limits" switch until I scrolled.
-- [ ] **Clear all makes the page jump.** The welcome panel reappears and pushes everything down about 430 px.
-- [ ] **Search ranking quirks.** "banana" lists "Bananas, overripe" first, and "chicken" starts with "Chicken, wing, meat and skin, raw". "Best sources of vitamin D" opens with cod liver oil (explained by the note, but still a strange first impression).
-- [ ] **The preset grid leaves "Custom" alone on a second row** at desktop width ([screenshot 12](walkthrough/12-goals-presets.png)).
+- [x] **Stale plans show the new preset name.** **Fixed:** the plan keeps the preset it was made with ("Your day · Everyday essentials (before your changes)").
+- [x] **Household amounts can read oddly.** **Fixed:** counts are preferred ("≈ 3 large" eggs), plain weights such as "¾ oz" are dropped, USDA jargon and measurements in brackets are removed, qualifiers are lower-case ("bananas, peeled"), and counts of 4 or more are whole numbers. *Still open:* some foods (raw almonds) have no household serving, so only grams are shown.
+- [x] **"RACC" jargon.** **Fixed:** shown as "standard serving" in serving hints, the label menu and suggestions.
+- [x] **"Limited data" badge on genuinely zero-calorie foods.** **Fixed:** a measured 0 kcal with measured macros or water (tea, water, salt) no longer gets the badge.
+- [x] **The bold "short name" is sometimes the USDA category word.** **Fixed:** "**Salmon**, sockeye…", "**Tea**, green…", "**Chicken**, breast, meat only…" (filler such as "broilers or fryers" is dropped).
+- [x] **The error message is run together.** **Fixed:** "We couldn't reach the planner." on its own line, then "Your foods and goals are saved. Check your connection, then try again." The browser's raw text is never shown.
+- [x] **"…and 1 more goal that can't be met yet"** doesn't say which goal. **Fixed:** the optimizer now returns every issue; all cards are listed (six at first, then "Show N more goals: …"), and shortfalls under 1 % get one quiet line.
+- [x] **"Too much sodium" has no "over by" amount.** **Fixed:** limits broken by fixed-amount foods report the amount ("over by 700 mg").
+- [x] **Switching on a "No official target" goal** (EPA, DHA) sets "at least 0". **Fixed:** the switch asks for an amount instead, and "at least 0" is never counted as a goal.
+- [x] **The phone search box has two clear (×) buttons.** **Fixed:** the browser's own button is hidden.
+- [x] **The bottom action bar covers content.** **Fixed** on the welcome screen (the bar appears once there is a food to plan); focused fields scroll clear of it. *Still open:* at 1440×900 the last goals setting still sits under the bar until you scroll, as with any fixed bar.
+- [x] **Clear all makes the page jump.** **Fixed:** the welcome panel no longer comes back after **Clear all** (the Undo bar and the panel's own *Try a sample day* stay).
+- [x] **Search ranking quirks.** **Fixed:** "banana" opens with ripe bananas and "chicken" with breast or thigh; *Best sources of vitamin D* opens with UV mushrooms. *Still open:* "lentils" still lists dry lentils before cooked.
+- [x] **The preset grid leaves "Custom" alone on a second row.** **Fixed:** 3 + 2 cards at desktop width.
+
+**Also changed in the polish pass**
+
+- Updating a plan keeps the previous plan on screen (dimmed, with a spinner) instead of flashing a skeleton.
+- "Safe upper limits" and per-goal "safe upper limit" notes explain that these are safety checks, not goals; an infeasible upper limit offers *Turn off upper limits* rather than a "Drop this limit" that wouldn't work.
+- The skip link focuses the content without changing the address; switches can be clicked anywhere on the track.
+- Phone plan summary: calories full width, the goals ring and protein side by side.
 
 ## 17. About these screenshots
 

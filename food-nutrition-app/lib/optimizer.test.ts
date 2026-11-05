@@ -372,4 +372,53 @@ describe('optimizeDiet: tolerable upper intake levels', () => {
         assert.equal(capped.constraintLimits!.iron_mg.max, 45);
         assert.equal(capped.constraintLimits!.magnesium_mg, undefined);
     });
+
+    it('reports which caps are upper limits so clients do not mistake them for goals', () => {
+        const constraints = relaxed();
+        for (const k of Object.keys(constraints)) constraints[k] = {};
+        constraints.protein_g = { min: 20 };
+        constraints.calcium_mg = { min: 100 };
+        constraints.zinc_mg = { max: 30 };
+        const result = optimizeDiet({ foods: [chicken, broccoli], customConstraints: constraints, applyUpperLimits: true });
+        assert.equal(result.success, true, result.message ?? 'expected success');
+        const ul = new Set(result.upperLimitKeys);
+        assert.ok(ul.has('vitamin_d_ug'), 'vitamin D has only its UL');
+        assert.ok(ul.has('calcium_mg'), 'calcium: user minimum + UL maximum');
+        assert.equal(result.constraintLimits!.calcium_mg.min, 100);
+        assert.ok(!ul.has('zinc_mg'), 'the user\'s own zinc maximum is a goal, not a UL');
+        assert.ok(!ul.has('protein_g'));
+
+        const off = optimizeDiet({ foods: [chicken, broccoli], customConstraints: constraints });
+        assert.deepEqual(off.upperLimitKeys, []);
+    });
+});
+
+describe('optimizeDiet: structured issues for infeasible plans', () => {
+    it('lists every blocking goal, not just the first five (regression: "...and 1 more goal" did not say which)', () => {
+        const constraints = relaxed();
+        for (const k of Object.keys(constraints)) constraints[k] = {};
+        Object.assign(constraints, {
+            vitamin_c_mg: { min: 90 }, vitamin_a_ug: { min: 900 }, vitamin_d_ug: { min: 20 }, vitamin_k_ug: { min: 120 },
+            fiber_g: { min: 28 }, folate_ug: { min: 400 }, carbohydrate_g: { min: 100 },
+        });
+        const result = optimizeDiet({ foods: [chicken], customConstraints: constraints, portionCap: { servings: 3, grams: 300 } });
+        assert.equal(result.success, false);
+        assert.match(result.message ?? '', /more issues/);
+        const short = result.issues!.filter(i => i.kind === 'short').map(i => i.nutrient).sort();
+        assert.deepEqual(short, ['carbohydrate_g', 'fiber_g', 'folate_ug', 'vitamin_a_ug', 'vitamin_c_mg', 'vitamin_d_ug', 'vitamin_k_ug']);
+        for (const i of result.issues!) assert.ok(i.amount > 0, `${i.nutrient} amount ${i.amount}`);
+    });
+
+    it('gives an "over by" amount when fixed foods alone break a limit', () => {
+        const salty = makeFood({ id: 50, description: 'Salty bread', calories: 250, sodium_mg: 500, carbohydrate_g: 50 });
+        const constraints = relaxed();
+        for (const k of Object.keys(constraints)) constraints[k] = {};
+        constraints.sodium_mg = { max: 2300 };
+        const result = optimizeDiet({ foods: [broccoli], guaranteedFoods: [{ food: salty, grams: 600 }], customConstraints: constraints });
+        assert.equal(result.success, false);
+        const sodium = result.issues!.find(i => i.nutrient === 'sodium_mg')!;
+        assert.equal(sodium.kind, 'excess');
+        assert.equal(sodium.cause, 'fixed_foods');
+        assert.equal(sodium.amount, 700);
+    });
 });

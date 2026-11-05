@@ -1,7 +1,8 @@
 import solver, { type SolveResult } from 'javascript-lp-solver';
-import type { Food, ServingSize } from '@/lib/food-types';
+import type { Food } from '@/lib/food-types';
 import { nutrientValue } from '@/lib/food-types';
 import { ALL_NUTRIENT_CONFIG, isFoodSafeUpperLimit } from '@/lib/nutrient-defaults';
+import { referenceServingGrams } from '@/lib/servings';
 
 /*
  * Linear-programming diet optimizer.
@@ -47,6 +48,16 @@ export interface OptimizationParams {
     foodConstraints?: Record<number | string, { min?: BoundInput; max?: BoundInput } | undefined>;
     /** Add Tolerable Upper Intake Levels that apply to total intake as caps. */
     applyUpperLimits?: boolean;
+    /**
+     * The general per-food portion cap. When present it is authoritative and
+     * replaces the legacy default (about 3 reference servings, `diversityMode`):
+     *   servings  at most this many typical servings of each food (100 g counts
+     *             as one serving for foods without a household serving)
+     *   grams     at most this many grams of each food
+     * Whichever is lower applies; `{}` means no general cap. Per-food limits in
+     * `foodConstraints` override it either way.
+     */
+    portionCap?: { servings?: BoundInput; grams?: BoundInput } | null;
 }
 
 export interface ConstraintLimit {
@@ -73,6 +84,20 @@ export interface OptimizationWarning {
     inDiet: boolean;
 }
 
+/** One reason a plan is infeasible (every issue, unlike the 5-line `message`). */
+export interface OptimizationIssue {
+    /** 'short' / 'excess': a nutrient (or 'calories') goal. 'food_min' / 'food_max': a per-food bound. */
+    kind: 'short' | 'excess' | 'food_min' | 'food_max';
+    /** Nutrient key or 'calories' (nutrient issues). */
+    nutrient?: string;
+    /** Food id (per-food issues). */
+    foodId?: number;
+    /** How far off, in the nutrient's unit (grams for per-food issues). */
+    amount: number;
+    /** 'fixed_foods': the user's fixed-amount foods alone already break this limit. */
+    cause?: 'fixed_foods';
+}
+
 export interface OptimizationResult {
     success: boolean;
     message?: string;
@@ -81,11 +106,24 @@ export interface OptimizationResult {
     totalCalories?: number;
     totalNutrients?: Record<string, number>;
     constraintLimits?: Record<string, ConstraintLimit>;
+    /**
+     * Nutrients whose `max` in constraintLimits is a Tolerable Upper Intake
+     * Level added by `applyUpperLimits`, not a goal the client asked for.
+     * A key listed here with no `min` is a safety ceiling only.
+     */
+    upperLimitKeys?: string[];
     debugEquations?: string[];
     lpModel?: LpModel;
     /** Set (with success=false) for malformed input; the API maps it to HTTP 400. */
     error?: string;
     warnings?: OptimizationWarning[];
+    /** Infeasible results only: every blocking issue, most severe first. */
+    issues?: OptimizationIssue[];
+    /**
+     * Infeasible results only: true when the plan would work if the general
+     * portion cap were lifted (the user's own per-food limits still applied).
+     */
+    portionCapBinding?: boolean;
 }
 
 interface LpModel {
@@ -106,6 +144,8 @@ export class OptimizationInputError extends Error {}
 
 const DEFAULT_SERVINGS = 3;
 const DEFAULT_CAP_GRAMS = 300;
+/** Grams treated as "one serving" for foods without a household serving. */
+const FALLBACK_SERVING_GRAMS = 100;
 const MAX_NUTRIENT_PER_100G = 1e6;
 const MAX_GRAMS = 100_000;
 const CALORIE_ROW = 'constraint_calories';
@@ -203,24 +243,6 @@ function displayGrams(g: number): number {
     return Number(g.toPrecision(2));
 }
 
-/** Generic gram-based rows ("100 g", "1 g") that every food carries; not a real portion. */
-const GENERIC_GRAM_SERVING = /^\s*\d+(\.\d+)?\s*(g|gram|grams)\s*$/i;
-
-/**
- * Reference serving for the default cap: RACC if labelled, else the (lower)
- * median household serving, ignoring generic "100 g" rows.
- */
-function referenceServingGrams(servings: ServingSize[] | undefined): number | undefined {
-    const valid = (servings ?? []).filter(s =>
-        typeof s?.weight_g === 'number' && s.weight_g > 0 &&
-        !(typeof s.label === 'string' && GENERIC_GRAM_SERVING.test(s.label)));
-    if (valid.length === 0) return undefined;
-    const racc = valid.find(s => typeof s.label === 'string' && s.label.toUpperCase().includes('RACC'));
-    if (racc) return racc.weight_g;
-    const sorted = valid.map(s => s.weight_g).sort((a, b) => a - b);
-    return sorted[Math.floor((sorted.length - 1) / 2)];
-}
-
 // ---------------------------------------------------------------------------
 // Main entry point
 // ---------------------------------------------------------------------------
@@ -237,7 +259,7 @@ export function optimizeDiet(params: OptimizationParams): OptimizationResult {
 function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
     const {
         customConstraints, maxCalories, minCalories, diversityMode, maxFoodAmount,
-        foodConstraints, applyUpperLimits,
+        foodConstraints, applyUpperLimits, portionCap,
     } = params ?? ({} as OptimizationParams);
     const rawFoods: unknown = params?.foods ?? [];
     const rawGuaranteed: unknown = params?.guaranteedFoods ?? [];
@@ -293,12 +315,14 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
     const custom = (customConstraints ?? {}) as Record<string, unknown>;
     const has = (k: string) => Object.prototype.hasOwnProperty.call(custom, k);
     const constraintLimits: Record<string, ConstraintLimit> = {};
+    const upperLimitKeys: string[] = [];
 
     for (const key of NUTRIENT_KEYS) {
         const bounds = resolveBounds(key, custom[key], has(key));
         const config = ALL_NUTRIENT_CONFIG[key];
         if (applyUpperLimits && bounds.max === undefined && config.ul && isFoodSafeUpperLimit(config)) {
             bounds.max = config.ul.value;
+            upperLimitKeys.push(key);
         }
         if (bounds.min !== undefined || bounds.max !== undefined) {
             constraintLimits[key] = { min: bounds.min, max: bounds.max };
@@ -314,7 +338,25 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
         constraintLimits.calories = { min: calBounds.min, max: calBounds.max };
     }
 
+    if (portionCap !== undefined && portionCap !== null && (typeof portionCap !== 'object' || Array.isArray(portionCap))) {
+        throw new OptimizationInputError('portionCap must be an object');
+    }
+    const portion = portionCap
+        ? { servings: parseBound(portionCap.servings, 'portionCap.servings'), grams: parseBound(portionCap.grams, 'portionCap.grams') }
+        : null;
     const diversityCap = diversityMode ? parseBound(maxFoodAmount, 'maxFoodAmount') : undefined;
+    /** The general (non-user) cap for one food, in grams; undefined = no cap. */
+    const generalCapGrams = (food: Food): number | undefined => {
+        const ref = referenceServingGrams(food.serving_sizes);
+        if (portion) {
+            const caps: number[] = [];
+            if (portion.servings !== undefined) caps.push(portion.servings * (ref ?? FALLBACK_SERVING_GRAMS));
+            if (portion.grams !== undefined) caps.push(portion.grams);
+            return caps.length ? Math.min(...caps) : undefined;
+        }
+        const legacy = ref !== undefined ? DEFAULT_SERVINGS * ref : DEFAULT_CAP_GRAMS;
+        return diversityCap !== undefined ? Math.min(legacy, diversityCap) : legacy;
+    };
     const fc = (foodConstraints ?? {}) as Record<string, { min?: BoundInput; max?: BoundInput } | undefined>;
 
     // 2. Missing-data warnings (for every user-selected food).
@@ -353,6 +395,7 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
                 success: false,
                 message: `Optimization Failed:\n• ${label(key)}: minimum (${fmt(lim.min)}${unit(key)}) is greater than maximum (${fmt(lim.max)}${unit(key)}).`,
                 constraintLimits,
+                upperLimitKeys,
                 warnings: buildWarnings(new Set()),
             };
         }
@@ -366,6 +409,7 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
             totalCalories: Math.round(guaranteedCalories),
             totalNutrients: { ...guaranteedNutrients, calories: guaranteedCalories },
             constraintLimits,
+            upperLimitKeys,
             message: 'Only guaranteed foods provided.',
             warnings: buildWarnings(new Set()),
         };
@@ -383,6 +427,8 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
     }
 
     const foodByVar = new Map<string, Food>();
+    /** Food rows whose max comes from the general portion cap (not the user). */
+    const generalCapped = new Set<string>();
     for (const food of foods) {
         const key = `food_${food.id}`;
         foodByVar.set(key, food);
@@ -392,18 +438,18 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
         model.variables[key] = variable;
 
         // Per-food bounds (grams).
-        const ref = referenceServingGrams(food.serving_sizes);
-        let capGrams = ref !== undefined ? DEFAULT_SERVINGS * ref : DEFAULT_CAP_GRAMS;
-        if (diversityCap !== undefined) capGrams = Math.min(capGrams, diversityCap);
+        let capGrams = generalCapGrams(food);
         const user = fc[String(food.id)];
         const userMin = user ? parseBound(user.min, `minimum grams for food ${food.id}`) : undefined;
         const userMax = user ? parseBound(user.max, `maximum grams for food ${food.id}`) : undefined;
         if (userMax !== undefined) capGrams = userMax; // explicit user max overrides every default
-        else if (userMin !== undefined && userMin > capGrams) capGrams = userMin; // ...and so does a min
+        else if (userMin !== undefined && capGrams !== undefined && userMin > capGrams) capGrams = userMin; // ...and so does a min
+        else if (capGrams !== undefined) generalCapped.add(key);
 
-        const bound: ConstraintLimit = { max: capGrams / 100 };
+        const bound: ConstraintLimit = {};
+        if (capGrams !== undefined) bound.max = capGrams / 100;
         if (userMin !== undefined && userMin > 0) bound.min = userMin / 100;
-        model.constraints[key] = bound;
+        if (bound.min !== undefined || bound.max !== undefined) model.constraints[key] = bound;
     }
 
     // 4. Solve a row-scaled copy.
@@ -411,15 +457,29 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
     const results = solveLp(scaled);
 
     if (!results.feasible || results.bounded === false) {
-        const message = results.feasible
-            ? 'The problem is unbounded; check the nutrient data for the selected foods.'
+        const diagnosis = results.feasible
+            ? { message: 'The problem is unbounded; check the nutrient data for the selected foods.', issues: [] }
             : diagnoseInfeasibility(scaled, scale, constraintLimits, guaranteedCalories, guaranteedNutrients, foodByVar);
+        const { message, issues } = diagnosis;
+        let portionCapBinding = false;
+        if (!results.feasible && generalCapped.size > 0) {
+            const constraints = { ...scaled.constraints };
+            for (const row of generalCapped) {
+                const { max: _max, ...rest } = constraints[row];
+                void _max;
+                if (rest.min !== undefined) constraints[row] = rest; else delete constraints[row];
+            }
+            portionCapBinding = solveLp({ ...scaled, constraints }).feasible === true;
+        }
         return {
             success: false,
             message,
+            issues,
+            portionCapBinding,
             lpModel: model,
             debugEquations: failureEquations(model),
             constraintLimits,
+            upperLimitKeys,
             warnings: buildWarnings(new Set()),
         };
     }
@@ -453,6 +513,7 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
         totalCalories: Math.round(guaranteedCalories + optimizedCaloriesExact),
         totalNutrients,
         constraintLimits,
+        upperLimitKeys,
         debugEquations: successEquations(model, diet),
         lpModel: model,
         warnings: buildWarnings(new Set(diet.map(d => d.food.id))),
@@ -495,8 +556,8 @@ function diagnoseInfeasibility(
     guaranteedCalories: number,
     guaranteedNutrients: Record<string, number>,
     foodByVar: Map<string, Food>,
-): string {
-    const issues: { text: string; weight: number }[] = [];
+): { message: string; issues: OptimizationIssue[] } {
+    const issues: { text: string; weight: number; issue: OptimizationIssue }[] = [];
 
     // Guaranteed foods alone already break a maximum.
     for (const [key, lim] of Object.entries(limits)) {
@@ -506,6 +567,7 @@ function diagnoseInfeasibility(
             issues.push({
                 text: `Guaranteed foods already exceed ${label(key)} limit (${fmt(g)}${unit(key)} > ${fmt(lim.max)}${unit(key)}).`,
                 weight: Number.POSITIVE_INFINITY,
+                issue: { kind: 'excess', nutrient: key === CALORIE_ROW ? 'calories' : key, amount: g - lim.max, cause: 'fixed_foods' },
             });
         }
     }
@@ -543,6 +605,7 @@ function diagnoseInfeasibility(
                         ? `Cannot meet minimum requirement for ${describe(food)} (short by ${grams}g).`
                         : `Cannot stay under limit for ${describe(food)} (exceeds by ${grams}g).`,
                     weight: val,
+                    issue: { kind: isShort ? 'food_min' : 'food_max', foodId: food.id, amount: amount * 100 },
                 });
             } else {
                 const u = unit(row);
@@ -551,17 +614,24 @@ function diagnoseInfeasibility(
                         ? `Cannot meet ${label(row)} target (short by ${fmt(amount)}${u}).`
                         : `Cannot stay under ${label(row)} limit (exceeds by ${fmt(amount)}${u}).`,
                     weight: val,
+                    issue: { kind: isShort ? 'short' : 'excess', nutrient: row === CALORIE_ROW ? 'calories' : row, amount },
                 });
             }
         }
     }
 
-    if (issues.length === 0) return 'No combination of these foods can meet all daily requirements.';
+    if (issues.length === 0) return { message: 'No combination of these foods can meet all daily requirements.', issues: [] };
     issues.sort((a, b) => b.weight - a.weight);
     const unique = Array.from(new Set(issues.map(i => i.text)));
     let message = `Optimization Failed:\n• ${unique.slice(0, 5).join('\n• ')}`;
     if (unique.length > 5) message += `\n...and ${unique.length - 5} more issues.`;
-    return message;
+    // One structured issue per nutrient/food and direction (a fixed-food cause wins).
+    const structured = new Map<string, OptimizationIssue>();
+    for (const { issue } of issues) {
+        const k = `${issue.kind}:${issue.nutrient ?? issue.foodId}`;
+        if (!structured.has(k)) structured.set(k, issue);
+    }
+    return { message, issues: Array.from(structured.values()) };
 }
 
 function failureEquations(model: LpModel): string[] {

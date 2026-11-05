@@ -14,9 +14,15 @@ export interface CalorieRange {
     max?: number;
 }
 
+/**
+ * "Keep portions realistic": when enabled, each food is capped at `servings`
+ * typical servings and at `grams`, whichever is lower. `servings` is absent in
+ * state saved by older versions (it then defaults to 3).
+ */
 export interface PortionCap {
     enabled: boolean;
     grams: number;
+    servings?: number;
 }
 
 export type PresetId = 'essentials' | 'fda' | 'high-protein' | 'lower-carb' | 'custom';
@@ -29,8 +35,9 @@ export interface GoalPreset {
     goals: Goals;
 }
 
+/** A goal is on when it constrains something ("at least 0" does not). */
 export function isGoalOn(g: GoalRange | undefined): boolean {
-    return !!g && (g.min !== undefined || g.max !== undefined);
+    return !!g && ((g.min !== undefined && g.min > 0) || g.max !== undefined);
 }
 
 /** The FDA Daily Value for a nutrient, as a floor ("at least") or ceiling ("at most"). */
@@ -82,7 +89,23 @@ export const GOAL_PRESETS: GoalPreset[] = [
 
 export const DEFAULT_PRESET: GoalPreset = GOAL_PRESETS[0];
 
-export const DEFAULT_PORTION_CAP: PortionCap = { enabled: true, grams: 300 };
+export const DEFAULT_PORTION_SERVINGS = 3;
+export const DEFAULT_PORTION_CAP: PortionCap = { enabled: true, grams: 300, servings: DEFAULT_PORTION_SERVINGS };
+
+/** The next, more generous portion setting (used by the "Allow bigger portions" quick fix). */
+export function biggerPortions(cap: PortionCap): PortionCap {
+    if (!cap.enabled) return cap;
+    const servings = cap.servings ?? DEFAULT_PORTION_SERVINGS;
+    if (servings >= 6 && cap.grams >= 600) return { ...cap, enabled: false };
+    return { enabled: true, servings: Math.max(6, servings), grams: Math.max(600, cap.grams) };
+}
+
+/** Plain-words description of a portion setting. */
+export function describePortionCap(cap: PortionCap): string {
+    if (!cap.enabled) return 'No general limit on how much of one food the plan uses';
+    const servings = cap.servings ?? DEFAULT_PORTION_SERVINGS;
+    return `At most ${servings} ${servings === 1 ? 'serving' : 'servings'} or ${cap.grams.toLocaleString()} g of any one food`;
+}
 
 export function presetById(id: PresetId): GoalPreset | undefined {
     return GOAL_PRESETS.find(p => p.id === id);
@@ -106,7 +129,8 @@ export function goalsToPayload(goals: Goals): Record<string, { min: number | '';
     const out: Record<string, { min: number | ''; max: number | '' }> = {};
     for (const k of GOAL_KEYS) {
         const g = goals[k] ?? {};
-        out[k] = { min: g.min ?? '', max: g.max ?? '' };
+        // "At least 0" constrains nothing; send it as no bound so it is not reported as a goal.
+        out[k] = { min: g.min !== undefined && g.min > 0 ? g.min : '', max: g.max ?? '' };
     }
     return out;
 }

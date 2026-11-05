@@ -1,15 +1,17 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import Icon from '@/components/ui/Icon';
 import NumberInput from '@/components/ui/NumberInput';
 import { plannerActions, type PlannerState } from '@/hooks/usePlannerState';
-import { GOAL_PRESETS, countGoals, fdaGoal, isGoalOn, type GoalRange } from '@/components/planner/goals';
+import { DEFAULT_PORTION_SERVINGS, GOAL_PRESETS, countGoals, fdaGoal, isGoalOn, type GoalRange } from '@/components/planner/goals';
 import { NUTRIENT_GROUPS, dailyValue, fmtNumber, nutrientLabel, nutrientUnit, referenceKind, upperLimit } from '@/components/planner/nutrients';
 
 export default function GoalsStep({ state }: { state: PlannerState }) {
     const presetsId = useId();
     const fineId = useId();
+    const portionId = useId();
+    const ulId = useId();
     const n = countGoals(state.goals);
 
     return (
@@ -63,28 +65,41 @@ export default function GoalsStep({ state }: { state: PlannerState }) {
                 </div>
                 <div className="setting-row">
                     <div className="setting-text">
-                        <div className="setting-title">Keep portions realistic</div>
-                        <div className="setting-help">Stops the planner from piling on one food (like a kilo of spinach). You can still set limits per food.</div>
+                        <div className="setting-title" id={portionId}>Keep portions realistic</div>
+                        <div className="setting-help">
+                            {state.portionCap.enabled
+                                ? <>Stops the plan from leaning on one food (like a kilo of spinach). A serving is USDA&apos;s usual amount for that food, such as 1 cup of milk or 1 oz of nuts; foods without one count 100 g as a serving. Limits you set on a single food always win.</>
+                                : <>Off: the planner may use as much of any one food as it needs. Limits you set on a single food in step 1 still apply.</>}
+                        </div>
                     </div>
-                    <div className="row-wrap">
+                    <div className="row-wrap setting-controls">
                         <label className="switch">
-                            <input type="checkbox" checked={state.portionCap.enabled} aria-label="Keep portions realistic"
+                            <input type="checkbox" checked={state.portionCap.enabled} aria-labelledby={portionId}
                                 onChange={e => plannerActions.setPortionCap({ ...state.portionCap, enabled: e.target.checked })} />
                             <span className="switch-track" />
                         </label>
                         {state.portionCap.enabled && (
-                            <NumberInput label="At most" unit="g per food" className="input-num" value={state.portionCap.grams}
-                                onChange={v => plannerActions.setPortionCap({ ...state.portionCap, grams: v ?? 300 })} />
+                            <>
+                                <NumberInput label="At most" unit="servings" className="input-num input-xs" min={1} step={1}
+                                    value={state.portionCap.servings ?? DEFAULT_PORTION_SERVINGS}
+                                    onChange={v => plannerActions.setPortionCap({ ...state.portionCap, servings: v ?? DEFAULT_PORTION_SERVINGS })} />
+                                <NumberInput label="or" unit="g of each food" className="input-num" min={1}
+                                    value={state.portionCap.grams}
+                                    onChange={v => plannerActions.setPortionCap({ ...state.portionCap, grams: v ?? 300 })} />
+                            </>
                         )}
                     </div>
                 </div>
                 <div className="setting-row">
                     <div className="setting-text">
-                        <div className="setting-title">Respect safe upper limits <span className="chip">Optional</span></div>
-                        <div className="setting-help">Also keeps nutrients like iron, zinc and selenium under the adult Tolerable Upper Intake Level.</div>
+                        <div className="setting-title" id={ulId}>Respect safe upper limits <span className="chip">Optional</span></div>
+                        <div className="setting-help">
+                            Also keeps nutrients like iron, zinc and selenium under the adult Tolerable Upper Intake Level.
+                            These are safety checks, not extra goals. Limits that only apply to supplements (such as magnesium&apos;s) are skipped.
+                        </div>
                     </div>
                     <label className="switch">
-                        <input type="checkbox" checked={state.upperLimits} aria-label="Respect safe upper limits"
+                        <input type="checkbox" checked={state.upperLimits} aria-labelledby={ulId}
                             onChange={e => plannerActions.setUpperLimits(e.target.checked)} />
                         <span className="switch-track" />
                     </label>
@@ -121,12 +136,22 @@ function GoalRow({ nutrient, goal }: { nutrient: string; goal: GoalRange | undef
     const ref = fdaGoal(nutrient);
     const ul = upperLimit(nutrient);
     const set = (r: GoalRange) => plannerActions.setGoal(nutrient, r);
+    const minInputId = useId();
+    // Nutrients with no official target (EPA, DHA) have nothing sensible to switch on to:
+    // ask for an amount instead of silently setting "at least 0".
+    const [askAmount, setAskAmount] = useState(false);
+    const hasTarget = dv !== null;
 
     return (
-        <div className="goal-row" data-on={on}>
+        <div className="goal-row" data-on={on || askAmount}>
             <label className="switch">
-                <input type="checkbox" checked={on} aria-label={`${label} goal`}
-                    onChange={e => set(e.target.checked ? ref : {})} />
+                <input type="checkbox" checked={on || askAmount} aria-label={`${label} goal`}
+                    onChange={e => {
+                        if (!e.target.checked) { setAskAmount(false); set({}); return; }
+                        if (hasTarget) { set(ref); return; }
+                        setAskAmount(true);
+                        requestAnimationFrame(() => document.getElementById(minInputId)?.focus());
+                    }} />
                 <span className="switch-track" />
             </label>
             <div>
@@ -135,9 +160,10 @@ function GoalRow({ nutrient, goal }: { nutrient: string; goal: GoalRange | undef
                     {dv !== null ? `${referenceKind(nutrient)}: ${fmtNumber(dv)} ${unit}${ref.max !== undefined ? ' (limit)' : ''}` : referenceKind(nutrient)}
                     {ul?.total ? ` · Upper limit ${fmtNumber(ul.value)} ${unit}` : ''}
                 </div>
+                {askAmount && !on && <div className="tiny" style={{ color: 'var(--primary)', fontWeight: 600 }}>Type the amount you want to aim for.</div>}
             </div>
             <div className="goal-inputs" style={{ gridColumn: 'span 2' }}>
-                <NumberInput label="At least" unit={unit} value={goal?.min} placeholder="—"
+                <NumberInput id={minInputId} label="At least" unit={unit} value={goal?.min} placeholder="—"
                     onChange={v => set({ ...goal, min: v })} />
                 <NumberInput label="At most" unit={unit} value={goal?.max} placeholder="—"
                     onChange={v => set({ ...goal, max: v })} />

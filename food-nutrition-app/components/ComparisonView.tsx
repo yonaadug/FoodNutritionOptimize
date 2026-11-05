@@ -5,6 +5,7 @@ import type { Food } from '@/lib/food-types';
 import NutritionLabel from './NutritionLabel';
 import Icon from '@/components/ui/Icon';
 import { splitFoodName } from '@/components/planner/nutrients';
+import { friendlyServingLabel } from '@/lib/servings';
 
 interface ComparisonViewProps {
     foods: Food[];
@@ -40,7 +41,7 @@ function LabelCard({ food }: { food: Food }) {
     const selectId = useId();
     const chosen = servings.find(s => String(s.id) === servingId);
     const grams = chosen ? chosen.weight_g : 100;
-    const label = chosen ? `${chosen.label} (${Math.round(chosen.weight_g)} g)` : '100 g';
+    const label = chosen ? `${friendlyServingLabel(chosen.label)} (${Math.round(chosen.weight_g)} g)` : '100 g';
     const { name, detail } = splitFoodName(food.description);
 
     return (
@@ -54,7 +55,7 @@ function LabelCard({ food }: { food: Food }) {
                 <label className="field-label" htmlFor={selectId}>Serving size</label>
                 <select id={selectId} className="select" value={servingId} onChange={e => setServingId(e.target.value)}>
                     <option value="100">100 g</option>
-                    {servings.map(s => <option key={s.id} value={String(s.id)}>{s.label} ({Math.round(s.weight_g)} g)</option>)}
+                    {servings.map(s => <option key={s.id} value={String(s.id)}>{friendlyServingLabel(s.label)} ({Math.round(s.weight_g)} g)</option>)}
                 </select>
             </div>
             <NutritionLabel food={food} grams={grams} servingLabel={label} />

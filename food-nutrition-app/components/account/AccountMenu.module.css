@@ -3,6 +3,12 @@
   display: inline-flex;
 }
 
+/* Keeps a compact look on desktop, and the same 40px tap target as the theme switch on phones. */
+.signIn { flex: none; }
+@media (max-width: 719px) {
+  .signIn.signIn { min-height: 40px; padding-inline: 12px; }
+}
+
 .avatar {
   width: 40px;
   height: 40px;
@@ -33,6 +39,10 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-lg);
+}
+/* The theme switch (40px + a 12px gap) sits to the right of the avatar: use that space on phones. */
+@media (max-width: 719px) {
+  .menu { right: -52px; }
 }
 
 .who {

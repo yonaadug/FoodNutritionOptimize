@@ -6,6 +6,7 @@ import AccountMenu from '@/components/account/AccountMenu';
 import Icon from '@/components/ui/Icon';
 import ThemeToggle from '@/components/ThemeToggle';
 import { isNavActive, NAV_ITEMS, SITE_NAME } from '@/lib/nav';
+import styles from './SiteHeader.module.css';
 
 /** Skips the header without changing the address (the planner keeps its step in the #hash). */
 export function SkipLink() {
@@ -30,7 +31,7 @@ export default function SiteHeader() {
     return (
         <header className="site-header">
             <div className="container site-header-inner">
-                <Link href="/" className="brand" aria-label={`${SITE_NAME} home`}>
+                <Link href="/" className={`brand ${styles.brand}`} aria-label={`${SITE_NAME} home`}>
                     <span className="brand-mark"><Icon name="leaf" size={17} strokeWidth={2.4} /></span>
                     {SITE_NAME}
                 </Link>
@@ -45,7 +46,7 @@ export default function SiteHeader() {
                         );
                     })}
                 </nav>
-                <span className="spacer" />
+                <span className={`spacer ${styles.spacer}`} />
                 <AccountMenu />
                 <ThemeToggle />
             </div>

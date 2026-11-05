@@ -13,7 +13,7 @@ export function userInitial(user: Pick<CurrentUser, 'displayName' | 'email'>): s
 export default function AccountMenu() {
     const { user } = useCurrentUser();
     if (!user) {
-        return <Link href="/account/sign-in" className="btn btn-secondary btn-sm">Sign in</Link>;
+        return <Link href="/account/sign-in" prefetch={false} className={`btn btn-secondary btn-sm ${styles.signIn}`}>Sign in</Link>;
     }
     return <SignedInMenu user={user} />;
 }
@@ -85,8 +85,8 @@ function SignedInMenu({ user }: { user: CurrentUser }) {
             {open && (
                 <div id={menuId} ref={menu} role="menu" aria-label="Account" className={styles.menu} onKeyDown={onMenuKey}>
                     <p className={styles.who} title={user.email}>{user.email}</p>
-                    <Link role="menuitem" href="/account" className={styles.item} onClick={() => setOpen(false)}>Account</Link>
-                    <Link role="menuitem" href="/account/history" className={styles.item} onClick={() => setOpen(false)}>History</Link>
+                    <Link role="menuitem" href="/account" prefetch={false} className={styles.item} onClick={() => setOpen(false)}>Account</Link>
+                    <Link role="menuitem" href="/account/history" prefetch={false} className={styles.item} onClick={() => setOpen(false)}>History</Link>
                     <button role="menuitem" type="button" className={styles.item} onClick={onSignOut}>Sign out</button>
                 </div>
             )}

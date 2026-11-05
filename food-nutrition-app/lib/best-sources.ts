@@ -50,7 +50,7 @@ const SOFT_PATTERNS: [RegExp, string][] = [
     [/\b(meatless|vegetarian (meat|burger)|meat substitute)\b/i, 'meat substitute'],
     [/\b(alaska native|northern plains|apache|navajo|hopi|shoshone|bannock)\b/i, 'regional specialty'],
     [/\b(fast food|restaurant)\b/i, 'restaurant food'],
-    [/\b(mix|pickled|candied|syrup)\b/i, 'processed'],
+    [/\b(mix|pickled|candied|syrup|breaded|battered|fried)\b/i, 'processed'],
 ];
 
 const SOFT_CATEGORIES: [RegExp, string][] = [
@@ -94,7 +94,7 @@ const GROUP_PREFIX = /^(fish|nuts|seeds|beans|cheese|mollusks|crustaceans|game m
 const MODIFIERS = new Set(`
 sweet green red white black brown yellow purple golden whole baby mixed plain fresh frozen canned raw cooked low fat nonfat
 reduced lean ground wild dried roasted toasted boiled baked of and or with without in style common regular large small medium
-hard soft firm silken greek light skim young products great northern kernel kernels seed seeds butter nut nuts hulled
+hard soft firm silken greek light skim young great northern kernel kernels seed seeds butter nut nuts hulled
 `.split(/\s+/).filter(Boolean));
 
 function words(s: string): string[] {
@@ -185,7 +185,9 @@ export function sourceTier(food: Food): { tier: SourceTier; reason?: string } {
 /** Near-duplicates share a group ("Fish, salmon, sockeye, raw" and "Fish, salmon, pink, canned"). */
 function groupKey(food: Food): string {
     const segs = food.description.toLowerCase().split(',').map(s => s.trim());
-    return GROUP_PREFIX.test(segs[0] ?? '') ? `${segs[0]},${segs[1] ?? ''}` : segs[0] ?? '';
+    const head = GROUP_PREFIX.test(segs[0] ?? '') ? segs[1] ?? segs[0] : segs[0] ?? '';
+    // "Fish, salmon, ..." and "Salmon, sockeye, canned" are the same food.
+    return head.replace(/(es|s)$/, '');
 }
 
 export interface RankOptions {

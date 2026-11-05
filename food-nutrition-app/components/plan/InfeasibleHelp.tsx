@@ -45,8 +45,14 @@ export default function InfeasibleHelp({
 }: InfeasibleHelpProps) {
     const { issues, more } = parsed;
     const [showAll, setShowAll] = useState(false);
-    const nutrientIssues = issues.filter(i => i.nutrient && (i.kind === 'short' || i.kind === 'excess'));
-    const otherIssues = issues.filter(i => !nutrientIssues.includes(i));
+    const allNutrientIssues = issues.filter(i => i.nutrient && (i.kind === 'short' || i.kind === 'excess'));
+    // Shortfalls of under 1% are a side effect of the main problem; mention them quietly.
+    const bound = (i: PlanIssue) => limitsAtRun[i.nutrient!]?.[i.kind === 'short' ? 'min' : 'max'];
+    const isMinor = (i: PlanIssue) => i.amount !== undefined && (bound(i) ?? 0) > 0 && i.amount / bound(i)! < 0.01;
+    const major = allNutrientIssues.filter(i => !isMinor(i));
+    const nutrientIssues = major.length ? major : allNutrientIssues;
+    const minor = allNutrientIssues.filter(i => !nutrientIssues.includes(i));
+    const otherIssues = issues.filter(i => !allNutrientIssues.includes(i));
     const visible = showAll ? nutrientIssues : nutrientIssues.slice(0, SHOWN_AT_FIRST);
     const hidden = nutrientIssues.length - visible.length;
     const selectedIds = new Set([...state.foods.map(f => f.id), ...state.fixedFoods.map(f => f.food.id)]);
@@ -88,6 +94,11 @@ export default function InfeasibleHelp({
                     </button>
                 )}
 
+                {minor.length > 0 && (
+                    <p className="small muted" style={{ marginTop: 12 }}>
+                        Also just short: {minor.map(i => `${inSentence(nutrientLabel(i.nutrient!))} (by ${fmtNumber(i.amount)} ${nutrientUnit(i.nutrient!)})`).join(', ')}. Fixing the goals above usually fixes {minor.length === 1 ? 'this' : 'these'} too.
+                    </p>
+                )}
                 {otherIssues.length > 0 && (
                     <ul className="small secondary" style={{ marginTop: 16, paddingLeft: 18 }}>
                         {otherIssues.map((i, idx) => <li key={idx}>{i.text}</li>)}

@@ -1,70 +1,66 @@
 # Micronutrient Diary
 
-> **Eat the foods you like and still hit your nutrition goals.** · [micronutrientdiary.com](https://micronutrientdiary.com) *(planned domain)*
+> **What's in your food?** · [micronutrientdiary.com](https://micronutrientdiary.com) *(planned domain)*
 
 *Formerly "NutriCompare".*
 
-Micronutrient Diary is a nutrition planner built on mathematical optimization. Pick foods you'd happily eat and choose your goals (or a preset). It works out how much of each food to eat, in grams and everyday servings, so you hit every goal for the day.
+Micronutrient Diary lets you look up the nutrients in any food, see what contaminant testing found in it, work out the nutrition of a recipe, and plan a day of eating that meets your goals. It uses public USDA and FDA data, it's free, and it needs no account.
 
-![Micronutrient Diary daily plan](docs/ux/after-desktop-plan-full.png)
+![The Micronutrient Diary home page](docs/walkthrough/01-home.png)
+
+**New here?** The [guided tour](docs/WEBSITE_WALKTHROUGH.md) shows every screen and lists known rough edges.
 
 ---
 
 ## What Does This App Do?
 
-Imagine you want to meet all your daily nutritional requirements (protein, vitamins, minerals, etc.) but you're not sure which foods to eat or how much. **Micronutrient Diary solves this problem for you automatically.**
+- **Foods** (`/`): search 9,435 USDA foods, or browse by category or nutrient. Each food page has a serving selector, a Nutrition Facts label and a full nutrient table.
+- **Contaminants** (on each food page): meters for heavy metals, pesticide residues and microplastics in the serving you chose, with sources. Foods with no testing say so instead of showing zero. See [how they're worked out](docs/CONTAMINANT_DATA.md).
+- **Plan** (`/plan`): pick foods you'd happily eat and choose your goals. It works out how much of each to eat, in grams and everyday servings.
+- **Recipes** (`/recipes`): paste a recipe, add a photo or start blank, check the ingredients, and get nutrition per serving. Add a serving to your plan. AI reading needs a provider switched on; otherwise it runs in a clearly labelled demo mode. See [RECIPES.md](docs/RECIPES.md).
+- **Accounts** (optional): passwordless sign-in, a history of the foods and recipes you've looked at, export and delete. See [ACCOUNTS.md](docs/ACCOUNTS.md).
 
-### How It Works (Simple Explanation)
+Values are estimates for general information, not medical advice.
 
-1. **Pick foods**: Search "salmon", "oats", "black beans", or tap **Try a sample day** to start from 15 everyday staples
-2. **Set goals**: Pick a preset (*Everyday essentials*, *FDA Daily Values*, *High protein*, *Lower carb*) or turn individual goals on or off
-3. **Your plan**: Tap **Make my plan** to see how much of each food to eat, with progress bars for every goal
+### How the Planner Works
 
-The app uses **Linear Programming** (a mathematical technique) to find the combination that:
-- ✅ Meets every goal you turned on
-- ✅ Uses as few calories as possible to get there
-- ✅ Keeps portions realistic (each food is capped at a sensible amount; you can change per-food limits)
+1. **Pick foods**: search, add from any food page, or tap **Try a sample day** to start from 15 everyday staples
+2. **Set goals**: pick a preset (*Everyday essentials*, *FDA Daily Values*, *High protein*, *Lower carb*) or turn individual goals on or off
+3. **Your plan**: tap **Make my plan** to see how much of each food to eat, with progress bars for every goal
 
-If the goals can't all be met, it tells you which ones fall short and suggests foods to add.
-
-### Real-World Example
-
-**Your Goal:** Get 50g protein, 90mg Vitamin C, ≤2000 calories
-
-**You Select:** Chicken breast, Broccoli, Rice, Oranges
-
-**Micronutrient Diary Calculates (illustrative):**
-- 120g Chicken breast = 30g protein, 132 cal
-- 200g Broccoli = 5.6g protein, 68mg Vitamin C, 68 cal
-- 150g Rice = 4.5g protein, 195 cal
-- 100g Orange = 1g protein, 47mg Vitamin C, 47 cal
-
-**Total:** 41.1g protein, 115mg Vitamin C, 442 calories ✅
-
-The app shows how close you are to each goal with progress bars, and suggests what to change when a goal can't be met.
+It uses **linear programming** (a mathematical technique) to find the combination that meets every goal you turned on, with as few calories as possible and realistic portions. If the goals can't all be met, it tells you which ones fall short and suggests foods to add.
 
 ---
 
 ## Features
 
-### Core Features
-- 🔍 **Search 9,400+ Foods** from USDA FoodData Central (Foundation Foods, SR Legacy, and FNDDS mixed dishes). Everyday forms rank first: "egg" finds whole eggs, not dried yolk.
-- 🧭 **Guided 3-step flow**: Pick foods → Set goals → Your plan, with a one-click sample day
-- 🎯 **Goal presets** (Everyday essentials, FDA Daily Values, High protein, Lower carb) plus per-goal on/off and custom min/max
-- 📊 **30+ Nutrients** (macros, vitamins A–K, minerals, choline, omega-3s), with FDA Daily Values and upper limits cited in code
-- 🍽️ **Plans that read like a meal plan**: grams plus household servings ("≈ ½ fillet"), and goal progress bars
-- 🆘 **Helpful "can't meet" screen**: tells you which goal falls short, by how much, with one-click foods to add
-- ❔ **Honest about missing data**: nutrients USDA didn't measure show as "—", not 0, and the plan flags them
-- 🌙 **Dark/Light Mode** (follows your OS), responsive down to phone width, keyboard and screen-reader friendly
-- 💾 **Saved automatically** in your browser (no account needed)
+### Foods
+- **Search 9,400+ foods** from USDA FoodData Central (Foundation Foods, SR Legacy and FNDDS mixed dishes), or browse by category or by best sources of a nutrient
+- **Food pages** with household servings or a custom amount, an FDA-style label, 30+ nutrients with % Daily Value, similar foods, comparison with up to three others, and links to the USDA record
+- **Honest about missing data**: nutrients USDA didn't measure show as "—", not 0
 
-### Advanced Options
-- 🔒 **Fixed amounts**: lock in foods you'll definitely eat ("plan the rest of my day")
-- ↕️ **Per-food limits** and a "keep portions realistic" cap
-- 🛡️ **Respect safe upper limits** (opt-in; only limits that apply to food, not supplement-only limits)
-- 📈 **Best sources of…**: foods highest in a nutrient
-- 🔬 **Nutrition Facts labels** and side-by-side comparison
-- 🧮 **Show the math**: the underlying LP model
+### Contaminants
+- **Per-serving meters** for lead, cadmium, mercury, arsenic, pesticide residues and microplastics, which follow the serving selector
+- **References and sources** from FDA, EPA and USDA testing programs, with data quality and matching shown under each row
+- **Clear states** for Not detected, Not rated and No data
+
+### Planner
+- **Guided 3-step flow** with a one-click sample day
+- **Goal presets** plus per-goal on/off and custom min/max
+- **Plans that read like a meal plan**: grams plus household servings ("≈ ½ fillet"), and goal progress bars
+- **A helpful "can't meet" screen**: which goal falls short, by how much, with one-click foods to add
+- **Fixed amounts, per-food limits**, a "keep portions realistic" cap and optional safe upper limits
+- **Where each nutrient comes from**, and **Show the math** for the underlying model
+
+### Recipes
+- **Paste, photo or blank**, with editable amounts and USDA matches, and live per-serving totals
+- **Marks what's uncertain**: estimated weights, ingredients not counted, and "≥" where data is missing
+- **Add a serving to a plan**, and recent recipes kept in your browser
+
+### Accounts and everything else
+- **Optional passwordless sign-in** by email link, with history, data export and account deletion
+- **No account needed** for anything else: the planner and recent recipes are saved in your browser
+- **Dark/light mode** (follows your OS), responsive down to phone width, usable by keyboard
 
 ---
 

@@ -35,7 +35,12 @@ const env = {
     PORT: process.env.PORT ?? '3000',
     HOSTNAME: process.env.BIND_HOST ?? '127.0.0.1',
 };
-console.log(`[standalone] http://${env.HOSTNAME}:${env.PORT}  (Ctrl+C to stop)`);
+// This script is for trying a production build on a laptop, so sign-in works with no
+// settings: links are printed here instead of emailed. A deployed site never runs it.
+if (!env.AUTH_BASE_URL) env.AUTH_BASE_URL = `http://localhost:${env.PORT}`;
+const isLocalBase = /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(env.AUTH_BASE_URL);
+if (!env.AUTH_EMAIL_TRANSPORT && isLocalBase) env.AUTH_EMAIL_TRANSPORT = 'console';
+console.log(`[standalone] http://localhost:${env.PORT}  (Ctrl+C to stop)`);
 const child = spawn(process.execPath, [server], { cwd: standalone, env, stdio: 'inherit' });
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => child.kill(sig));
 child.on('exit', (code, signal) => process.exit(signal ? 0 : (code ?? 0)));

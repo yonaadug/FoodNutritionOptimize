@@ -108,9 +108,9 @@ export async function readJson(request: Request, maxBytes: number): Promise<unkn
  * isn't from a browser page, so it isn't a CSRF risk, but refusing it is simpler and
  * nothing legitimate needs it.
  */
-export function assertSameOrigin(request: Request, config: Pick<AuthConfig, 'origin'>) {
+export function assertSameOrigin(request: Request, config: Pick<AuthConfig, 'origins'>) {
     const origin = request.headers.get('origin');
-    if (origin ? origin === config.origin : request.headers.get('sec-fetch-site') === 'same-origin') return;
+    if (origin ? config.origins.includes(origin) : request.headers.get('sec-fetch-site') === 'same-origin') return;
     throw new AccountError(403, 'forbidden', 'Cross-site request refused');
 }
 

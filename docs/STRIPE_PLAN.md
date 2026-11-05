@@ -128,13 +128,15 @@ A subscription has to belong to a person, and today the app has no accounts (eve
 - a user record holding `stripeCustomerId` and subscription state
 - server-side checks on Plus-only API routes
 
+**Update: decided and built.** Accounts use **Better Auth with passwordless email links** (see [ACCOUNTS.md](ACCOUNTS.md)), and users live in `lib/user-store` (SQLite locally, DynamoDB on AWS). Stripe should add `stripeCustomerId` and subscription state there, and account deletion must cancel the subscription first. The rest of this section is the original reasoning.
+
 The AWS design proposes **Amazon Cognito** for production. For a laptop-testable first version, an email-link sign-in behind an interface that Cognito can replace later is the simplest path. **Decision pending.**
 
 ## 9. Open decisions
 
 1. **What Plus unlocks first.** The roadmap's candidates: unlimited saved plans and history, a week planner with grocery list, recipe import by link or photo, full nutrient-gap insights.
 2. **Trial:** none, a no-card "reverse trial" (the AWS doc's suggestion), or a card-on-file trial via `trial_period_days` (Stripe's "Free Trial" path).
-3. **Sign-in method** (§8).
+3. ~~**Sign-in method** (§8).~~ Decided: Better Auth email links.
 4. **Managed Payments** later, if you'd rather Stripe handle global tax as merchant of record.
 
 ## 10. Go-live checklist

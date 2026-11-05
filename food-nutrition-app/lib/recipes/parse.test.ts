@@ -160,6 +160,20 @@ describe('parseServings', () => {
 });
 
 describe('parseRecipeText', () => {
+    it('keeps a title that shares a line with the servings', () => {
+        const r = parseRecipeText('Banana oat pancakes (serves 2)\n2 ripe bananas\n1 cup rolled oats');
+        assert.equal(r.title, 'Banana oat pancakes');
+        assert.equal(r.servings, 2);
+        assert.equal(r.ingredients.length, 2);
+        assert.equal(parseRecipeText('Chili - serves 6\n1 can beans').title, 'Chili');
+    });
+
+    it('does not take a title from a servings line that is only servings', () => {
+        for (const line of ['Makes 12 cookies', 'Yield: 6-8 servings', 'Serves 4', '4 servings']) {
+            assert.equal(parseRecipeText(`${line}\n1 cup flour`).title, '', line);
+        }
+    });
+
     it('reads a recipe with headers, skipping instructions', () => {
         const r = parseRecipeText(`Classic Pancakes
 Serves 4

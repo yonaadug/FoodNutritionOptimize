@@ -21,6 +21,24 @@ describe('loadAuthConfig', () => {
         assert.equal(config.emailTransport, 'console');
     });
 
+    it('on a laptop, trusts this machine under any of its names', () => {
+        // `make dev` prints http://127.0.0.1:3000, while sign-in links use localhost.
+        const config = loadAuthConfig(env({ NODE_ENV: 'development', PORT: '3000' }));
+        assert.deepEqual(config.origins, ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://[::1]:3000']);
+        const request = (origin: string) => new Request('http://localhost:3000/api/history', { method: 'POST', headers: { origin } });
+        assert.doesNotThrow(() => assertSameOrigin(request('http://127.0.0.1:3000'), config));
+        assert.doesNotThrow(() => assertSameOrigin(request('http://localhost:3000'), config));
+        assert.throws(() => assertSameOrigin(request('http://127.0.0.1:9999'), config), AccountError);
+        assert.throws(() => assertSameOrigin(request('https://evil.example'), config), AccountError);
+    });
+
+    it('a deployed site trusts only its own origin', () => {
+        const config = loadAuthConfig(env({ NODE_ENV: 'production', AUTH_BASE_URL: 'https://micronutrientdiary.com', AUTH_SECRET: SECRET, AUTH_EMAIL_FROM: 'x@micronutrientdiary.com' }));
+        assert.deepEqual(config.origins, ['https://micronutrientdiary.com']);
+        const request = (origin: string) => new Request('https://micronutrientdiary.com/api/history', { method: 'POST', headers: { origin } });
+        assert.throws(() => assertSameOrigin(request('http://localhost:3000'), config), AccountError);
+    });
+
     it('a deployed site needs https, a real secret and a sender', () => {
         const prod = { NODE_ENV: 'production', AUTH_BASE_URL: 'https://micronutrientdiary.com', AUTH_SECRET: SECRET, AUTH_EMAIL_FROM: 'no-reply@micronutrientdiary.com' };
         const config = loadAuthConfig(env(prod));
@@ -83,7 +101,7 @@ describe('clientIp', () => {
 });
 
 describe('assertSameOrigin', () => {
-    const config = { origin: 'https://site.example' };
+    const config = { origins: ['https://site.example'] };
     const req = (headers: Record<string, string>) => new Request('https://lambda-url.example/', { method: 'POST', headers });
     const refused = (e: unknown) => e instanceof AccountError && e.status === 403;
 

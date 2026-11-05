@@ -5,6 +5,8 @@
 
 All prices are USD, us-east-1, and were taken from official pricing pages on **2026-11-03** (sources in [§10](#10-sources-accessed-2026-11-03)). Values marked **(unverified)** could not be confirmed on an official page and should be checked before you rely on them. Values marked **(est.)** are my own estimates.
 
+> **Update, 2026-11-05: accounts don't use Cognito.** They were built with Better Auth email links (see [ACCOUNTS.md](../ACCOUNTS.md)), because Cognito can't be tested on a laptop. Read the Cognito rows below as $0, which removes the largest cost at scale (about $165–450/mo at 100k users), but add SES for each sign-in email ($0.10 per 1,000). We now own security patches and abuse handling. The cost tables have not been recalculated. [ACCOUNTS.md](../ACCOUNTS.md) lists the deployment steps, including one that matters: forward `CloudFront-Viewer-Address`, or everyone shares one sign-in rate limit.
+
 ---
 
 ## 1. One-page recommendation

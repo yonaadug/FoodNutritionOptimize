@@ -9,9 +9,17 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **USDA data updates with admin approval and change tracking.** Design is pending one choice: approve on a
       page of the website (needs an admin login), or email + GitHub pull request (free, history built in).
       Foods are matched across USDA releases by NDB number, because USDA gives updated foods new FDC IDs.
-- [ ] **Stripe subscriptions.** The plan is done ([docs/STRIPE_PLAN.md](docs/STRIPE_PLAN.md)). Before building, decide:
-      what Plus unlocks first, the trial style, and the sign-in method. Local dev currently uses LIVE keys
+- [ ] **Stripe subscriptions.** The plan is done ([docs/STRIPE_PLAN.md](docs/STRIPE_PLAN.md)) and sign-in now exists.
+      Before building, decide what Plus unlocks first and the trial style. Local dev currently uses LIVE keys
       (`STRIPE_MODE=live`); switch to `test` before trying Checkout.
+- [ ] **Real AI for recipes.** No live model call has succeeded. AWS refuses Claude on this account (403/404). Either
+      request Bedrock access or set `AI_PROVIDER=anthropic` with a key ([docs/RECIPES.md](docs/RECIPES.md)). Start with
+      `AI_MODEL=claude-haiku-5-5`: the code defaults to Opus, about 40x the cost, and Haiku's quality needs evaluating.
+- [ ] **Arsenic reference for the rice meter.** EPA 2025 (current default) reads brown rice at about 220% per cup, and
+      ATSDR 2007 at about 44%. It's one edit to `is_default` in `data/contaminants/reference_values.tsv`, plus a rebuild.
+- [ ] **Old `feat/*` branches and worktrees** (`feat/food-search`, `feat/recipe-analyzer`, `feat/accounts`,
+      `feat/contaminants`, under `.claude/worktrees/feat-*`). Another session's parallel attempt at the same features,
+      with uncommitted work. Not merged and not used. Keep anything from them, or delete them.
 
 ## P0: owner actions
 
@@ -62,6 +70,30 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Save multiple plans/days; print, share and export (CSV).** Roadmap "Now" phase.
 - [ ] **Carbohydrate default minimum** is the 275 g DV. Consider the 130 g RDA in the Everyday essentials preset.
 - [ ] **Dedupe near-identical Foundation rows** (e.g. "Peanut butter, creamy" vs "Peanut butter, Creamy").
+
+## P1: new features (food search, contaminants, recipes, accounts)
+
+- [ ] **Before accounts go public (legal):** recorded consent, an age statement, privacy policy and terms don't exist
+      yet and need legal review. Pregnancy, weight and diet data count as health data (FTC rule, Washington MHMDA).
+- [ ] **Before `/recipes` goes public on a paid AI provider:** per-user quotas and a global spend cap (§3.7 of the AWS
+      design) plus an AWS Budget. Today's rate limits are in-memory, per server instance.
+- [ ] **Contaminants, license:** Milne 2024 microplastics data is CC BY-NC-ND and paid features are planned. Get a
+      review or remove those rows.
+- [ ] **Contaminants, data gaps:**
+  - Microplastics are coarse (canned tuna uses an Alaska pollock figure shared across about 200 seafood items).
+  - Dark chocolate reads High from one cocoa powder sample.
+  - Many TDS foods have only 3 samples; fresh strawberry and spinach pesticide data is from 2016.
+  - FDA FY2021-22 results are dashboard-only, and TDS pesticide data isn't published yet. Re-check periodically.
+- [ ] **Contaminants, methodology** links to GitHub; make it a page on the site.
+- [ ] **History gaps:** food rows have no nutrition values, plans aren't recorded, and recipe rows link to `/recipes`
+      rather than that specific recipe.
+- [ ] **Recipes, not built:** import by URL, cooking-loss adjustment, the Claude Platform on AWS provider, refusal
+      fallback on Bedrock. HEIC photos are rejected outside Safari.
+- [ ] **Desktop app** shows "Sign in", which leads to "isn't available" in a packaged build. Needs a build flag.
+- [ ] **Food pages** have no CDN cache headers, so every view hits Lambda. Add CloudFront caching before launch.
+- [ ] **Not tested on real services:** DynamoDB (emulator only), SES email, Google sign-in, CloudFront.
+- [ ] Rebuild the contaminant extract once with `--download`. The PDP extract step last ran before a small refactor of
+      its `main()`.
 
 ## P1: launch (see [docs/aws/AWS_HOSTING_DESIGN.md](docs/aws/AWS_HOSTING_DESIGN.md))
 

@@ -275,6 +275,13 @@ export function parseServings(text: string): number | null {
     return v > 0 && v <= 200 ? Math.round(v * 2) / 2 : null;
 }
 
+/** The words on a line before its servings phrase, without joining punctuation. */
+function textBeforeServings(line: string): string {
+    const match = line.match(SERVINGS_RE) ?? line.match(SERVINGS_AFTER_RE);
+    if (!match || match.index === undefined) return '';
+    return line.slice(0, match.index).replace(/^#+\s*/, '').replace(/[\s([{:,;\-–—|]+$/, '').trim();
+}
+
 /**
  * Pasted recipe text -> title, servings and ingredient lines. With an
  * "Ingredients" header only that section is read; without one every line that
@@ -295,6 +302,12 @@ export function parseRecipeText(text: string): ParsedRecipe {
             const sv = parseServings(line);
             if (sv !== null && line.length < 60 && !parseQuantity(line)) {
                 servings = sv;
+                // "Banana pancakes (serves 2)": what comes before the servings is the title.
+                const lead = textBeforeServings(line);
+                if (lead && !title && !seenContent) {
+                    title = lead;
+                    seenContent = true;
+                }
                 continue;
             }
         }

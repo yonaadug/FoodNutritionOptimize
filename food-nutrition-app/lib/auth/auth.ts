@@ -37,7 +37,7 @@ export function createAuth(options: { table: SingleTable; config: AuthConfig; ma
         baseURL: config.baseUrl,
         basePath: '/api/auth',
         secret: config.secret,
-        trustedOrigins: [config.origin],
+        trustedOrigins: config.origins,
         database: singleTableAdapter(table),
         // Sessions, magic-link tokens and auth rate limits are short-lived key-value
         // data with a TTL, so they don't need the adapter's relational shape.

@@ -38,7 +38,7 @@ npm ci --ignore-scripts
 PORT=3604 npm run dev     # no other settings needed
 ```
 
-1. Open <http://localhost:3604> (use `localhost`, not `127.0.0.1`: the same-origin check compares exactly) and press **Sign in**.
+1. Open <http://localhost:3604> and press **Sign in**. On a laptop, `localhost` and `127.0.0.1` are both accepted; the sign-in link always uses `localhost`, so that's where you end up signed in. A deployed site accepts only its own address.
 2. Enter any email address. Nothing is sent. The link appears in the terminal:
    ```
    [auth] Sign-in link (printed instead of emailed; AUTH_EMAIL_TRANSPORT=console):
@@ -51,8 +51,7 @@ Data goes in `food-nutrition-app/.data/app.db` (gitignored, excluded from Docker
 To test a production build:
 
 ```bash
-npm run build
-PORT=3604 AUTH_BASE_URL=http://localhost:3604 AUTH_EMAIL_TRANSPORT=console npm run start:standalone
+PORT=3604 npm run preview   # builds, then serves; sign-in links print in this terminal
 ```
 
 `npm test` runs the account tests on both backends. DynamoDB tests use [dynalite](https://github.com/architect/dynalite), an in-process emulator, through the real AWS SDK, so there's nothing to install.

@@ -9,6 +9,8 @@ export type EmailTransport = 'console' | 'ses';
 export interface AuthConfig {
     baseUrl: string;
     origin: string;
+    /** Origins allowed to make account requests: this site, or this machine under any of its names on a laptop. */
+    origins: string[];
     isHttps: boolean;
     /** The site runs on this machine, so dev conveniences are safe. */
     isLocal: boolean;
@@ -70,6 +72,9 @@ export function loadAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig
     return {
         baseUrl: url.origin,
         origin: url.origin,
+        origins: isLocal
+            ? ['localhost', '127.0.0.1', '[::1]'].map(host => `${url.protocol}//${host}${url.port ? `:${url.port}` : ''}`)
+            : [url.origin],
         isHttps,
         isLocal,
         secret,

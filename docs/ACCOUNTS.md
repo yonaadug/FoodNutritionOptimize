@@ -72,7 +72,7 @@ recordHistory({
 });
 ```
 
-`recordHistory` is safe to call anywhere: it never throws, and **when signed out it does nothing**, with no request and nothing stored. What someone viewed before signing in is not added to their account afterwards. Recording the same item again moves it to the top. Writes are best-effort and not retried.
+`recordHistory` is safe to call anywhere: it never throws, and **when signed out it does nothing**, with no request and nothing stored. What someone viewed before signing in is not added to their account afterwards, unless they press **Save to my account** on a recipe or plan ([Data in this browser](#data-in-this-browser)). Recording the same item again moves it to the top. Writes are best-effort and not retried.
 
 `data` is free-form JSON up to 8 KB. The history row shows these keys (`lib/auth/history-summary.ts`):
 
@@ -83,9 +83,13 @@ recordHistory({
 
 What's recorded today:
 
-- **Foods:** `components/food/onFoodViewed.ts`, once each time a food page opens. These rows have a title and link, but no nutrition yet, because `onFoodViewed` isn't given any.
-- **Recipes:** `components/recipes/RecipesPage.tsx`, through `lib/recipes/history.ts`. The analyzer calls this after the first read and again after edits with the same id, so one recipe stays one row. Only a summary is stored (per-serving calories, protein, carbs and fat, plus servings), not the ingredients. Rows link to `/recipes`, which opens the analyzer rather than that recipe, because saved analyses are only kept in that browser's `localStorage`.
-- **Plans:** nothing yet. The tab, API and display are ready, but the planner doesn't call `recordHistory`.
+- **Foods:** `components/food/onFoodViewed.ts`, once each time a food page opens, with calories per typical serving and what the food is rich in.
+- **Recipes:** `components/recipes/RecipesPage.tsx`, through `lib/recipes/history.ts`. The analyzer calls this after the first read and again after edits with the same id, so one recipe stays one row. It stores a per-serving summary plus the ingredients, and the row links to `/recipes?id=<id>`, which reopens that recipe on any device. Foods are stored by id, so their nutrition is read fresh.
+- **Plans:** `hooks/usePlan.ts`, through `lib/plan-history.ts`, whenever a signed-in person's plan finishes, including one that can't meet every goal. The same foods and goals give the same id, so making a plan again moves one row to the top. It stores a summary for the row (calories, protein, goals met, foods) plus the inputs: foods by id, fixed amounts, limits and goals, and recipes in full. The row links to `/plan?open=<id>`, which runs the planner again with today's data. An empty planner also offers the last saved plan, so a second browser has somewhere to start.
+
+Recipes and plans too big for the 8 KB cap keep their summary and can't be reopened from another device. A partial recipe or plan would give the wrong numbers, so it never keeps part of one.
+
+**After signing in,** people return to the page they started from. `lib/auth/next-path.ts` allows only same-site relative paths, and the check runs in the browser, on the sign-in page and again on the page the link lands on (`/account/sign-in/done`), which also tells the browser who signed in.
 
 The account control is `components/account/AccountMenu.tsx`, mounted in `components/shell/SiteHeader.tsx`.
 
@@ -98,6 +102,7 @@ All responses are `private, no-store`. Errors are `{ error, code, details? }`, t
 | `GET /api/me` | `{ user }`, or `{ user: null }` when signed out | 600/min per IP |
 | `PATCH /api/me` | Update `{ displayName?, preferences? }` | writes |
 | `GET /api/history?kind=&limit=&cursor=` | `{ items, nextCursor }`, newest first | 240/min per user |
+| `GET /api/history?kind=&itemId=` | `{ item }`, or 404. Reopens a saved recipe or plan | 240/min per user |
 | `POST /api/history` | Upsert `{ kind, itemId, title, href, data? }` | writes |
 | `DELETE /api/history?kind=&itemId=` | Remove one item | writes |
 | `DELETE /api/history?all=1[&kind=]` | Clear everything, or one kind | writes |
@@ -106,6 +111,23 @@ All responses are `private, no-store`. Errors are `{ error, code, details? }`, t
 | `/api/auth/*` | Better Auth, limited to the endpoints the site uses | 10 links per 5 min per IP; 5 emails per hour per address |
 
 "Writes" means 120/min per user and 300/min per IP. Limits: 200-character titles, 8 KB of `data`, 16 KB bodies, and 500 items per kind, after which the oldest are removed.
+
+### Data in this browser
+
+The planner's foods, goals and last plan, recent recipes and recent searches live in `localStorage`, so the site works without an account. On a shared computer that needs a clear rule, in `lib/local-data.ts`:
+
+| What happens | What happens to this browser's data |
+|---|---|
+| **Someone uses the site without an account** | It stays, and nothing is sent anywhere. Nothing here ever clears it |
+| **They sign in** | It stays in this browser and is **not uploaded**. Their account's history is unchanged |
+| **They press Save to my account** on a recipe or plan made before signing in | That one item is added to their history. It's the only way anonymous work reaches an account |
+| **They use the site signed in** | New recipes and plans are recorded to their history, and marked in this browser as theirs |
+| **They sign out, delete the account, or the session turns out to have ended** | All of it is cleared, including anything left from before signing in. The theme stays, because it belongs to the device |
+| **Someone else signs in without signing out first** | All of it is cleared before they see it |
+
+Why signing out clears anonymous work too: once someone has signed in, the planner holds a mix of the two and can't be split, and the next person at a shared computer shouldn't inherit either. Anything saved to the account is still there after signing in again. The account page says so next to **Sign out**.
+
+How it works: `md.localOwner` records whose data this is, and `lib/auth/client.ts` calls `reconcileLocalData` after every definite answer about who is signed in. A failed request isn't an answer, so being offline never clears anything. Recent recipes carry an `ownerId`, and one without it is "unclaimed": opening or editing it after signing in doesn't add it to history. Stores holding a copy in memory listen for `mnd:local-data-cleared`, or the `storage` event in other tabs. Any new `localStorage` key that holds personal data must be added to `PERSONAL_KEYS`.
 
 ### Storage
 
@@ -174,7 +196,8 @@ Nothing here has been created. These are the steps, in order.
 | Flooding someone's inbox | 5 emails per hour per address, across all IPs. Over the limit, nothing is sent and the response doesn't change |
 | Stolen session cookie by script | `httpOnly`, so scripts can't read it. `Secure` with the `__Secure-` prefix on https, `SameSite=Lax` |
 | CSRF | `SameSite=Lax`, plus an exact `Origin` check on every change, and JSON-only bodies. Sign-in routes use Better Auth's own origin check |
-| Open redirect after sign-in | Better Auth checks callback URLs against the site's origin |
+| Open redirect after sign-in | `next` must be a same-site relative path (`lib/auth/next-path.ts`), checked in the browser, on the sign-in page and on the landing page. Better Auth also checks callback URLs against the site's origin |
+| Data left on a shared computer | Sign-out, deletion and a changed user clear this browser's data. See [Data in this browser](#data-in-this-browser) |
 | Malicious links in history | `href` must be a path on this site, checked on write and again on render |
 | Reading another person's data | Every query is keyed by the session's user id, never by input. Pagination cursors are tied to their partition |
 | Filling the database | Size limits, per-kind cap, rate limits |

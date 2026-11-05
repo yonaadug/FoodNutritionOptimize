@@ -47,7 +47,7 @@ export default function SiteFooter() {
                 <a href={info?.downloadPage ?? 'https://fdc.nal.usda.gov/'} target="_blank" rel="noreferrer">USDA FoodData Central</a>
                 {info?.release ? `, ${info.release}` : ''} (public domain).
             </p>
-            <p>Plans are estimates for general information, not medical advice.</p>
+            <p>Nutrition values and plans are estimates for general information, not medical advice.</p>
         </footer>
     );
 }

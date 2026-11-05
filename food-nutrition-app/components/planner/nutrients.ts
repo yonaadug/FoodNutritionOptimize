@@ -120,7 +120,8 @@ export function fmtNumber(v: number | null | undefined, opts: { decimals?: numbe
     if (v === null || v === undefined || !Number.isFinite(v)) return '—';
     const abs = Math.abs(v);
     const decimals = opts.decimals ?? (abs >= 100 ? 0 : abs >= 10 ? 0 : abs >= 1 ? 1 : abs === 0 ? 0 : 2);
-    return v.toLocaleString(undefined, { maximumFractionDigits: decimals, minimumFractionDigits: 0 });
+    // Fixed locale: labels are also server-rendered, and the server's locale may differ from the browser's.
+    return v.toLocaleString('en-US', { maximumFractionDigits: decimals, minimumFractionDigits: 0 });
 }
 
 /** "12 g", "1.3 mg", or "—" when unknown. */

@@ -9,7 +9,13 @@ interface NutritionLabelProps {
     grams?: number;
     /** Text shown as the serving size, e.g. "1 cup, chopped (91 g)". */
     servingLabel?: string;
+    /** Heading level of "Nutrition Facts", to fit the page's outline. */
+    titleAs?: 'h2' | 'h3' | 'h4';
+    /** 'fda' lists only the four micronutrients the FDA requires (the rest are in a table beside it). */
+    micros?: 'all' | 'fda';
 }
+
+const FDA_MICROS = ['vitamin_d_ug', 'calcium_mg', 'iron_mg', 'potassium_mg'];
 
 const MAIN: { key: string; label?: string; bold?: boolean; indent?: boolean; dv?: boolean }[] = [
     { key: 'total_fat_g', label: 'Total Fat', bold: true, dv: true },
@@ -38,7 +44,7 @@ function unitOf(key: string) {
 /**
  * FDA-style Nutrition Facts label. Missing values show "—" (no data), never 0.
  */
-export default function NutritionLabel({ food, grams = 100, servingLabel }: NutritionLabelProps) {
+export default function NutritionLabel({ food, grams = 100, servingLabel, titleAs: Title = 'h4', micros = 'all' }: NutritionLabelProps) {
     const val = (key: string) => amountFor(food, key, grams);
     const dvPct = (key: string, v: number | null) => {
         const dv = dailyValue(key);
@@ -53,7 +59,7 @@ export default function NutritionLabel({ food, grams = 100, servingLabel }: Nutr
             fontFamily: 'Helvetica, Arial, sans-serif', border: '2px solid var(--text-primary)', fontSize: 13,
         }}>
             <div style={{ borderBottom: '8px solid var(--text-primary)', paddingBottom: 4, marginBottom: 6 }}>
-                <h4 style={{ fontSize: 26, fontWeight: 900, margin: 0, letterSpacing: '-0.01em' }}>Nutrition Facts</h4>
+                <Title style={{ fontSize: 26, fontWeight: 900, margin: 0, letterSpacing: '-0.01em' }}>Nutrition Facts</Title>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontWeight: 700, fontSize: 14, marginTop: 4 }}>
                     <span>Serving size</span>
                     <span style={{ textAlign: 'right' }}>{servingLabel ?? `${fmtNumber(grams)} g`}</span>
@@ -94,7 +100,7 @@ export default function NutritionLabel({ food, grams = 100, servingLabel }: Nutr
             <div style={{ borderTop: '8px solid var(--text-primary)', margin: '6px 0' }} />
 
             <div style={{ fontSize: 12 }}>
-                {MICROS.map(key => {
+                {(micros === 'fda' ? FDA_MICROS : MICROS).map(key => {
                     const raw = (food as unknown as Record<string, unknown>)[key];
                     if (raw === undefined) return null; // column not in this DB
                     const v = val(key);

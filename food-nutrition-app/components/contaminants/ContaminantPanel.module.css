@@ -1,0 +1,84 @@
+/* Colours come from the design tokens in globals.css, which already switch for dark mode.
+   Meter levels are always also written out as text, so nothing relies on colour alone. */
+.panel { margin-top: var(--space-4); min-width: 0; }
+.title { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+.intro { margin-top: var(--space-1); color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+
+.group { margin-top: var(--space-5); }
+.groupHead { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.groupTitle { font-size: 13px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+
+.basedOn { list-style: none; margin: var(--space-1) 0 0; padding: 0; font-size: 12px; color: var(--text-muted); line-height: 1.45; }
+.limitedNote {
+  margin-top: var(--space-2); padding: var(--space-2) var(--space-3);
+  border-left: 3px dashed var(--border-strong); background: var(--bg-secondary);
+  border-radius: var(--radius-sm); font-size: 13px; line-height: 1.5; color: var(--text-secondary);
+}
+
+.items { list-style: none; margin: var(--space-2) 0 0; padding: 0; }
+.item { padding: var(--space-3) 0; border-top: 1px solid var(--border); }
+.itemHead { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
+.itemName { font-size: 15px; font-weight: 600; }
+
+.badge {
+  display: inline-block; padding: 2px 9px; border-radius: var(--radius-pill);
+  font-size: 12px; font-weight: 700; line-height: 1.5; border: 1px solid transparent; white-space: nowrap;
+}
+.badgeNeutral { background: var(--bg-secondary); color: var(--text-secondary); border-color: var(--border); }
+.badgeLimited { background: transparent; color: var(--text-secondary); border: 1px dashed var(--border-strong); }
+
+/* The same classes colour both the meter segments and the badge. */
+.level_low { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+.level_moderate { background: color-mix(in srgb, var(--warning) 12%, var(--bg-card)); color: var(--warning); border-color: color-mix(in srgb, var(--warning) 45%, transparent); }
+.level_elevated { background: var(--warning-bg); color: var(--warning); border-color: var(--warning); }
+.level_high { background: var(--danger-bg); color: var(--danger); border-color: var(--danger); }
+
+.meterRow { margin-top: var(--space-2); }
+.meter { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; height: 10px; margin-bottom: 4px; }
+.segment { display: block; border-radius: 2px; border: 1px solid; }
+.segment.level_low { background: color-mix(in srgb, var(--success) 45%, var(--bg-card)); }
+.segment.level_moderate { background: color-mix(in srgb, var(--warning) 28%, var(--bg-card)); }
+.segment.level_elevated { background: color-mix(in srgb, var(--warning) 60%, var(--bg-card)); }
+.segment.level_high { background: color-mix(in srgb, var(--danger) 60%, var(--bg-card)); }
+/* Stripes mark a relative comparison, so it doesn't read like the health-based meters above it. */
+.meterRelative .segment {
+  background-image: repeating-linear-gradient(135deg, transparent 0 3px, color-mix(in srgb, var(--bg-card) 60%, transparent) 3px 6px);
+}
+.marker {
+  position: absolute; top: -3px; bottom: -3px; width: 4px; margin-left: -2px; border-radius: 2px;
+  background: var(--text-primary); box-shadow: 0 0 0 2px var(--bg-card);
+}
+
+.explanation { margin-top: var(--space-1); font-size: 14px; line-height: 1.5; color: var(--text-primary); overflow-wrap: anywhere; }
+.servings { margin-top: 2px; font-size: 13px; line-height: 1.45; color: var(--text-secondary); }
+
+.details { margin-top: var(--space-2); font-size: 13px; }
+.details > summary { cursor: pointer; color: var(--primary); font-weight: 600; padding: 4px 0; min-height: 24px; }
+.details > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
+.detailsBody { margin-top: var(--space-2); line-height: 1.5; color: var(--text-secondary); }
+.detailsBody a { color: var(--primary); text-decoration: underline; }
+.detailsBody p + p { margin-top: var(--space-1); }
+
+.facts { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px var(--space-3); margin: 0; }
+.facts dt { color: var(--text-secondary); }
+.facts dd { margin: 0; text-align: right; font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+.block { margin-top: var(--space-3); }
+.blockTitle { font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; }
+.muted { color: var(--text-muted); }
+.list { margin: 2px 0 0; padding-left: 18px; }
+.list li { margin-top: 2px; overflow-wrap: anywhere; }
+
+.tableWrap { margin-top: var(--space-2); overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.table th, .table td { padding: 4px 6px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top; }
+.table th:first-child { text-align: left; font-weight: 500; color: var(--text-primary); overflow-wrap: anywhere; }
+.table thead th { font-weight: 700; color: var(--text-muted); }
+.table td { font-variant-numeric: tabular-nums; }
+
+.disclaimer { margin-top: var(--space-3); font-size: 12px; line-height: 1.5; color: var(--text-muted); }
+
+.srOnly {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+  clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}

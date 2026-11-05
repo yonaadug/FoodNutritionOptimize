@@ -17,8 +17,9 @@ interface SearchData {
 
 const EMPTY: SearchData = { key: '', foods: [], page: 0, totalPages: 0, total: 0 };
 
-export async function fetchSearch(q: string, page = 1, limit = PAGE_SIZE, signal?: AbortSignal) {
-    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`, { signal });
+export async function fetchSearch(q: string, page = 1, limit = PAGE_SIZE, signal?: AbortSignal, opts: { includeSuperseded?: boolean } = {}) {
+    const extra = opts.includeSuperseded ? '&includeSuperseded=1' : '';
+    const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}${extra}`, { signal });
     if (!res.ok) throw new Error(`Search failed (${res.status})`);
     const data = await res.json();
     return {

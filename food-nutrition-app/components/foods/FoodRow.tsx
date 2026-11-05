@@ -10,10 +10,12 @@ interface FoodRowProps {
     onToggle: (food: Food) => void;
     /** Optional highlighted value, e.g. "38 g protein". */
     highlight?: string;
+    /** Small text under the highlight, e.g. "per 1 cup". */
+    highlightSub?: string;
 }
 
 /** One compact, scannable search/browse result. Designed for long USDA names and thousands of results. */
-export default function FoodRow({ food, added, onToggle, highlight }: FoodRowProps) {
+export default function FoodRow({ food, added, onToggle, highlight, highlightSub }: FoodRowProps) {
     const { name, detail } = splitFoodName(food.description);
     const ok = hasCoreData(food);
     const kcal = nv(food, 'calories');
@@ -41,7 +43,12 @@ export default function FoodRow({ food, added, onToggle, highlight }: FoodRowPro
                     {source && <span className="tiny muted">{source}</span>}
                 </div>
             </div>
-            {highlight && <span className="highlight-badge">{highlight}</span>}
+            {highlight && (
+                <span className="highlight">
+                    <span className="highlight-badge">{highlight}</span>
+                    {highlightSub && <span className="highlight-sub">{highlightSub}</span>}
+                </span>
+            )}
             <button
                 type="button"
                 className="btn-add"

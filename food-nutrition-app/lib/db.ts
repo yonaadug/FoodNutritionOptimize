@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Food, ServingSize } from './food-types';
 import { ALL_NUTRIENT_CONFIG } from './nutrient-defaults';
+import { pickSources, scoreSources, type RankedSource, type RankOptions } from './best-sources';
 
 export type { Food, ServingSize } from './food-types';
 
@@ -402,6 +403,52 @@ export function getTopFoodsByNutrientIn(conn: Connection, nutrient: string, limi
         .all(safeLimit) as Food[];
     attachServingSizes(foods, conn);
     return foods;
+}
+
+/** Every food with serving sizes, loaded once per connection (the DB is read-only). */
+const allFoodsCache = new WeakMap<Connection, Food[]>();
+const scoredCache = new WeakMap<Connection, Map<string, RankedSource[]>>();
+
+function allFoodsIn(conn: Connection): Food[] {
+    let foods = allFoodsCache.get(conn);
+    if (!foods) {
+        foods = conn.db.prepare('SELECT * FROM foods').all() as Food[];
+        attachServingSizes(foods, conn);
+        allFoodsCache.set(conn, foods);
+    }
+    return foods;
+}
+
+export interface BestSource extends Food {
+    best: { servingLabel: string; servingGrams: number; perServing: number; per100g: number; everyday: boolean };
+}
+
+/**
+ * Good sources of a nutrient for people: ranked by a realistic serving,
+ * everyday foods with decent data first; supplements, powders, organ meats
+ * and other specialty items only when nothing else qualifies (unless
+ * `everyday: false`). See lib/best-sources.ts.
+ */
+export function getBestSourcesIn(conn: Connection, nutrient: string, opts: RankOptions = {}): BestSource[] {
+    if (!sortableNutrients(conn).includes(nutrient) || !/^[a-z0-9_]+$/.test(nutrient)) {
+        throw new RangeError(`Unknown nutrient: ${nutrient}`);
+    }
+    let byNutrient = scoredCache.get(conn);
+    if (!byNutrient) scoredCache.set(conn, byNutrient = new Map());
+    let scored = byNutrient.get(nutrient);
+    if (!scored) byNutrient.set(nutrient, scored = scoreSources(allFoodsIn(conn), nutrient));
+    const limit = Math.min(Math.max(1, Math.floor(opts.limit ?? 20) || 20), SEARCH_MAX_LIMIT);
+    return pickSources(scored, { ...opts, limit }).map(r => ({
+        ...r.food,
+        best: {
+            servingLabel: r.servingLabel, servingGrams: r.servingGrams,
+            perServing: r.perServing, per100g: r.per100g, everyday: r.tier === 0,
+        },
+    }));
+}
+
+export async function getBestSources(nutrient: string, opts: RankOptions = {}): Promise<BestSource[]> {
+    return getBestSourcesIn(connection(), nutrient, opts);
 }
 
 /**

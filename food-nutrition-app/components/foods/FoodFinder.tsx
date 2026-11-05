@@ -6,7 +6,7 @@ import Icon from '@/components/ui/Icon';
 import FoodRow, { FoodRowSkeleton } from './FoodRow';
 import { useFoodSearch } from '@/hooks/useFoodSearch';
 import { useTopFoods } from '@/hooks/useTopFoods';
-import { GOAL_KEYS, fmtNumber, hasCoreData, nutrientLabel, nutrientUnit, nv, NUTRIENT_GROUPS } from '@/components/planner/nutrients';
+import { GOAL_KEYS, fmtNumber, nutrientLabel, nutrientUnit, nv, NUTRIENT_GROUPS } from '@/components/planner/nutrients';
 
 const QUICK_SEARCHES = ['oats', 'egg', 'salmon', 'spinach', 'yogurt', 'lentils', 'banana', 'almonds', 'chicken', 'rice', 'tofu', 'broccoli'];
 
@@ -135,24 +135,39 @@ function SearchPanel({ isAdded, onToggle, inputRef }: { isAdded: (id: number) =>
 
 function BestSourcesPanel({ isAdded, onToggle }: { isAdded: (id: number) => boolean; onToggle: (f: Food) => void }) {
     const [nutrient, setNutrient] = useState('protein_g');
-    const top = useTopFoods(nutrient, 40);
+    const [everyday, setEveryday] = useState(true);
+    const top = useTopFoods(nutrient, 40, { everyday });
     const selectId = useId();
+    const everydayId = useId();
     const unit = nutrientUnit(nutrient);
-    const foods = top.foods.filter(hasCoreData);
+    const foods = top.foods;
 
     return (
         <div className="stack">
-            <div className="field" style={{ maxWidth: 320 }}>
-                <label className="field-label" htmlFor={selectId}>Show foods richest in</label>
-                <select id={selectId} className="select" value={nutrient} onChange={e => setNutrient(e.target.value)}>
-                    {NUTRIENT_GROUPS.map(g => (
-                        <optgroup key={g.id} label={g.title}>
-                            {g.keys.filter(k => GOAL_KEYS.includes(k)).map(k => <option key={k} value={k}>{nutrientLabel(k)}</option>)}
-                        </optgroup>
-                    ))}
-                </select>
+            <div className="row-wrap" style={{ alignItems: 'flex-end', gap: 16 }}>
+                <div className="field" style={{ flex: '1 1 220px', maxWidth: 320 }}>
+                    <label className="field-label" htmlFor={selectId}>Show foods richest in</label>
+                    <select id={selectId} className="select" value={nutrient} onChange={e => setNutrient(e.target.value)}>
+                        {NUTRIENT_GROUPS.map(g => (
+                            <optgroup key={g.id} label={g.title}>
+                                {g.keys.filter(k => GOAL_KEYS.includes(k)).map(k => <option key={k} value={k}>{nutrientLabel(k)}</option>)}
+                            </optgroup>
+                        ))}
+                    </select>
+                </div>
+                <label className="toggle-line" htmlFor={everydayId}>
+                    <span className="switch">
+                        <input id={everydayId} type="checkbox" checked={everyday} onChange={e => setEveryday(e.target.checked)} />
+                        <span className="switch-track" />
+                    </span>
+                    Everyday foods only
+                </label>
             </div>
-            <p className="small muted">Amounts are per 100 g. Dried or concentrated foods (powders, spices) rank high per 100 g but are eaten in small amounts.</p>
+            <p className="small muted">
+                {everyday
+                    ? 'Ranked by a typical serving, with familiar, well-measured foods first. Supplements, powders, organ meats and other specialty items are left out.'
+                    : 'Every food, ranked by a typical serving, including supplements, powders, organ meats and other specialty items.'}
+            </p>
 
             {top.loading && <FoodRowSkeleton count={5} />}
             {top.error && (
@@ -170,7 +185,8 @@ function BestSourcesPanel({ isAdded, onToggle }: { isAdded: (id: number) => bool
                             <ul className="result-list" aria-label={`Foods richest in ${nutrientLabel(nutrient)}`}>
                                 {foods.map(f => (
                                     <FoodRow key={f.id} food={f} added={isAdded(f.id)} onToggle={onToggle}
-                                        highlight={`${fmtNumber(nv(f, nutrient))} ${unit}`} />
+                                        highlight={f.best ? `${fmtNumber(f.best.perServing)} ${unit}` : `${fmtNumber(nv(f, nutrient))} ${unit}`}
+                                        highlightSub={f.best ? `per ${f.best.servingLabel}` : 'per 100 g'} />
                                 ))}
                             </ul>
                         </div>

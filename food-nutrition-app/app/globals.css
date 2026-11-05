@@ -357,6 +357,10 @@ button:disabled { cursor: not-allowed; }
   background: var(--primary-soft); color: var(--primary); font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums;
 }
 
+.highlight { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; max-width: 40%; }
+.highlight-sub { font-size: 11px; color: var(--text-muted); text-align: right; line-height: 1.2; }
+.toggle-line { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 550; cursor: pointer; min-height: 40px; }
+
 .list-footer { display: flex; justify-content: center; padding-top: var(--space-3); }
 
 .empty-state { text-align: center; padding: var(--space-6) var(--space-4); color: var(--text-secondary); }

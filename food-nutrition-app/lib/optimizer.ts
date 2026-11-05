@@ -1,7 +1,8 @@
 import solver, { type SolveResult } from 'javascript-lp-solver';
-import type { Food, ServingSize } from '@/lib/food-types';
+import type { Food } from '@/lib/food-types';
 import { nutrientValue } from '@/lib/food-types';
 import { ALL_NUTRIENT_CONFIG, isFoodSafeUpperLimit } from '@/lib/nutrient-defaults';
+import { referenceServingGrams } from '@/lib/servings';
 
 /*
  * Linear-programming diet optimizer.
@@ -224,24 +225,6 @@ function displayGrams(g: number): number {
     if (g >= 10) return Math.round(g);
     if (g >= 1) return Math.round(g * 10) / 10;
     return Number(g.toPrecision(2));
-}
-
-/** Generic gram-based rows ("100 g", "1 g") that every food carries; not a real portion. */
-const GENERIC_GRAM_SERVING = /^\s*\d+(\.\d+)?\s*(g|gram|grams)\s*$/i;
-
-/**
- * Reference serving for the default cap: RACC if labelled, else the (lower)
- * median household serving, ignoring generic "100 g" rows.
- */
-function referenceServingGrams(servings: ServingSize[] | undefined): number | undefined {
-    const valid = (servings ?? []).filter(s =>
-        typeof s?.weight_g === 'number' && s.weight_g > 0 &&
-        !(typeof s.label === 'string' && GENERIC_GRAM_SERVING.test(s.label)));
-    if (valid.length === 0) return undefined;
-    const racc = valid.find(s => typeof s.label === 'string' && s.label.toUpperCase().includes('RACC'));
-    if (racc) return racc.weight_g;
-    const sorted = valid.map(s => s.weight_g).sort((a, b) => a - b);
-    return sorted[Math.floor((sorted.length - 1) / 2)];
 }
 
 // ---------------------------------------------------------------------------

@@ -1,0 +1,13 @@
+key	name	kind	n	mean_ppb	sem_ppb	min_ppb	max_ppb
+brown_basmati	Brown basmati rice (uncooked)	brown	13	122.7	11.3	66	200
+brown_jasmine	Brown jasmine rice (uncooked)	brown	2	132.5	18.5	114	151
+brown_instant	Brown instant rice (uncooked)	brown	2	72.0	7.1	65	79
+brown_parboiled	Brown parboiled rice (uncooked)	brown	1	191.3
+brown_regular	Brown rice, regular (uncooked)	brown	98	160.5	4.1	34	249
+white_basmati	White basmati rice (uncooked)	white	40	61.8	3.9	20	144
+white_jasmine	White jasmine rice (uncooked)	white	11	78.4	6.6	34	110
+white_instant	White instant rice (uncooked)	white	14	57.6	7.5	31	134
+white_parboiled	White parboiled rice (uncooked)	white	38	111.9	3.8	71	182
+white_long	White long-grain rice (uncooked)	white	148	103.3	2.2	23	196
+white_medium	White medium-grain rice (uncooked)	white	91	80.9	2.6	39	174
+white_short	White short-grain rice (uncooked)	white	23	78.9	3.5	52	102

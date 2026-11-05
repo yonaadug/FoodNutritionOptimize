@@ -1,0 +1,24 @@
+key	name	particles_per_g	low_per_g	high_per_g	statistic	samples_note	size_note	source_id	year	notes
+breaded_shrimp	Breaded shrimp	1.2			mean	3-12 samples per product, 111 across the study	45 µm and larger	milne2024	2024	Blank-corrected and checked by spectroscopy. Standard deviations often exceed the mean.
+shrimp	Shrimp, not breaded	0.1575	0.04	0.22	mean of 4 products	3-12 samples per product	45 µm and larger	milne2024	2024	Mean of four products in one study: white Gulf and Key West pink shrimp, fresh caught and minimally processed.
+pollock	Alaska pollock	0.055	0.05	0.06	mean of 2 products	3-12 samples per product	45 µm and larger	milne2024	2024	Mean of fresh-caught and minimally processed pollock in one study.
+fish_stick	Pollock fish sticks	0.26			mean	3-12 samples per product	45 µm and larger	milne2024	2024
+chicken_nugget	Chicken nuggets	0.31			mean	3-12 samples per product	45 µm and larger	milne2024	2024
+plant_nugget	Plant-based nuggets	0.32			mean	3-12 samples per product	45 µm and larger	milne2024	2024
+plant_ground	Plant-based ground beef	0.06			mean	3-12 samples per product	45 µm and larger	milne2024	2024
+steak	Top sirloin steak	0.12			mean	3-12 samples per product	45 µm and larger	milne2024	2024
+pork	Pork loin chop	0.02			mean	3-12 samples per product	45 µm and larger	milne2024	2024
+chicken	Chicken breast	0.01			mean	3-12 samples per product	45 µm and larger	milne2024	2024
+tofu	Tofu	0.03			mean	3-12 samples per product	45 µm and larger	milne2024	2024
+clam	Clams	1.25			meta-analysis mean	5 studies	varies by study	danopoulos2020	2020	Clams are usually eaten whole, gut included.
+mussel	Mussels	0.71			meta-analysis mean	9 studies	varies by study	danopoulos2020	2020	Mussels are usually eaten whole, gut included.
+oyster	Oysters	0.42			meta-analysis mean	5 studies	varies by study	danopoulos2020	2020	Oysters are usually eaten whole, gut included.
+scallop	Scallops	0.48			meta-analysis mean	3 studies	varies by study	danopoulos2020	2020
+mollusk	Mollusks, all studied species	0.78	0	10.5	meta-analysis mean	14 studies	varies by study	danopoulos2020	2020
+seafood	Seafood, all studied species	1.48	0	8.6	mean across studies	14 studies	varies by study	cox2019	2019	An average across species and methods. Many fish studies measured the gut, which people usually do not eat, so this probably overstates fillets. Danopoulos 2020 reports 0-2.9 particles/g in fish and 0.1-8.6 in crustaceans.
+salt	Salt	0.11	0.047	0.806	mean across studies	not stated in the paper text	varies by study	cox2019	2019	Kosuth 2018 reports a mean of 0.212 particles/g (46.7-806 per kg) in 12 sea salt brands, identified by staining and visual inspection.
+sugar	Sugar	0.44			mean across studies	1 study, 5 values	varies by study	cox2019	2019	Cox et al. say their sugar and honey values are likely overestimates.
+honey	Honey	0.10			mean across studies	not stated in the paper text	varies by study	cox2019	2019	Cox et al. say their sugar and honey values are likely overestimates.
+beer	Beer	0.00405	0	0.0143	mean	12 brands	11 µm filter	kosuth2018	2018	4.05 particles per liter, assuming 1 g/mL. Cox 2019 reports 32.27 per liter, so published values differ about 8-fold.
+bottled_water	Bottled water	0.09437			mean across studies	not stated in the paper text	varies by study	cox2019	2019	94.37 particles per liter, assuming 1 g/mL. Published values vary widely: Kosuth 2018 found 3.57/L in 3 brands. Qian 2024 reported about 240,000 particles/L, about 90% of them nanoplastics, and that figure is disputed in the same journal. It is not used here.
+tap_water	Tap water	0.00545	0	0.061	mean	159 samples, 14 countries	2.5 µm filter	kosuth2018	2018	5.45 particles per liter, assuming 1 g/mL. Identified by staining and visual inspection, not chemically confirmed.

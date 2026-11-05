@@ -1,0 +1,23 @@
+pesticide	rfd_mg_kg_day	source_id	notes
+Malathion	0.07	epa_dwsha_2018
+Chlorpyrifos	0.0003	epa_dwsha_2018
+Dieldrin	0.00005	epa_dwsha_2018
+DCPA	0.01	epa_dwsha_2018	EPA suspended DCPA in August 2024 and cancelled it in October 2024 over fetal thyroid risk. This older reference dose likely understates that risk, and the residue data predates the ban.
+Glyphosate	2	epa_dwsha_2018
+Atrazine	0.02	epa_dwsha_2018
+Carbaryl	0.01	epa_dwsha_2018
+Methomyl	0.025	epa_dwsha_2018
+Diazinon	0.0002	epa_dwsha_2018
+Trifluralin	0.02	epa_dwsha_2018
+Chlorothalonil	0.015	epa_dwsha_2018
+Oxamyl	0.001	epa_dwsha_2018
+Carbofuran	0.00006	epa_dwsha_2018
+Simazine	0.02	epa_dwsha_2018
+Metribuzin	0.01	epa_dwsha_2018
+Diuron	0.003	epa_dwsha_2018
+Endrin	0.0003	epa_dwsha_2018
+Heptachlor	0.0005	epa_dwsha_2018
+Chlordane	0.0005	epa_dwsha_2018
+Alachlor	0.01	epa_dwsha_2018
+Methoxychlor	0.005	epa_dwsha_2018
+DDT	0.0005	epa_iris_ddt	The oral reference dose is set for p,p'-DDT. It is applied here to DDE and DDD, which are DDT breakdown products.

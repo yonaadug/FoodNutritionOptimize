@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from 'react';
 import type { Food } from '@/lib/food-types';
-import { goalsToPayload } from '@/components/planner/goals';
+import { buildPayload, payloadKey } from '@/components/planner/payload';
 import type { FixedFood, PlannerState } from './usePlannerState';
 
 /** Shape of a successful /api/optimize response (fields we rely on; extras are ignored). */
@@ -32,32 +32,13 @@ export interface PlanResult {
     /** Optional structured diagnostics (requested from the API team; parsed from `message` when absent). */
     issues?: { nutrient: string; kind: 'short' | 'excess'; amount?: number }[];
     totalCost?: number | null;
+    /** Infeasible only: lifting the general portion cap would make the plan work. */
+    portionCapBinding?: boolean;
 }
+
+export { buildPayload, payloadKey };
 
 export type PlanStatus = 'idle' | 'loading' | 'success' | 'infeasible' | 'error';
-
-export function buildPayload(s: PlannerState) {
-    return {
-        foods: s.foods,
-        guaranteedFoods: s.fixedFoods,
-        customConstraints: goalsToPayload(s.goals),
-        minCalories: s.calories.min !== undefined ? String(s.calories.min) : undefined,
-        maxCalories: s.calories.max !== undefined ? String(s.calories.max) : undefined,
-        diversityMode: s.portionCap.enabled,
-        maxFoodAmount: s.portionCap.enabled ? String(s.portionCap.grams) : undefined,
-        foodConstraints: s.foodLimits,
-        applyUpperLimits: s.upperLimits || undefined,
-    };
-}
-
-/** A cheap fingerprint of the inputs, used to detect an out-of-date plan. */
-export function payloadKey(s: PlannerState): string {
-    return JSON.stringify({
-        f: s.foods.map(f => f.id),
-        x: s.fixedFoods.map(f => [f.food.id, f.grams]),
-        g: s.goals, c: s.calories, p: s.portionCap, l: s.foodLimits, u: s.upperLimits,
-    });
-}
 
 export function usePlan(state: PlannerState) {
     const [status, setStatus] = useState<PlanStatus>('idle');

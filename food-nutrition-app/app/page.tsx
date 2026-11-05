@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import type { Food } from '@/lib/food-types';
 import { ActionBar, SiteHeader, Stepper, Welcome, type StepId } from '@/components/shell/Shell';
 import SiteFooter from '@/components/shell/SiteFooter';
+import Toaster from '@/components/ui/Toaster';
 import FoodFinder from '@/components/foods/FoodFinder';
 import YourFoods from '@/components/foods/YourFoods';
 import ComparisonView from '@/components/ComparisonView';
@@ -99,6 +100,7 @@ export default function Home() {
                 )}
             </main>
             <SiteFooter />
+            <Toaster />
 
             <ActionBar step={step} foodsCount={foodsCount} goalsLabel={goalsLabel} goalsCount={goalsCount}
                 planning={plan.status === 'loading'} onMakePlan={makePlan} onNext={() => go('goals')} onBack={() => go('foods')} />

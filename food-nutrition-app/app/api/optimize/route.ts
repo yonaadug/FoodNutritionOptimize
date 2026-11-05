@@ -9,7 +9,8 @@ export const runtime = 'nodejs';
 /**
  * POST /api/optimize
  * Body: { foods, guaranteedFoods?, customConstraints?, maxCalories?, minCalories?,
- *         diversityMode?, maxFoodAmount?, foodConstraints?, applyUpperLimits? }
+ *         diversityMode?, maxFoodAmount?, foodConstraints?, applyUpperLimits?,
+ *         portionCap?: { servings?, grams? } }
  * 200: OptimizationResult (success true or false; `warnings` always present)
  * 400: { error, code } for malformed input; 413/415 for body problems.
  */

@@ -71,6 +71,13 @@ export function parseOptimizeRequest(body: unknown): OptimizationParams {
         }
     }
 
+    const portionCap = body.portionCap ?? undefined;
+    if (portionCap !== undefined) {
+        if (!isPlainObject(portionCap)) throw new RequestValidationError('portionCap must be an object');
+        scalar(portionCap.servings, 'portionCap.servings');
+        scalar(portionCap.grams, 'portionCap.grams');
+    }
+
     return {
         foods: foods.map((f, i) => checkFood(f, `foods[${i}]`)),
         guaranteedFoods: guaranteed.map((g, i) => {
@@ -84,5 +91,11 @@ export function parseOptimizeRequest(body: unknown): OptimizationParams {
         maxFoodAmount: scalar(body.maxFoodAmount, 'maxFoodAmount'),
         diversityMode: body.diversityMode === true,
         applyUpperLimits: body.applyUpperLimits === true,
+        ...(portionCap !== undefined ? {
+            portionCap: {
+                servings: portionCap.servings as string | number | null | undefined,
+                grams: portionCap.grams as string | number | null | undefined,
+            },
+        } : {}),
     };
 }

@@ -102,6 +102,7 @@ export default function PlanStep({ state, status, result, error, stale, fixedAtR
                     onRun={onRun}
                     onEditGoals={onEditGoals}
                     debug={<ShowTheMath result={result} />}
+                    portionCapBinding={result.portionCapBinding}
                 />
             )}
 

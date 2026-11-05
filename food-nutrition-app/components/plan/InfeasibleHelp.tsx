@@ -3,6 +3,8 @@
 import type { Food } from '@/lib/food-types';
 import Icon from '@/components/ui/Icon';
 import { plannerActions, type PlannerState } from '@/hooks/usePlannerState';
+import { notify } from '@/hooks/useToasts';
+import { biggerPortions, describePortionCap } from '@/components/planner/goals';
 import { useTopFoods } from '@/hooks/useTopFoods';
 import { fmtNumber, hasCoreData, nutrientLabel, nutrientUnit, nv } from '@/components/planner/nutrients';
 import type { PlanIssue } from './analysis';
@@ -15,16 +17,19 @@ interface InfeasibleHelpProps {
     onRun: () => void;
     onEditGoals: () => void;
     debug: React.ReactNode;
+    /** The plan would work if the general portion cap were lifted. */
+    portionCapBinding?: boolean;
 }
 
 /**
  * Plain-language help when no combination of foods meets every goal:
  * which goals are the problem, foods that would help, and one-click fixes.
  */
-export default function InfeasibleHelp({ state, parsed, headingId, headingRef, onRun, onEditGoals, debug }: InfeasibleHelpProps) {
+export default function InfeasibleHelp({ state, parsed, headingId, headingRef, onRun, onEditGoals, debug, portionCapBinding }: InfeasibleHelpProps) {
     const { issues, more } = parsed;
     const nutrientIssues = issues.filter(i => i.nutrient && (i.kind === 'short' || i.kind === 'excess'));
     const otherIssues = issues.filter(i => !nutrientIssues.includes(i));
+    const portionHelps = !!portionCapBinding;
     const selectedIds = new Set([...state.foods.map(f => f.id), ...state.fixedFoods.map(f => f.food.id)]);
 
     return (
@@ -66,9 +71,14 @@ export default function InfeasibleHelp({ state, parsed, headingId, headingRef, o
                         </button>
                     )}
                     {state.portionCap.enabled && (
-                        <button type="button" className="btn btn-secondary btn-sm"
-                            onClick={() => plannerActions.setPortionCap({ ...state.portionCap, enabled: false })}>
-                            Allow bigger portions
+                        <button type="button" className={`btn btn-sm ${portionHelps ? 'btn-primary-soft' : 'btn-secondary'}`}
+                            onClick={() => {
+                                const next = biggerPortions(state.portionCap);
+                                plannerActions.setPortionCap(next);
+                                notify(next.enabled ? `Portions can now go up to ${describePortionCap(next).replace(/^At most /, '')}.` : 'Portion limit turned off.',
+                                    { action: { label: 'Update plan', onClick: onRun } });
+                            }}>
+                            Allow bigger portions{portionHelps ? ' (this would work)' : ''}
                         </button>
                     )}
                     <button type="button" className="btn btn-ghost btn-sm" onClick={onEditGoals}>Review all goals</button>

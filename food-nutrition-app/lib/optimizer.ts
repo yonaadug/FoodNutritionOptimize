@@ -47,6 +47,16 @@ export interface OptimizationParams {
     foodConstraints?: Record<number | string, { min?: BoundInput; max?: BoundInput } | undefined>;
     /** Add Tolerable Upper Intake Levels that apply to total intake as caps. */
     applyUpperLimits?: boolean;
+    /**
+     * The general per-food portion cap. When present it is authoritative and
+     * replaces the legacy default (about 3 reference servings, `diversityMode`):
+     *   servings  at most this many typical servings of each food (100 g counts
+     *             as one serving for foods without a household serving)
+     *   grams     at most this many grams of each food
+     * Whichever is lower applies; `{}` means no general cap. Per-food limits in
+     * `foodConstraints` override it either way.
+     */
+    portionCap?: { servings?: BoundInput; grams?: BoundInput } | null;
 }
 
 export interface ConstraintLimit {
@@ -92,6 +102,11 @@ export interface OptimizationResult {
     /** Set (with success=false) for malformed input; the API maps it to HTTP 400. */
     error?: string;
     warnings?: OptimizationWarning[];
+    /**
+     * Infeasible results only: true when the plan would work if the general
+     * portion cap were lifted (the user's own per-food limits still applied).
+     */
+    portionCapBinding?: boolean;
 }
 
 interface LpModel {
@@ -112,6 +127,8 @@ export class OptimizationInputError extends Error {}
 
 const DEFAULT_SERVINGS = 3;
 const DEFAULT_CAP_GRAMS = 300;
+/** Grams treated as "one serving" for foods without a household serving. */
+const FALLBACK_SERVING_GRAMS = 100;
 const MAX_NUTRIENT_PER_100G = 1e6;
 const MAX_GRAMS = 100_000;
 const CALORIE_ROW = 'constraint_calories';
@@ -243,7 +260,7 @@ export function optimizeDiet(params: OptimizationParams): OptimizationResult {
 function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
     const {
         customConstraints, maxCalories, minCalories, diversityMode, maxFoodAmount,
-        foodConstraints, applyUpperLimits,
+        foodConstraints, applyUpperLimits, portionCap,
     } = params ?? ({} as OptimizationParams);
     const rawFoods: unknown = params?.foods ?? [];
     const rawGuaranteed: unknown = params?.guaranteedFoods ?? [];
@@ -322,7 +339,25 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
         constraintLimits.calories = { min: calBounds.min, max: calBounds.max };
     }
 
+    if (portionCap !== undefined && portionCap !== null && (typeof portionCap !== 'object' || Array.isArray(portionCap))) {
+        throw new OptimizationInputError('portionCap must be an object');
+    }
+    const portion = portionCap
+        ? { servings: parseBound(portionCap.servings, 'portionCap.servings'), grams: parseBound(portionCap.grams, 'portionCap.grams') }
+        : null;
     const diversityCap = diversityMode ? parseBound(maxFoodAmount, 'maxFoodAmount') : undefined;
+    /** The general (non-user) cap for one food, in grams; undefined = no cap. */
+    const generalCapGrams = (food: Food): number | undefined => {
+        const ref = referenceServingGrams(food.serving_sizes);
+        if (portion) {
+            const caps: number[] = [];
+            if (portion.servings !== undefined) caps.push(portion.servings * (ref ?? FALLBACK_SERVING_GRAMS));
+            if (portion.grams !== undefined) caps.push(portion.grams);
+            return caps.length ? Math.min(...caps) : undefined;
+        }
+        const legacy = ref !== undefined ? DEFAULT_SERVINGS * ref : DEFAULT_CAP_GRAMS;
+        return diversityCap !== undefined ? Math.min(legacy, diversityCap) : legacy;
+    };
     const fc = (foodConstraints ?? {}) as Record<string, { min?: BoundInput; max?: BoundInput } | undefined>;
 
     // 2. Missing-data warnings (for every user-selected food).
@@ -393,6 +428,8 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
     }
 
     const foodByVar = new Map<string, Food>();
+    /** Food rows whose max comes from the general portion cap (not the user). */
+    const generalCapped = new Set<string>();
     for (const food of foods) {
         const key = `food_${food.id}`;
         foodByVar.set(key, food);
@@ -402,18 +439,18 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
         model.variables[key] = variable;
 
         // Per-food bounds (grams).
-        const ref = referenceServingGrams(food.serving_sizes);
-        let capGrams = ref !== undefined ? DEFAULT_SERVINGS * ref : DEFAULT_CAP_GRAMS;
-        if (diversityCap !== undefined) capGrams = Math.min(capGrams, diversityCap);
+        let capGrams = generalCapGrams(food);
         const user = fc[String(food.id)];
         const userMin = user ? parseBound(user.min, `minimum grams for food ${food.id}`) : undefined;
         const userMax = user ? parseBound(user.max, `maximum grams for food ${food.id}`) : undefined;
         if (userMax !== undefined) capGrams = userMax; // explicit user max overrides every default
-        else if (userMin !== undefined && userMin > capGrams) capGrams = userMin; // ...and so does a min
+        else if (userMin !== undefined && capGrams !== undefined && userMin > capGrams) capGrams = userMin; // ...and so does a min
+        else if (capGrams !== undefined) generalCapped.add(key);
 
-        const bound: ConstraintLimit = { max: capGrams / 100 };
+        const bound: ConstraintLimit = {};
+        if (capGrams !== undefined) bound.max = capGrams / 100;
         if (userMin !== undefined && userMin > 0) bound.min = userMin / 100;
-        model.constraints[key] = bound;
+        if (bound.min !== undefined || bound.max !== undefined) model.constraints[key] = bound;
     }
 
     // 4. Solve a row-scaled copy.
@@ -424,9 +461,20 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
         const message = results.feasible
             ? 'The problem is unbounded; check the nutrient data for the selected foods.'
             : diagnoseInfeasibility(scaled, scale, constraintLimits, guaranteedCalories, guaranteedNutrients, foodByVar);
+        let portionCapBinding = false;
+        if (!results.feasible && generalCapped.size > 0) {
+            const constraints = { ...scaled.constraints };
+            for (const row of generalCapped) {
+                const { max: _max, ...rest } = constraints[row];
+                void _max;
+                if (rest.min !== undefined) constraints[row] = rest; else delete constraints[row];
+            }
+            portionCapBinding = solveLp({ ...scaled, constraints }).feasible === true;
+        }
         return {
             success: false,
             message,
+            portionCapBinding,
             lpModel: model,
             debugEquations: failureEquations(model),
             constraintLimits,

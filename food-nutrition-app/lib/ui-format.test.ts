@@ -55,10 +55,10 @@ describe('missing data is shown honestly', () => {
         success: true,
         diet: [{ food: chicken, grams: 200, calories: 330, nutrients: {} }, { food: broccoli, grams: 300, calories: 102, nutrients: {} }],
         totalCalories: 432,
-        totalNutrients: { saturated_g: 2, protein_g: 70, fiber_g: 8 },
-        constraintLimits: { saturated_g: { max: 20 }, protein_g: { min: 50 }, fiber_g: { min: 28 } },
+        totalNutrients: { saturated_g: 15, protein_g: 70, fiber_g: 8, sodium_mg: 300 },
+        constraintLimits: { saturated_g: { max: 20 }, protein_g: { min: 50 }, fiber_g: { min: 28 }, sodium_mg: { max: 2300 } },
         warnings: [
-            { code: 'missing_nutrient_data', foodId: broccoli.id, description: 'Broccoli, raw', nutrients: ['saturated_g', 'fiber_g'], inDiet: true, role: 'optimized' },
+            { code: 'missing_nutrient_data', foodId: broccoli.id, description: 'Broccoli, raw', nutrients: ['saturated_g', 'fiber_g', 'sodium_mg'], inDiet: true, role: 'optimized' },
             { code: 'missing_nutrient_data', foodId: 99, description: 'Unused oats', nutrients: ['protein_g'], inDiet: false, role: 'optimized' },
         ],
     });
@@ -69,6 +69,7 @@ describe('missing data is shown honestly', () => {
         assert.equal(sat.uncertain, true);
         assert.deepEqual(sat.missing, ['Broccoli']);
         assert.equal(goalSummary(goalProgress(result())).uncertain.length, 1);
+        assert.equal(goalProgress(result()).find(p => p.key === 'sodium_mg')!.uncertain, false, '300 of 2,300 mg: far from the limit');
     });
 
     it('marks minimums as "at least" floors, and ignores foods the plan did not use', () => {

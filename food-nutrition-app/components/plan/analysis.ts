@@ -69,7 +69,9 @@ export function goalProgress(result: PlanResult): GoalProgress[] {
         else if (min !== undefined && value < min * 0.995) status = 'low';
         else if (max !== undefined && value > max * 1.005) status = 'high';
         else if (safeMax !== undefined && value > safeMax * 1.005) status = 'high';
-        const uncertain = status === 'met' && missing.length > 0 && (max !== undefined || safeMax !== undefined);
+        // Only worth a warning when the known total is already at least half the ceiling.
+        const ceiling = max ?? safeMax;
+        const uncertain = status === 'met' && missing.length > 0 && ceiling !== undefined && value !== null && value >= ceiling * 0.5;
         return { key, kind, min, max, safeMax, value, status, missing, uncertain };
     }).sort((a, b) => (a.key === 'calories' ? -1 : b.key === 'calories' ? 1 : 0));
 }

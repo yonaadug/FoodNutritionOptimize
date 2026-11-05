@@ -15,8 +15,10 @@ import {
  * so there are no keys to store.
  */
 export interface DynamoSender {
-    send(command: unknown): Promise<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+    send(command: unknown): Promise<any>;
 }
+
+type BatchRequest = { DeleteRequest: { Key: Record<string, string> } };
 
 const isConditionFailure = (e: unknown) => (e as { name?: string })?.name === 'ConditionalCheckFailedException';
 
@@ -189,11 +191,11 @@ export class DynamoTable implements SingleTable {
 
     async deleteMany(keys: ItemKey[]): Promise<void> {
         for (let i = 0; i < keys.length; i += 25) {
-            let requests: unknown[] | undefined = keys.slice(i, i + 25).map(k => ({ DeleteRequest: { Key: { PK: k.PK, SK: k.SK } } }));
+            let requests: BatchRequest[] | undefined = keys.slice(i, i + 25).map(k => ({ DeleteRequest: { Key: { PK: k.PK, SK: k.SK } } }));
             for (let attempt = 0; requests?.length; attempt++) {
                 if (attempt > 8) throw new Error('DynamoTable.deleteMany: unprocessed items after retries');
                 if (attempt > 0) await new Promise(r => setTimeout(r, 50 * 2 ** attempt));
-                const res: { UnprocessedItems?: Record<string, unknown[]> } = await this.client.send(new BatchWriteCommand({
+                const res: { UnprocessedItems?: Record<string, BatchRequest[]> } = await this.client.send(new BatchWriteCommand({
                     RequestItems: { [this.tableName]: requests },
                 }));
                 requests = res.UnprocessedItems?.[this.tableName];

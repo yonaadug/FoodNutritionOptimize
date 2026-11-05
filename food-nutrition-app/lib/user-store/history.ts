@@ -54,7 +54,6 @@ export class HistoryValidationError extends Error {
 
 const KIND_RE = /^[a-z][a-z0-9-]*$/;
 const ITEM_ID_RE = /^[A-Za-z0-9._:~-]+$/;
-// eslint-disable-next-line no-control-regex
 const CONTROL_RE = /[\u0000-\u001f\u007f]/;
 
 export function validateKind(kind: unknown): string {
@@ -100,7 +99,7 @@ export function validateHistoryInput(body: unknown): HistoryInput {
     if (typeof b.title !== 'string' || !b.title.trim() || b.title.length > HISTORY_LIMITS.titleLength) {
         throw new HistoryValidationError('title', `title must be 1-${HISTORY_LIMITS.titleLength} characters`);
     }
-    const title = b.title.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim(); // eslint-disable-line no-control-regex
+    const title = b.title.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
     if (!title) throw new HistoryValidationError('title', `title must be 1-${HISTORY_LIMITS.titleLength} characters`);
     const href = validateHref(b.href);
     let data: unknown = null;

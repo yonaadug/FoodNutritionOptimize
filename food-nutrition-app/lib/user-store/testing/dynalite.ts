@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { CreateTableCommand, DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { CreateTableCommand, DynamoDBClient, type CreateTableCommandInput } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { DynamoTable, type DynamoSender } from '../dynamo-table';
 
@@ -12,7 +12,7 @@ import { DynamoTable, type DynamoSender } from '../dynamo-table';
 const require = createRequire(import.meta.url);
 
 /** The table the app expects. docs/ACCOUNTS.md documents the same definition for CDK. */
-const TABLE_DEFINITION = {
+const TABLE_DEFINITION: Omit<CreateTableCommandInput, 'TableName'> = {
     AttributeDefinitions: [
         { AttributeName: 'PK', AttributeType: 'S' },
         { AttributeName: 'SK', AttributeType: 'S' },
@@ -38,7 +38,7 @@ const TABLE_DEFINITION = {
         },
     ],
     BillingMode: 'PAY_PER_REQUEST',
-} as const;
+};
 
 export interface DynaliteHarness {
     table: DynamoTable;

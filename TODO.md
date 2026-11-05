@@ -39,10 +39,7 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Cost objective.** It isn't implemented: the optimizer always minimizes calories, and there is no price
       data. Add seed prices (USDA ERS) plus user overrides. Roadmap #2. Ship realistic-portion guards first:
       cost-minimized diets collapse onto a few foods.
-- [x] ~~**Better "Best sources of…" and infeasibility suggestions.**~~ Fixed in the polish pass (ranked per realistic serving, specialty items last). Ranking per 100 g surfaces specialty items
-      (liver, acerola, fortified cereals), and one Vitamin A card showed no suggestions. Rank per serving or per
-      100 kcal, exclude specialty and fortified items by default, and always return suggestions.
-      (`lib/db.ts` `getTopFoodsByNutrientIn`, `/api/foods/top`)
+- [x] ~~**Better "Best sources of…" and infeasibility suggestions.**~~ Fixed in the polish pass: ranked per realistic serving, specialty items last, never empty.
 - [x] Walkthrough rough edges fixed in the Nov 2026 polish pass: the upper-limits count, real portion controls,
       everyday "Good sources", honest missing-data totals (≥ / "could be over"), unused-food explanations, feedback
       toasts, plans remembered across reloads, and 14 polish items. See

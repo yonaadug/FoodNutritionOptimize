@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
 import { signOut, useCurrentUser, type CurrentUser } from '@/lib/auth/client';
+import { nextFromLocation, signInPath } from '@/lib/auth/next-path';
 import styles from './AccountMenu.module.css';
 
 /** "Sign in" for anonymous visitors; an initial with a menu for signed-in people. */
@@ -12,8 +14,15 @@ export function userInitial(user: Pick<CurrentUser, 'displayName' | 'email'>): s
 
 export default function AccountMenu() {
     const { user } = useCurrentUser();
+    const router = useRouter();
     if (!user) {
-        return <Link href="/account/sign-in" prefetch={false} className={`btn btn-secondary btn-sm ${styles.signIn}`}>Sign in</Link>;
+        // Read the address on click: it changes without a navigation (search, the recipe editor, the plan's step).
+        const goToSignIn = (e: React.MouseEvent) => {
+            if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            e.preventDefault();
+            router.push(signInPath(nextFromLocation(window.location)));
+        };
+        return <Link href="/account/sign-in" prefetch={false} onClick={goToSignIn} className={`btn btn-secondary btn-sm ${styles.signIn}`}>Sign in</Link>;
     }
     return <SignedInMenu user={user} />;
 }

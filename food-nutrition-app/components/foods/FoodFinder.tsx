@@ -3,6 +3,7 @@
 import { useId, useRef, useState } from 'react';
 import type { Food } from '@/lib/food-types';
 import Icon from '@/components/ui/Icon';
+import { isFilled } from '@/lib/nutrient-fill';
 import FoodRow, { FoodRowSkeleton } from './FoodRow';
 import { useFoodSearch } from '@/hooks/useFoodSearch';
 import { useTopFoods } from '@/hooks/useTopFoods';
@@ -186,7 +187,7 @@ function BestSourcesPanel({ isAdded, onToggle }: { isAdded: (id: number) => bool
                                 {foods.map(f => (
                                     <FoodRow key={f.id} food={f} added={isAdded(f.id)} onToggle={onToggle}
                                         highlight={f.best ? `${fmtNumber(f.best.perServing)} ${unit}` : `${fmtNumber(nv(f, nutrient))} ${unit}`}
-                                        highlightSub={f.best ? `per ${f.best.servingLabel}` : 'per 100 g'} />
+                                        highlightSub={`${f.best ? `per ${f.best.servingLabel}` : 'per 100 g'}${isFilled(f, nutrient) ? ' · from USDA’s older entry' : ''}`} />
                                 ))}
                             </ul>
                         </div>

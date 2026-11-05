@@ -29,7 +29,7 @@ editable rows in the browser ──► live totals (lib/recipes/nutrition.ts)
 
 **Missing data.** A nutrient total built from any ingredient with no value shows `≥`, because it's a lower bound. If nothing has a value it shows `—`, never 0.
 
-**Foundation gaps.** Foundation foods are well measured but sparse, so nulls are filled from the SR Legacy food they supersede. Household measures come from there too. Existing values are never overwritten, the food lists what was filled in `filledNutrients`, and the page discloses it. The same logic runs in `POST /api/recipes/nutrition`.
+**Foundation gaps.** Foundation foods are well measured but sparse, so nulls are filled from the SR Legacy food they supersede. This is now one rule for the whole site (`lib/nutrient-fill.ts`, applied in `lib/db.ts`), so a recipe, a food page, search and a plan all see the same values. Existing values are never overwritten, each food lists what was filled in `filledFrom` (nutrient column to older entry's `fdc_id`), and the page marks those values †. Household measures also come from the older entry, in recipes only.
 
 **Limits to tell users about**, which the page already does:
 
@@ -50,13 +50,23 @@ All errors have the shape `{ error, code, details? }`.
 
 The picker searches with the existing `/api/search`.
 
-`/api/recipes/parse` can return 400, 413, 415, 422 (`ai_not_food`, `ai_refused`), 429 (`rate_limited`, with `Retry-After`), 502, 503 (`ai_unavailable`, `ai_busy`, `ai_rate_limited`) and 504 (`ai_timeout`).
+`GET /api/recipes/food` and the matched foods include `filledFrom`. `/api/recipes/parse` can return 400, 413, 415, 422 (`ai_not_food`, `ai_refused`), 429 (`rate_limited`, with `Retry-After`), 502, 503 (`ai_unavailable`, `ai_busy`, `ai_rate_limited`) and 504 (`ai_timeout`).
 
 ## Saving analyses
 
-`onRecipeAnalyzed` in `components/recipes/RecipesPage.tsx` saves each analysis to a signed-in person's history ([ACCOUNTS.md](ACCOUNTS.md)). It receives an `AnalyzedRecipe`: plain JSON with a title and a stable `id`. It runs after the first read and again after edits settle, so treat it as an upsert. Anonymous visitors' recent analyses are kept in `localStorage` (`recipes.recent.v1`).
+`onRecipeAnalyzed` in `components/recipes/RecipesPage.tsx` saves each analysis to a signed-in person's history ([ACCOUNTS.md](ACCOUNTS.md)). It receives an `AnalyzedRecipe`: plain JSON with a title and a stable `id`. It runs after the first read and again after edits settle, so treat it as an upsert. The history row holds the ingredients (`lib/recipes/history.ts`), so `/recipes?id=<id>` reopens the recipe on any device. A recipe too long for the 8 KB cap drops its notes, then its ingredient list, and never keeps part of it.
 
-"Add a serving to my plan" adds the recipe to the planner as a fixed-amount food with a negative id. `/api/optimize` passes unknown foods through unchanged.
+Recent analyses are also kept in `localStorage` (`recipes.recent.v1`). One made before signing in has no `ownerId` and stays out of history unless its owner presses **Save to my account**. See [Data in this browser](ACCOUNTS.md#data-in-this-browser).
+
+The open recipe is in the address (`/recipes?id=<id>`), so Back, a reload and signing in all return to it.
+
+## Recipes in a plan
+
+"Add a serving to my plan" adds the recipe to the planner as a fixed-amount food with a negative id, and `Food.recipe` says which recipe it is. `/api/optimize` passes unknown foods through unchanged.
+
+- **Servings add up.** Each press adds a serving. The plan stores grams, and the serving count is worked out from them (`lib/planner-recipes.ts`).
+- **Edits reach the plan.** While a recipe that's in the plan is open, its nutrition, title and serving size are copied across and the number of servings is kept. `recipe.fingerprint` is part of the plan's key, so the plan then reads as out of date.
+- **Warnings carry over.** "Not counted" ingredients get their own note on the plan, and a nutrient that's only a lower bound counts as missing data, so its goal shows "≥".
 
 ## Test locally
 

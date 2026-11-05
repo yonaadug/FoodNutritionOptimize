@@ -2,9 +2,9 @@
 
 _Toured on 5 November 2026 against the production build on a laptop (`npm run preview`, port 3620), with the full 9,435-food database, a throwaway account database and the offline demo AI. Screenshots come from headless Chromium at 1440×900 and 390×844, in light and dark themes._
 
-The site used to be one thing, a meal planner. It is now four things that were built side by side and only just merged: a food lookup, contaminant meters on every food, a recipe analyzer, and optional accounts. This tour walks through all of it as a customer would. Because it was the first look at the finished whole, it also records where the parts don't quite fit. Those are in the [rough edges checklist](#14-rough-edges-checklist).
+The site used to be one thing, a meal planner. It is now four things that were built side by side and then merged: a food lookup, contaminant meters on every food, a recipe analyzer, and optional accounts. This tour walks through all of it as a customer would. The first tour recorded where the parts didn't quite fit, in the [rough edges checklist](#14-rough-edges-checklist). The integration items have since been fixed, and the tour below describes the site as it is now. Some screenshots predate the fixes where the change doesn't affect them.
 
-**The short version:** the site is fast, has no broken internal links, and the contaminant meters always match the chosen serving. The main problems are at the joins between features: the same food can give different nutrition depending on where you look, and accounts promise more than they save.
+**The short version:** the site is fast, has no broken internal links, and the contaminant meters always match the chosen serving. A food now has one set of values everywhere, plans and recipes reopen from an account on any device, and nothing is left behind in a browser after signing out. What's left is mostly polish, plus privacy and terms pages, which need legal review.
 
 ## The 60-second tour
 
@@ -73,14 +73,18 @@ Further down:
 
 - **Breadcrumb:** Foods › category › food.
 - **Name,** with a badge for the USDA dataset. Foods with almost no data also get a **Limited data** badge. An older record that USDA has replaced gets a note linking to the newer one.
-- **Add to my plan** puts the food on your planner list and shows a short message with **Open plan**. The button then becomes **In your plan · Open plan**.
+- **Add to my plan** puts the food on your planner list, and the planner chooses how much. **Add exactly 216 g** does the same but keeps the serving you picked as a fixed amount, and plans the rest of the day around it. A short line under the buttons says which is which. The button then becomes **In your plan · Open plan**, with the amount if it's fixed.
 - **Compare** opens the [comparison panel](#4-compare).
 - **Share** copies the link, or opens the share sheet on a phone.
 - **Serving size:** household measures from USDA, "1 standard serving", 100 g, or **Custom amount…** (1 to 5,000 g; anything else shows a warning and uses 100 g for now). This one menu drives everything else on the page.
 - **Nutrition Facts:** the FDA-style label for that serving.
 - **Rich in:** up to five nutrients at 20% of the Daily Value or more for that serving.
-- **All nutrients:** every nutrient, with the amount, a % Daily Value bar and the value per 100 g. "—" means USDA has no measurement.
+- **All nutrients:** every nutrient, with the amount, a % Daily Value bar and the value per 100 g. "—" means USDA has no measurement. **†** marks a value from USDA's older entry for the same food, used because the newest entry has none. A note under the table links to that entry, and the label and "Where this data comes from" say so too. Measured values are never replaced.
 - **Contaminants:** see the [next section](#3-contaminant-meters).
+
+![Values from USDA's older entry, marked †](walkthrough/67-food-older-entry.png)
+
+![Add to my plan, or add exactly this serving](walkthrough/68-food-add-exactly.png)
 
 ![Related foods and the data source](walkthrough/05-food-related-and-source.png)
 
@@ -140,7 +144,7 @@ When nothing at all can be matched, the panel shrinks to one calm line. This is 
 
 ![A food with no contaminant data](walkthrough/10-contaminants-no-data.png)
 
-At the bottom of a full panel, **How we work this out** repeats the bands and links to the methodology, and a disclaimer says this is general information, not medical advice. If the data can't load, the panel says so and offers **Try again**.
+At the bottom of a full panel, **How we work this out** repeats the bands and links to the [methodology page](#3-contaminant-meters) (`/methodology`, also linked from every footer), and a disclaimer says this is general information, not medical advice. If the data can't load, the panel says so and offers **Try again**.
 
 ## 4. Compare
 
@@ -153,7 +157,7 @@ At the bottom of a full panel, **How we work this out** repeats the bands and li
 - **The labels** sit side by side. Each has its own **Serving size** menu, and you scroll sideways if they don't fit.
 - **Close** hides the panel. The comparison isn't saved and is gone after a reload.
 
-The planner has a similar view, **Compare nutrition labels**, for the foods on your list. Neither shows contaminants.
+The planner has a similar view, **Compare nutrition labels**, for the foods on your list. Each label starts at the food's typical serving, as its page does, and its name links to that page. Neither shows contaminants.
 
 ## 5. Browse by category or nutrient
 
@@ -189,16 +193,18 @@ A first visit shows a welcome panel with two buttons. **Try a sample day** loads
 
 **The summary.** The sample day took about 0.1 seconds and gives "Every goal met":
 
-- 12 of the 15 foods are used, about 1,585 g in total.
-- **Calories:** 2,140 kcal, with a protein, carbs and fat split.
+- 8 of the 15 foods are used, about 1,306 g in total.
+- **Calories:** 1,800 kcal, with a protein, carbs and fat split.
 - **Goals met:** a 9/9 ring.
-- **Protein:** 94 g, with fiber underneath.
+- **Protein:** 106 g, with fiber underneath.
 - **Edit foods** and **Edit goals** jump back to those steps.
-- A yellow note lists any foods missing data for your goals, under **See which foods**.
+- A yellow note lists any foods missing data for your goals, under **See which foods**. A blue note says which values come from USDA's older entry for a food, and those goals are marked **†**.
+
+Signed in, each plan is also saved to your account, under **Account**, tab **Plans**.
 
 ![What to eat](walkthrough/18-plan-what-to-eat.png)
 
-**What to eat** lists each food with its calories, protein, grams and a household amount such as "≈ 3 large". Foods you fixed show a **Fixed amount** tag.
+**What to eat** lists each food with its calories, protein, grams and a household amount such as "≈ 3 large". Each name links to the food's page, where its nutrients and contaminants are. A recipe links back to the recipe. Foods you fixed show a **Fixed amount** tag.
 
 ![Goal progress](walkthrough/19-plan-goal-progress.png)
 
@@ -206,7 +212,7 @@ A first visit shows a welcome panel with two buttons. **Try a sample day** loads
 
 Below those:
 
-- **Foods the plan didn't need.** "3 of your 15 foods weren't needed", each with a reason and **Include it**.
+- **Foods the plan didn't need.** "7 of your 15 foods weren't needed", each with a reason and **Include it**.
 - **Where each nutrient comes from.** Pick a nutrient to see each food's share.
 - **Show the math (advanced).** The actual equations the solver used.
 
@@ -218,16 +224,18 @@ Below those:
 
 ![Your foods, with one food's options open](walkthrough/22-plan-your-foods.png)
 
-**Find foods you like** searches the same way as the home page, but each row has an **Add** button and the name isn't a link. **Popular starting points** are one-click searches.
+**Find foods you like** searches the same way as the home page, but each row has an **Add** button. The name links to the food's page. **Popular starting points** are one-click searches.
 
 **Your foods** is the list the plan is built from. Each food has two buttons:
 
 - **Sliders** opens its options: **Let the planner choose**, or **I'll eat exactly ___ g**, which makes it a fixed amount and plans the rest of the day around it. There are also optional **At least** and **At most** limits, with USDA serving weights for reference.
 - **×** removes it.
 
-**Compare nutrition labels** opens the labels, and **Clear all** empties the list with an **Undo**.
+**Compare nutrition labels** opens the labels, and **Clear all** empties the list with an **Undo**, which also brings back the plan. With no foods there's no plan: **Your plan** says "No plan yet" and offers **Pick foods** or **Try a sample day**.
 
 ![Best sources of](walkthrough/23-plan-best-sources.png)
+
+![No foods, so no plan](walkthrough/69-plan-no-foods.png)
 
 **Best sources of…** swaps search for a nutrient menu. It ranks by typical serving, and **Everyday foods only** keeps out supplements and other specialty items.
 
@@ -312,7 +320,7 @@ The bar along the bottom of steps 1 and 2 shows the food and goal counts and the
 **Per serving** shows calories, ten key nutrients with % Daily Value, and **All vitamins and minerals**. Then:
 
 - "≥" means at least this much, because one or more ingredients have no USDA value for that nutrient.
-- If the newest USDA entry lacks a nutrient, the older entry for the same food fills it in, and a note says so. Only recipes do this; see [H1](#14-rough-edges-checklist).
+- If the newest USDA entry lacks a nutrient, the older entry for the same food fills it in. The value is marked **†**, and a note names the ingredients. Food pages and plans use the same values.
 - A Nutrition Facts label for one serving sits underneath.
 
 **Photos, in demo mode.** No AI is connected on a laptop, so any photo returns a built-in sample meal, and the page says so. A plated-meal result adds a warning and a calorie range ("Could be roughly 407 to 846 kcal"). **Show my photo** shows your picture. Pasted text is read by a simple built-in reader with its own Demo mode note.
@@ -327,17 +335,19 @@ The bar along the bottom of steps 1 and 2 shows the food and goal counts and the
 
 ![After adding a serving](walkthrough/36-recipes-added-to-plan.png)
 
-**Add a serving to my plan** shows a message with **Open plan**. The recipe joins **Your foods** as a fixed amount, one serving's weight. It's a snapshot; see [M7](#14-rough-edges-checklist).
+**Add a serving to my plan** shows a message with **Open plan**. The recipe joins **Your foods** as a fixed amount, one serving's weight, and the button becomes **In your plan: 1 serving · Open plan**, with **Add another serving** and **Remove one**. Edits to the recipe reach the plan, which then says **Out of date** until you update it.
 
 ![A recipe in the plan](walkthrough/37-recipe-in-plan.png)
 
-After **Make my plan**, it appears in **What to eat** as "Recipe: Banana oat pancakes" with a Fixed amount tag, and the planner fills in the rest of the day around it.
+After **Make my plan**, it appears in **What to eat** as "Recipe: Banana oat pancakes" with a Fixed amount tag, and the planner fills in the rest of the day around it. Anything the recipe couldn't count is called out at the top of the plan.
+
+The open recipe is in the address, so the browser's **Back** button, a reload and signing in all return to it.
 
 ---
 
 ## 8. Accounts
 
-Accounts are optional, and every feature above works without one. They add a history of what you've looked at, plus export and delete.
+Accounts are optional, and every feature above works without one. They add a history of what you've looked at, which reopens recipes and plans on any device, plus export and delete.
 
 ### 8.1 Signing in
 
@@ -351,7 +361,7 @@ Accounts are optional, and every feature above works without one. They add a his
 
 ![Finish signing in](walkthrough/40-sign-in-confirm.png)
 
-**The link opens a page with one button.** Email security scanners open links automatically, so the link is spent only when you press **Sign in**. You land on your account, or the page you were trying to reach. An already-used link brings you back to sign-in with an explanation.
+**The link opens a page with one button.** Email security scanners open links automatically, so the link is spent only when you press **Sign in**. You return to the page you started signing in from. An already-used link brings you back to sign-in with an explanation.
 
 ### 8.2 Your account
 
@@ -359,7 +369,7 @@ Accounts are optional, and every feature above works without one. They add a his
 
 - **Display name** is optional. Your initial appears in the header.
 - **Export my data** downloads everything held about you as a JSON file.
-- **Sign out** returns you to the home page.
+- **Sign out** returns you to the home page, and clears your foods, recipes and plan from this browser. Anything saved to your account stays there.
 - **History** has three tabs. Food rows link back to the food. Each row has an × to remove it, and **Clear** empties the tab.
 - **Delete account** is at the bottom.
 
@@ -369,11 +379,15 @@ The **account menu** behind your initial offers **Account**, **History** (the hi
 
 ![Recipes in history](walkthrough/43-history-recipes.png)
 
-**Recipes** show per-serving calories, protein, carbs and fat. The row updates as you edit, so one recipe stays one row. Its link goes to the Recipes page, not to that recipe ([M2](#14-rough-edges-checklist)).
+**Recipes** show per-serving calories, protein, carbs and fat. The row updates as you edit, so one recipe stays one row. Its link opens that recipe, with its ingredients, in any browser you're signed in on.
 
-![The Plans tab](walkthrough/44-history-plans-empty.png)
+![The Plans tab](walkthrough/44-history-plans.png)
 
-**Plans** says "Plans you make will show up here", but nothing records plans yet ([H2](#14-rough-edges-checklist)).
+**Plans** lists each plan you've made while signed in, with its calories, protein, goals met and foods. Its link makes that plan the current one again, on any device. On a second browser, an empty planner also offers **Your last plan**.
+
+![A recipe made before signing in](walkthrough/70-recipe-before-sign-in.png)
+
+**Work from before you signed in** stays in this browser and isn't uploaded. A recipe or plan made that way says so and offers **Save to my account**. Details are in [ACCOUNTS.md](ACCOUNTS.md#data-in-this-browser).
 
 ### 8.3 Deleting an account
 
@@ -383,11 +397,9 @@ The **account menu** behind your initial offers **Account**, **History** (the hi
 
 ![After deleting](walkthrough/46-account-deleted.png)
 
-Afterwards you're signed out, with a confirmation, and the site works as normal. What's kept in this browser isn't removed, though:
+Afterwards you're signed out, with a confirmation, and the site works as normal. Everything kept in this browser is gone too: no recent recipes, no plan.
 
-![Recent recipes still there after deleting the account](walkthrough/47-recipes-after-delete.png)
-
-See [M3](#14-rough-edges-checklist).
+![No recipes left after deleting the account](walkthrough/47-recipes-after-delete.png)
 
 ---
 
@@ -441,9 +453,9 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
 
 > **Nutrition data.** 9,435 foods from USDA FoodData Central (October 2026 release, public domain), from three USDA collections: Foundation (newest lab analyses), SR Legacy (the classic reference) and FNDDS (mixed dishes). Everything is stored per 100 g. When USDA didn't measure something the site stores "unknown", not zero.
 >
-> **Contaminant data.** Heavy metals come from FDA's Total Diet Study (FY2018 to FY2020), FDA's fish mercury tables and its rice arsenic assessment. Pesticides come from USDA's Pesticide Data Program (2016 to 2024). References come from FDA and EPA. Microplastics come from a few published studies, and no health limit exists for them. Details and citations are in [CONTAMINANT_DATA.md](CONTAMINANT_DATA.md).
+> **Contaminant data.** Heavy metals come from FDA's Total Diet Study (FY2018 to FY2020), FDA's fish mercury tables and its rice arsenic assessment. Pesticides come from USDA's Pesticide Data Program (2016 to 2024). References come from FDA and EPA. Microplastics come from a few published studies, and no health limit exists for them. Details and citations are at `/methodology` on the site.
 >
-> **How a plan is calculated.** A method called linear programming finds the amounts of your foods with the fewest total calories that satisfy every goal, calorie bound and portion limit. If no mix can, it reports what's blocking it. Unmeasured values count as 0, which is why plans can undercount and why the yellow note exists.
+> **How a plan is calculated.** A method called linear programming finds the amounts of your foods with the fewest total calories that satisfy every goal, calorie bound and portion limit. If no mix can, it reports what's blocking it. Where USDA's newest entry lacks a value, its older entry fills the gap, on every page, and the value is marked †. Anything still unmeasured counts as 0, which is why plans can undercount and why the yellow note exists.
 >
 > **How a recipe is calculated.** The AI (or, in demo mode, a built-in reader) only reads the ingredient list. It never supplies nutrition. Each ingredient is matched to a USDA food, converted to grams, and added up. Cooking changes aren't modelled. See [RECIPES.md](RECIPES.md).
 >
@@ -451,8 +463,8 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
 >
 > | Where | What | Who can see it |
 > |---|---|---|
-> | **This browser** | Planner foods, goals, last plan and step; recent recipes with their ingredients; recent searches; theme; a flag that says "this browser was signed in" | Anyone using this browser. Survives sign-out and account deletion |
-> | **The site's database, if you have an account** | Email, display name, sign-in sessions, and history rows: title, link, date, and for recipes a per-serving summary. No ingredients and no plans | You, through export. Delete removes it |
+> | **This browser** | Planner foods, goals, last plan and step; recent recipes with their ingredients; recent searches; theme; flags that say "this browser was signed in" and as whom | Anyone using this browser. Cleared by signing out or deleting the account, apart from the theme |
+> | **The site's database, if you have an account** | Email, display name, sign-in sessions, and history rows: title, link, date and a summary, plus a recipe's ingredients and a plan's foods and goals, so they can be reopened | You, through export. Delete removes it |
 > | **The AI provider** | Pasted recipes and photos, when a real provider is switched on. Photos aren't stored by the site | Nothing is sent in demo mode |
 >
 > Anonymous visitors make no account requests and have nothing stored on the server.
@@ -463,7 +475,9 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
 
 **"Why does rice read High?"** Mainly because the arsenic reference is very cautious. A 45 g serving of raw long-grain white rice has about 4.6 µg of inorganic arsenic, against EPA's 4.8 µg a day. EPA's own estimate is that typical US intake is already about 61% of that reference. Any single serving over half of it counts as High on the site's scale. FDA doesn't advise avoiding rice. Cooking it in plenty of water and draining it removes 40–60% of the inorganic arsenic, though the meter doesn't adjust for that, and eating a variety of grains helps too.
 
-**"Why do some values show "—"?"** USDA has no measurement for that nutrient in that exact entry. It does not mean zero. Foundation entries are the newest but often the sparsest, so raw spinach has no vitamin K on its "mature" Foundation page. For planning, an older SR Legacy entry of the same food is often more complete.
+**"Why do some values show "—"?"** USDA has no measurement for that nutrient, in this entry or its older entry. It does not mean zero.
+
+**"What does † mean?"** Foundation entries are the newest but often the sparsest. Raw spinach has no vitamin K in its "mature" Foundation entry, so the site uses the 483 mcg from USDA's older entry for spinach, and marks it †. A value the newest entry does have is never replaced.
 
 **"What do the meters actually mean?"** Each compares one serving with a health-based reference, as a share of a day (a week for mercury). High doesn't mean harmful, and Low doesn't mean none: references are cautious planning values, and exposure adds up across everything you eat, over time. The bands are the site's judgment. See the [table](#3-contaminant-meters).
 
@@ -475,7 +489,7 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
 
 **"Why does the plan leave out some of my foods?"** The planner uses the fewest calories that meet your goals, so it doesn't need everything. Use **Include it**, or set **At least** on that food.
 
-**"Why can't the FDA preset be met?"** It turns on 26 goals at 100%, and gaps in the data count as 0. With the sample foods, it falls short by 2.4 mg of iron and a fraction of a gram of carbohydrate, and allowing bigger portions alone fixes it.
+**"Why can't the FDA preset be met?"** It turns on 26 goals at 100%, so it needs a wide variety of foods. The sample foods now meet all 26, using 10 foods and 1,800 kcal. A shorter list often won't, and the plan says which goals fall short and which foods would help.
 
 **"Is the recipe reader really AI?"** Not on a laptop or until a provider is switched on. The page says "Demo mode" when it isn't.
 
@@ -483,50 +497,77 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
 
 ## 14. Rough edges checklist
 
-**Severity:** **High** means it misleads people or breaks a promise the site makes. **Medium** means it's confusing or doesn't do what it says. **Low** is polish. Nothing here was changed in the code. Unless a step says otherwise, start from a fresh browser profile.
+**Severity:** **High** means it misleads people or breaks a promise the site makes. **Medium** means it's confusing or doesn't do what it says. **Low** is polish. Unless a step says otherwise, start from a fresh browser profile. A ticked item has been fixed, and a headless browser repeated its steps. The descriptions and steps are how each problem looked when it was found.
 
 ### High
 
-- [ ] **H1. The same food gives different nutrition in different features.** Recipes fill gaps in a newer USDA entry from the older entry. Food pages and the planner don't. So spinach has no vitamin K on its page and in a plan, but 483 mcg in a recipe, and the plan tells people spinach can't help with vitamin K. Vitamin E, cholesterol and sugars do the same.
+- [x] **H1. The same food gives different nutrition in different features.** Recipes fill gaps in a newer USDA entry from the older entry. Food pages and the planner don't. So spinach has no vitamin K on its page and in a plan, but 483 mcg in a recipe, and the plan tells people spinach can't help with vitamin K. Vitamin E, cholesterol and sugars do the same.
+
+  *Fixed. One server-side rule (`lib/nutrient-fill.ts`, applied in `lib/db.ts`) fills only NULLs, keeps per-nutrient provenance, and every value from an older entry is marked †. A test compares one food through the food page path, `/api/food`, `/api/search`, `/api/optimize` and recipes.*
+
   1. Open `/food/1999633-spinach-mature`, set **Serving size** to **100 g**. **Vitamin K** shows **—** ([screenshot](walkthrough/64-edge-spinach-food-page.png)).
   2. Open `/recipes`, click **Start blank**, type `100 g spinach` under **Add an ingredient**, click **Add**. It matches "Spinach, mature". Set **Servings** to 1 and open **All vitamins and minerals**. **Vitamin K** shows **483 mcg, 402%** ([screenshot](walkthrough/65-edge-spinach-recipe.png)).
   3. Back on the spinach page, click **Add to my plan**. Go to **Plan**, **Set goals**, choose **Standard adult (FDA Daily Values)**, click **Make my plan**. The plan says **Not enough Vitamin K, short by 120 mcg. None of your foods have enough Vitamin K**.
 
-- [ ] **H2. Plans are promised but never saved to an account.** The sign-in page says "Keep the foods, recipes and plans you look at, on any device". The account pages repeat it, and the Plans tab says "Plans you make will show up here". Nothing records a plan ([screenshot](walkthrough/44-history-plans-empty.png)). `docs/ACCOUNTS.md` notes this as not built yet, but the customer-facing words don't.
+- [x] **H2. Plans are promised but never saved to an account.** The sign-in page says "Keep the foods, recipes and plans you look at, on any device". The account pages repeat it, and the Plans tab says "Plans you make will show up here". Nothing recorded a plan. `docs/ACCOUNTS.md` notes this as not built yet, but the customer-facing words don't.
+
+  *Fixed. Plans are recorded to history and reopen at `/plan?open=<id>`. The Plans tab shows calories, protein, goals met and foods, and an empty planner offers the last plan. A plan too big for the 8 KB cap (roughly 10 recipes or more) keeps its summary but can't be reopened.*
+
   1. Sign in. Go to **Plan**, click **Try a sample day**.
   2. Open the account menu, **Account**, tab **Plans**. It's empty.
   3. Sign in to the same account in a second browser and open **Plan**. It says "Nothing yet".
 
 ### Medium
 
-- [ ] **M1. The methodology links are dead today, and go to a developer page.** "How we match foods" and "Read the full methodology and all sources" on contaminant panels open `github.com/yonaadug/FoodNutritionOptimize/blob/main/docs/CONTAMINANT_DATA.md`. That returns **404** without a login, because local `main` is 106 commits ahead of GitHub. Pushing will fix the 404, but customers still land on a code-hosting page ending in a "For developers" section.
+- [x] **M1. The methodology links are dead today, and go to a developer page.** "How we match foods" and "Read the full methodology and all sources" on contaminant panels open `github.com/yonaadug/FoodNutritionOptimize/blob/main/docs/CONTAMINANT_DATA.md`. That returns **404** without a login, because local `main` is 106 commits ahead of GitHub. Pushing will fix the 404, but customers still land on a code-hosting page ending in a "For developers" section.
+
+  *Fixed. `/methodology` is a real page with the same content, linked from the panel and every footer. A test keeps it in step with `docs/CONTAMINANT_DATA.md`.*
+
   1. Open `/food/2512381`, then **How we work this out**, then **Read the full methodology and all sources**.
   2. In a signed-out browser, you get GitHub's 404. (Checked with an anonymous request.)
 
-- [ ] **M2. A recipe in History can't be reopened.** The row's link goes to the blank Recipes page. Only a summary is stored, so on another device the ingredients are gone.
+- [x] **M2. A recipe in History can't be reopened.** The row's link goes to the blank Recipes page. Only a summary is stored, so on another device the ingredients are gone.
+
+  *Fixed. History rows hold the ingredients and link to `/recipes?id=<id>`, which opens from this browser or the account. A recipe too long for the 8 KB cap keeps its summary and opens only where it was made.*
+
   1. Sign in and analyze a recipe. On **Account**, tab **Recipes**, click its name. You land on the start page, not the recipe.
   2. Sign in on a second browser and do the same. The start page has no **Recent recipes** at all.
 
-- [ ] **M3. Browser-kept data outlives sign-out and deletion, and can move between accounts.** After "Your account and history have been deleted", the recipes with all their ingredients and the plan are still there ([screenshot](walkthrough/47-recipes-after-delete.png)). On a shared computer, the next person sees them, and opening one copies it into their own history.
+- [x] **M3. Browser-kept data outlives sign-out and deletion, and can move between accounts.** After "Your account and history have been deleted", the recipes with all their ingredients and the plan are still there. On a shared computer, the next person sees them, and opening one copies it into their own history.
+
+  *Fixed. Sign-out, deletion, an ended session or a different person signing in clears this browser. Work from before signing in stays local and isn't uploaded unless **Save to my account** is pressed. The rule is in `docs/ACCOUNTS.md`.*
+
   1. Sign in as person A. Analyze a recipe. Sign out.
   2. Sign in as person B in the same browser. Open **Recipes**. A's recipe is under **Recent recipes**.
   3. Click it, then open **Account**, tab **Recipes**. It's now in B's history.
   4. Alternatively, delete an account and open **Recipes** and **Plan**. Both still show its work.
 
-- [ ] **M4. Clear all leaves a plan behind, and Update plan does nothing.** With no foods, step 3 still shows the old plan under an **Update plan** banner, and the button has no effect, even after a reload ([screenshot](walkthrough/66-edge-plan-with-no-foods.png)). If the old plan had failed, it reads "No mix of your 0 foods covers everything".
+- [x] **M4. Clear all leaves a plan behind, and Update plan does nothing.** With no foods, step 3 still shows the old plan under an **Update plan** banner, and the button has no effect, even after a reload ([screenshot](walkthrough/66-edge-plan-with-no-foods.png)). If the old plan had failed, it reads "No mix of your 0 foods covers everything".
+
+  *Fixed. With no foods there is no plan, on screen or in storage. Your plan shows "No plan yet" with **Pick foods** and **Try a sample day**, and **Undo** restores both foods and plan.*
+
   1. Open `/plan`, click **Try a sample day**.
   2. Click **Pick foods**, then **Clear all**.
   3. Click **Your plan**, then **Update plan**. Nothing changes.
 
-- [ ] **M5. The planner is a dead end for food pages.** Food pages link to the planner, but nothing links back. Names in **Your foods**, search results, **Best sources**, **What to eat**, **Good sources** and the compare labels aren't links. Contaminant information can't be reached from the planner at all, and a plan can suggest a large amount of a High food without any mention. The recipe editor does link to food pages, so the two features behave differently.
+- [x] **M5. The planner is a dead end for food pages.** Food pages link to the planner, but nothing links back. Names in **Your foods**, search results, **Best sources**, **What to eat**, **Good sources** and the compare labels aren't links. Contaminant information can't be reached from the planner at all, and a plan can suggest a large amount of a High food without any mention. The recipe editor does link to food pages, so the two features behave differently.
+
+  *Fixed. Food names link to their pages in Your foods, search results, Best sources, What to eat, Foods the plan didn't need, Where each nutrient comes from, Good sources and the compare labels. A plan still doesn't mention a High contaminant reading by itself.*
+
   1. Open `/plan`, click **Try a sample day**.
   2. Try to click any food name. None of them is a link: the plan step has no links at all.
 
-- [ ] **M6. Add to my plan ignores the serving you chose.** You pick a serving, the label and meters change, and the button discards it. Recipes do the opposite and add a fixed serving.
+- [x] **M6. Add to my plan ignores the serving you chose.** You pick a serving, the label and meters change, and the button discards it. Recipes do the opposite and add a fixed serving.
+
+  *Fixed. **Add exactly 216 g** fixes the chosen serving in the plan. **Add to my plan** still lets the planner choose, and a line under the buttons says so.*
+
   1. Open `/food/171689`, choose **1 large (3-1/4" dia) (216 g)**, click **Add to my plan**.
   2. Open `/plan#foods`. The apple says **Planner chooses the amount**.
 
-- [ ] **M7. A recipe in the plan is a disconnected copy.**
+- [x] **M7. A recipe in the plan is a disconnected copy.**
+
+  *Fixed. Each press adds a serving and the page shows the count. Edits reach the plan and make it read **Out of date**. "Not counted" gets its own note on the plan, and lower bounds show "≥".*
+
   - Clicking **Add a serving** again says "Added one serving" but the plan stays at one serving, and the button never shows it's already in the plan, unlike the food page.
   - Edits to the recipe don't reach the plan, which still says **Ready**.
   - "Not counted" ingredients and "≥" warnings don't carry over.
@@ -536,44 +577,88 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
   2. Click **Make my plan**, go to **Recipes**, reopen the recipe from **Recent recipes**, and set **Servings** to 1. Return to **Plan**. The stepper says **Ready** and the recipe is still 258 g.
   3. Analyze a recipe with these three lines: `2 heads lettuce`, `salt to taste`, `1 cup milk`. The page warns "Not counted: salt". Add it to a plan and click **Make my plan**. The plan doesn't mention this.
 
-- [ ] **M8. Leaving the recipe editor loses your place, and Sign in doesn't bring you back.** The editor isn't in the address or the browser history, so Back, a reload or the header goes to the start page. The work is safe under **Recent recipes**, but it looks lost. Sign in always lands on **Account**, and a recipe analyzed just before it isn't in History until reopened, which contradicts "what someone viewed before signing in is not added" in `docs/ACCOUNTS.md`.
+- [x] **M8. Leaving the recipe editor loses your place, and Sign in doesn't bring you back.** The editor isn't in the address or the browser history, so Back, a reload or the header goes to the start page. The work is safe under **Recent recipes**, but it looks lost. Sign in always lands on **Account**, and a recipe analyzed just before it isn't in History until reopened, which contradicts "what someone viewed before signing in is not added" in `docs/ACCOUNTS.md`.
+
+  *Fixed. The recipe is in the address (`/recipes?id=<id>`), so Back and reload restore it. Sign-in returns to the page it started from, through a same-site check (`lib/auth/next-path.ts`). A recipe analyzed before signing in stays out of History until **Save to my account**, as the docs say.*
+
   1. Analyze the example. Click **Add a serving to my plan**, then **Open plan**, then the browser's Back button. You're on the start page, not the editor.
   2. Analyze the example. Click **Sign in** and finish signing in. You land on **Account**, with an empty **Recipes** tab.
   3. Open **Recipes** and reopen it from **Recent recipes**. It's now in History.
 
-- [ ] **M9. A failed recipe read throws away the pasted text.** The error appears, but the box is empty, so people have to find and paste the recipe again. Demo mode rarely fails, but a real AI provider will sometimes be busy, rate-limited or slow, so this will matter more. **Cancel** while reading clears it too.
+- [x] **M9. A failed recipe read throws away the pasted text.** The error appears, but the box is empty, so people have to find and paste the recipe again. Demo mode rarely fails, but a real AI provider will sometimes be busy, rate-limited or slow, so this will matter more. **Cancel** while reading clears it too.
+
+  *Fixed. The paste box survives a failed read and **Cancel**, and clears only after a successful read.*
+
   1. Open `/recipes`, then stop the server in its terminal.
   2. Paste some text and click **Work out the nutrition**. An error appears and the box is empty. (Checked by forcing a 503 reply in the test browser, which takes the same path.)
 
 - [ ] **M10. There's no privacy or terms page.** The site now holds email addresses and, once AI is on, sends recipes and photos to a provider. The footer has only the data credit and disclaimer, and a crawl of the whole site found no such page.
+
+  *Still open, on purpose: privacy and terms pages need legal review.*
+
   1. Scroll to the footer of any page. There are no links besides USDA.
 
 ### Low
 
-- [ ] **L1. One Back press seems to do nothing in the planner.** Click **Plan** in the header while on step 3, click **Pick foods**, press Back. The address changes to `/plan` but step 1 stays.
-- [ ] **L2. A second open tab doesn't get the new plan.** Open a plan in two tabs. In tab 2, add a food and click **Make my plan**. Tab 1 says **Out of date** until reloaded.
-- [ ] **L3. Compare starts at a different serving.** On `/food/2684440` the page shows 3 oz, 116 kcal. Click **Compare**. The label for the same food shows 100 g, 136 kcal.
-- [ ] **L4. Two spellings of microgram.** Nutrients use "mcg" and contaminants use "µg", on the same food page. Compare **All nutrients** and **Contaminants** on any food.
+- [x] **L1. One Back press seems to do nothing in the planner.** Click **Plan** in the header while on step 3, click **Pick foods**, press Back. The address changes to `/plan` but step 1 stays.
+
+  *Fixed. Leaving a bare `/plan` now names its step in that history entry, so Back returns to it.*
+- [x] **L2. A second open tab doesn't get the new plan.** Open a plan in two tabs. In tab 2, add a food and click **Make my plan**. Tab 1 says **Out of date** until reloaded.
+
+  *Fixed. Other tabs pick up the new plan as soon as it's saved.*
+- [x] **L3. Compare starts at a different serving.** On `/food/2684440` the page shows 3 oz, 116 kcal. Click **Compare**. The label for the same food shows 100 g, 136 kcal.
+
+  *Fixed. Compare labels use the same serving choices and default as the food page.*
+- [x] **L4. Two spellings of microgram.** Nutrients use "mcg" and contaminants use "µg", on the same food page. Compare **All nutrients** and **Contaminants** on any food.
+
+  *Fixed. "mcg" throughout, in contaminants and on the methodology page.*
 - [ ] **L5. Inconsistent food and category names.**
+
+  *Partly fixed. History now uses the site's food names. **Still open:** the home chips and category pages use different names, which needs a decision on wording.*
+
   - History shows raw USDA names ("Fish, salmon, sockeye, wild caught, raw") where everywhere else says "Salmon, sockeye, wild caught, raw".
   - The home chip says "Fish & shellfish" and leads to "Finfish and Shellfish Products". "Grains & pasta" leads to "Cereal Grains and Pasta".
-- [ ] **L6. Small wording slips.**
+- [x] **L6. Small wording slips.**
+
+  *Fixed. "Untitled recipe" everywhere, "1 ingredient", and "an 80 kg adult".*
+
   - An unnamed recipe is "My recipe" (Start blank), "Untitled recipe" (Recent recipes), "Recipe: Untitled" (planner) or "your recipe" (message).
   - Recent recipes can say "1 ingredients".
   - Details say "a 80 kg adult".
-- [ ] **L7. Food rows in History show only a date.** The home cards show calories and what a food is rich in. History has none of that, as `docs/ACCOUNTS.md` notes. Open a food signed in, then **Account**.
-- [ ] **L8. A tab left open after signing out elsewhere.** Open `/account/history` in two tabs. Sign out in one. The other's header changes to **Sign in**, but the page stays, and changing tabs gives "Couldn't load your history".
-- [ ] **L9. Page titles and headings.** `/account/sign-in` and `/account/history` have the title "Sign in" and "History" with no site name, while other pages have one. `/plan` has no main heading once the welcome panel is gone.
+- [x] **L7. Food rows in History show only a date.** The home cards show calories and what a food is rich in. History has none of that, as `docs/ACCOUNTS.md` notes. Open a food signed in, then **Account**.
+
+  *Fixed. Food rows show calories per typical serving and what the food is rich in. Rows saved earlier keep what they have until the food is viewed again.*
+- [x] **L8. A tab left open after signing out elsewhere.** Open `/account/history` in two tabs. Sign out in one. The other's header changes to **Sign in**, but the page stays, and changing tabs gives "Couldn't load your history".
+
+  *Fixed. Signing out in one tab sends an account page in another tab to sign-in, and so does an expired session.*
+- [x] **L9. Page titles and headings.** `/account/sign-in` and `/account/history` have the title "Sign in" and "History" with no site name, while other pages have one. `/plan` has no main heading once the welcome panel is gone.
+
+  *Fixed. Account pages now carry the site name, and `/plan` always has a main heading.*
 - [ ] **L10. Keyboard gaps.** After **Add to my plan** the button is replaced and focus drops to the page, and **Open plan** in the message is the far end of the page by Tab. On the home page focus starts in search, so the skip link is only reachable with Shift+Tab.
+
+  *Partly fixed. After adding a food, focus moves to the link that replaces the button. **Still open:** the home page skip link is reachable only with Shift+Tab, because search takes focus first.*
 - [ ] **L11. Search order for "rice".** The first results are black and then red rice, ahead of everyday white or brown rice. Search `rice` on the home page.
+
+  *Still open. Changing the ranking affects every search, so it needs its own test set.*
 - [ ] **L12. Some contaminant matches look loose.** All disclosed in **Based on**, but they may surprise people.
+
+  *Still open. These are data-matching decisions, and all are disclosed under **Based on**.*
+
   - Sockeye salmon's microplastics are based on "Alaska pollock".
   - "Apples, raw, without skin" uses "Apple, red, with peel, raw".
   - Black rice has no metals data, while white rice does.
 - [ ] **L13. Demo-mode wording.** "Your photo goes to our AI provider" appears even when no provider is connected. The demo reader treats any text as ingredients: paste `hello there, how are you today?`, and you get a row called "hello there how are you today?". Neither applies once real AI is on.
+
+  *Still open. Neither applies once real AI is on.*
 - [ ] **L14. A console warning.** Pages left open for a few seconds log "preloaded using link preload but not used" for one stylesheet. It's harmless and doesn't affect anything visible.
-- [ ] **L15. The site's one-line description is out of date.** The home tagline and search-engine description mention looking up nutrients and planning, but not recipes or contaminants.
+
+  *Still open. Harmless, and it comes from the framework.*
+- [x] **L15. The site's one-line description is out of date.** The home tagline and search-engine description mention looking up nutrients and planning, but not recipes or contaminants.
+
+  *Fixed. The tagline and search description now mention contaminants and recipes.*
 - [ ] **L16. Rest of the README.** The first page and Features are updated. The Usage Guide, Project Structure and Screenshots sections weren't in scope and still describe the planner as the main page.
+
+  *Still open. A documentation job, outside this round.*
 
 ## 15. What was checked, and what couldn't be
 
@@ -590,7 +675,7 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
 | Best sources rankings | The nutrient page and the planner tab match (checked vitamin D) |
 | Anonymous use after sign-out and account deletion | Works |
 | Sideways scrolling at 390 px | None on 12 page types, plus the plan, recipe and account screens |
-| Error states | Contaminants, search and the planner each explain a failed request and offer **Try again**, and the planner keeps your foods and goals. Recipes show the error but lose the text ([M9](#14-rough-edges-checklist)) |
+| Error states | Contaminants, search and the planner each explain a failed request and offer **Try again**, and the planner keeps your foods and goals. Recipes show the error and keep the text |
 | 404 pages | Friendly on food, nutrient, category and general addresses, each with a way back |
 | Console errors | None in normal use. The only ones were for the deliberate 404s, forced failures, and L8 |
 | Speed | Nothing over 1 second. Across the crawl, the typical page took 79 ms and the slowest 325 ms. Reading a recipe took about 0.4 s and a sample day about 0.1 s. This is on a laptop with no network in between, so a deployed site will be slower |
@@ -600,5 +685,5 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
 - **Real email:** links were read from the terminal. **Google sign-in** isn't set up locally.
 - **A real AI provider:** recipes and photos ran on the offline demo reader, so real-world reading accuracy is unknown.
 - **Stripe and any paid features,** which were out of scope, and the deployed site on AWS.
-- **External links:** USDA and the contaminant source links weren't opened, other than the GitHub check in M1.
+- **External links:** USDA and the contaminant source links weren't opened.
 - **Screen readers.** Labels, roles and focus were checked in code and by keyboard, but no screen reader was run.

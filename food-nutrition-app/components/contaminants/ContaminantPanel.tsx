@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useId, useState } from 'react';
 import {
     LEVELS, formatAmount, formatPercent, levelLabel,
@@ -112,8 +113,8 @@ function ReferenceDetails({ item }: { item: ContaminantItem }) {
         <div className={styles.block}>
             <h5 className={styles.blockTitle}>Reference used</h5>
             <p>
-                {formatAmount(r.amountUg)} µg per {r.period}
-                {r.bodyWeightKg !== null ? ` for a ${r.bodyWeightKg} kg adult` : ''}, from {r.authority} ({r.year}), set for: {r.population.toLowerCase()}.
+                {formatAmount(r.amountUg)} mcg per {r.period}
+                {r.bodyWeightKg !== null ? ` for ${/^(8|18)/.test(String(r.bodyWeightKg)) ? 'an' : 'a'} ${r.bodyWeightKg} kg adult` : ''}, from {r.authority} ({r.year}), set for: {r.population.toLowerCase()}.
             </p>
             <p className={styles.muted}>{r.basis}.</p>
             {r.whyChosen && <p className={styles.muted}>Why this one: {r.whyChosen}</p>}
@@ -339,7 +340,7 @@ export default function ContaminantPanel({ fdcId, servingGrams }: { fdcId: numbe
                 <h2 className={styles.title} id={titleId}>Contaminants</h2>
                 <p className={styles.explanation}>
                     No public contaminant testing matches this food yet. That doesn&apos;t tell you anything either way about what it contains.{' '}
-                    <a href={report.methodologyUrl} target="_blank" rel="noopener noreferrer">How we match foods</a>
+                    <Link href={`${report.methodologyUrl}#similar-foods`}>How we match foods</Link>
                 </p>
             </section>
         );
@@ -362,7 +363,7 @@ export default function ContaminantPanel({ fdcId, servingGrams }: { fdcId: numbe
                         <li>Microplastics, particles per serving: low under 10, moderate 10-50, elevated 50-200, high 200 or more. This compares studied foods and is not a safety rating.</li>
                     </ul>
                     <p>Similar foods share one set of measurements, so large and medium eggs use the same egg testing. Dried and cooked forms are scaled for water content where that is reasonable.</p>
-                    <p><a href={report.methodologyUrl} target="_blank" rel="noopener noreferrer">Read the full methodology and all sources</a></p>
+                    <p><Link href={report.methodologyUrl}>Read the full methodology and all sources</Link></p>
                 </div>
             </details>
             <p className={styles.disclaimer}>{report.disclaimer}</p>

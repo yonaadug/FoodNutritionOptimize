@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import Icon from '@/components/ui/Icon';
 import type { AnalyzedRecipe } from '@/lib/recipes/types';
 import { fmt } from '@/lib/food-page';
@@ -22,8 +22,13 @@ Ingredients
 Instructions
 Mash the bananas, stir in everything else, and fry small pancakes in the butter.`;
 
+const ingredientCount = (n: number) => `${n} ${n === 1 ? 'ingredient' : 'ingredients'}`;
+
 interface Props {
     error: string | null;
+    /** What's in the paste box. Kept by the page, so a failed or cancelled read doesn't lose it. */
+    text: string;
+    onTextChange: (text: string) => void;
     recents: AnalyzedRecipe[];
     onText: (text: string) => void;
     onPhoto: (file: File) => void;
@@ -33,8 +38,7 @@ interface Props {
 }
 
 /** Three ways in: paste text, add a photo, or start blank. */
-export default function RecipeStart({ error, recents, onText, onPhoto, onBlank, onOpenRecent, onRemoveRecent }: Props) {
-    const [text, setText] = useState('');
+export default function RecipeStart({ error, text, onTextChange: setText, recents, onText, onPhoto, onBlank, onOpenRecent, onRemoveRecent }: Props) {
     const textId = useId();
     const canSubmit = text.trim().length > 0;
 
@@ -121,8 +125,8 @@ export default function RecipeStart({ error, recents, onText, onPhoto, onBlank, 
                                     <span className={styles.recentTitle}>{r.title}</span>
                                     <span className="tiny muted">
                                         {r.perServing.calories === null || r.perServing.calories === undefined
-                                            ? `${r.ingredients.length} ingredients`
-                                            : `${r.incomplete.includes('calories') ? '≥ ' : ''}${fmt(r.perServing.calories, 0)} kcal per serving · ${r.ingredients.length} ingredients`}
+                                            ? ingredientCount(r.ingredients.length)
+                                            : `${r.incomplete.includes('calories') ? '≥ ' : ''}${fmt(r.perServing.calories, 0)} kcal per serving · ${ingredientCount(r.ingredients.length)}`}
                                     </span>
                                 </button>
                                 <button type="button" className="btn btn-ghost btn-sm" aria-label={`Remove ${r.title} from recent recipes`} onClick={() => onRemoveRecent(r.id)}>

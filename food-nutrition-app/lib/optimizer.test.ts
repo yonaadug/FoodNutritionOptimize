@@ -351,6 +351,21 @@ describe('optimizeDiet: missing data (null nutrients)', () => {
         assert.deepEqual(result.warnings, []);
     });
 
+    it('warns about a recipe whose total is only a lower bound, though it has a number', () => {
+        const recipe = makeFood({
+            id: -5, description: 'Recipe: Dinner', calories: 200, protein_g: 20, iron_mg: 2,
+            recipe: { id: 'r', servingGrams: 100, uncounted: [], incomplete: ['iron_mg'], fingerprint: 'x' },
+        });
+        const result = optimizeDiet({
+            foods: [broccoli],
+            guaranteedFoods: [{ food: recipe, grams: 100 }],
+            customConstraints: { iron_mg: { min: 1 }, protein_g: { min: 1 } },
+        });
+        const w = result.warnings!.find(x => x.foodId === -5);
+        assert.deepEqual(w?.nutrients, ['iron_mg']);
+        assert.equal(w?.inDiet, true);
+    });
+
     it('includes warnings on infeasible results too', () => {
         const constraints = relaxed();
         constraints.vitamin_c_mg = { min: 50 };

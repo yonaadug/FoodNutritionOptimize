@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import RecipeAnalyzer from './RecipeAnalyzer';
 import { recordHistory } from '@/lib/auth/client';
 import { recipeHistoryItem } from '@/lib/recipes/history';
@@ -18,6 +19,20 @@ export default function RecipesPage() {
     const onRecipeAnalyzed = useCallback((recipe: AnalyzedRecipe) => {
         void recordHistory(recipeHistoryItem(recipe));
     }, []);
+    // undefined until the address has been read, in the browser.
+    const [urlId, setUrlId] = useState<string | null | undefined>(undefined);
 
-    return <RecipeAnalyzer onRecipeAnalyzed={onRecipeAnalyzed} />;
+    return (
+        <>
+            {/* Only this reads the query string, so the page itself still renders on the server. */}
+            <Suspense fallback={null}><RecipeIdFromAddress onChange={setUrlId} /></Suspense>
+            <RecipeAnalyzer onRecipeAnalyzed={onRecipeAnalyzed} urlId={urlId} />
+        </>
+    );
+}
+
+function RecipeIdFromAddress({ onChange }: { onChange: (id: string | null) => void }) {
+    const id = useSearchParams().get('id');
+    useEffect(() => { onChange(id); }, [id, onChange]);
+    return null;
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { OlderEntryMark } from '@/components/food/FoodLink';
+import { isFilled } from '@/lib/nutrient-fill';
 import type { Food } from '@/lib/food-types';
 import { amountFor, dailyValue, fmtNumber, hasCoreData, nutrientLabel, nutrientUnit } from '@/components/planner/nutrients';
 
@@ -52,6 +54,7 @@ export default function NutritionLabel({ food, grams = 100, servingLabel, titleA
         return Math.round((v / dv) * 100);
     };
     const kcal = val('calories');
+    const usesOlderEntry = [...MAIN.map(r => r.key), ...(micros === 'fda' ? FDA_MICROS : MICROS)].some(k => isFilled(food, k));
 
     return (
         <div className="nutrition-label" style={{
@@ -91,7 +94,7 @@ export default function NutritionLabel({ food, grams = 100, servingLabel, titleA
                         borderBottom: row.key === 'protein_g' ? 'none' : '1px solid var(--border-strong)',
                         paddingLeft: row.indent ? 14 : 0, fontWeight: row.bold ? 700 : 400,
                     }}>
-                        <span>{row.label ?? nutrientLabel(row.key)} <span style={{ fontWeight: 400 }}>{v === null ? '—' : `${fmtNumber(v)} ${unitOf(row.key)}`}</span></span>
+                        <span>{row.label ?? nutrientLabel(row.key)} <span style={{ fontWeight: 400 }}>{v === null ? '—' : `${fmtNumber(v)} ${unitOf(row.key)}`}{isFilled(food, row.key) && <OlderEntryMark />}</span></span>
                         {pct !== null && <span style={{ fontWeight: 700 }}>{pct}%</span>}
                     </div>
                 );
@@ -107,7 +110,7 @@ export default function NutritionLabel({ food, grams = 100, servingLabel, titleA
                     const pct = dvPct(key, v);
                     return (
                         <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
-                            <span>{nutrientLabel(key)} <span style={{ color: 'var(--text-secondary)' }}>{v === null ? '—' : `${fmtNumber(v)} ${unitOf(key)}`}</span></span>
+                            <span>{nutrientLabel(key)} <span style={{ color: 'var(--text-secondary)' }}>{v === null ? '—' : `${fmtNumber(v)} ${unitOf(key)}`}{isFilled(food, key) && <OlderEntryMark />}</span></span>
                             {pct !== null && <span style={{ fontWeight: 700 }}>{pct}%</span>}
                         </div>
                     );
@@ -115,6 +118,7 @@ export default function NutritionLabel({ food, grams = 100, servingLabel, titleA
             </div>
 
             <div style={{ borderTop: '4px solid var(--text-primary)', marginTop: 6, paddingTop: 4, fontSize: 10, lineHeight: 1.35 }}>
+                {usesOlderEntry && <>† From USDA&apos;s older entry for {food.recipe ? 'that ingredient' : 'this food'}, which has a value where the newest entry doesn&apos;t. </>}
                 * The % Daily Value tells you how much a nutrient in a serving contributes to a daily diet. 2,000 calories a day is used for general nutrition advice. &ldquo;—&rdquo; = no data.
             </div>
         </div>

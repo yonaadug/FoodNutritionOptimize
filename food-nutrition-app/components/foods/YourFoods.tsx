@@ -4,6 +4,8 @@ import { useId, useState } from 'react';
 import type { Food } from '@/lib/food-types';
 import Icon from '@/components/ui/Icon';
 import NumberInput from '@/components/ui/NumberInput';
+import FoodLink from '@/components/food/FoodLink';
+import { getPlanSnapshot, restorePlanSnapshot, type PlanStoreState } from '@/hooks/usePlan';
 import { plannerActions, type FixedFood, type FoodLimits } from '@/hooks/usePlannerState';
 import { householdAmount, splitFoodName, hasCoreData } from '@/components/planner/nutrients';
 import { friendlyServingLabel } from '@/lib/servings';
@@ -21,13 +23,13 @@ interface YourFoodsProps {
 }
 
 export default function YourFoods({ foods, fixedFoods, foodLimits, onCompare, onTrySample, sampleLoading, sampleError, onCleared }: YourFoodsProps) {
-    const [undo, setUndo] = useState<{ foods: Food[]; fixedFoods: FixedFood[]; foodLimits: FoodLimits } | null>(null);
+    const [undo, setUndo] = useState<{ foods: Food[]; fixedFoods: FixedFood[]; foodLimits: FoodLimits; plan: PlanStoreState } | null>(null);
     const titleId = useId();
     const count = foods.length + fixedFoods.length;
     const limited = [...foods, ...fixedFoods.map(f => f.food)].filter(f => !hasCoreData(f)).length;
 
     const clearAll = () => {
-        setUndo({ foods, fixedFoods, foodLimits });
+        setUndo({ foods, fixedFoods, foodLimits, plan: getPlanSnapshot() });
         plannerActions.clearFoods();
         onCleared?.();
     };
@@ -45,7 +47,7 @@ export default function YourFoods({ foods, fixedFoods, foodLimits, onCompare, on
                 <div className="undo-bar" role="status">
                     <span style={{ flex: 1 }}>Cleared {undo.foods.length + undo.fixedFoods.length} {undo.foods.length + undo.fixedFoods.length === 1 ? 'food' : 'foods'}.</span>
                     <button type="button" className="btn btn-secondary btn-sm"
-                        onClick={() => { plannerActions.restoreFoods(undo.foods, undo.fixedFoods, undo.foodLimits); setUndo(null); }}>Undo</button>
+                        onClick={() => { plannerActions.restoreFoods(undo.foods, undo.fixedFoods, undo.foodLimits); restorePlanSnapshot(undo.plan); setUndo(null); }}>Undo</button>
                 </div>
             )}
 
@@ -111,9 +113,14 @@ function BasketItem({ food, fixedGrams, limits }: { food: Food; fixedGrams: numb
             <div className="basket-head">
                 <div className="basket-name">
                     <div className="food-name-line" title={food.description}>
-                        {name}{detail && <span className="food-detail" style={{ fontWeight: 400 }}>, {detail}</span>}
+                        <FoodLink food={food}>
+                            {name}{detail && <span className="food-detail" style={{ fontWeight: 400 }}>, {detail}</span>}
+                        </FoodLink>
                     </div>
                     <div className="basket-sub">{isFixed && <span className="chip chip-primary" style={{ marginRight: 6 }}><Icon name="pin" size={11} /> Fixed</span>}{sub}</div>
+                    {food.recipe && food.recipe.uncounted.length > 0 && (
+                        <div className="tiny" style={{ color: 'var(--warning)' }}>Not counted: {food.recipe.uncounted.join(', ')}</div>
+                    )}
                 </div>
                 <button type="button" className="icon-btn icon-btn-sm" aria-expanded={open} aria-controls={optionsId}
                     aria-label={`Options for ${food.description}`} title="More options" onClick={() => setOpen(o => !o)}>

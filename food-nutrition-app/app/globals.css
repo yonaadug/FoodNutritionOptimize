@@ -811,3 +811,27 @@ a.chip-btn { text-decoration: none; }
 .main { padding-top: var(--space-5); }
 .main .stepper:first-child { margin-top: 0; }
 .main .hero { margin-bottom: 0; }
+
+/* ---------------- links to food pages, and values from an older USDA entry ---------------- */
+.food-link { color: inherit; text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 2px; }
+.food-link:hover { color: var(--primary); text-decoration-color: currentColor; }
+.older-mark { color: var(--text-secondary); font-size: 0.8em; margin-left: 1px; cursor: help; line-height: 0; }
+.suggestion-wrap { display: inline-flex; align-items: center; gap: 2px; max-width: 100%; }
+.suggestion-info { display: inline-flex; padding: 4px; color: var(--text-muted); border-radius: 999px; }
+.suggestion-info:hover { color: var(--primary); }
+.food-actions-wrap { display: flex; flex-direction: column; gap: 6px; }
+.food-actions-hint { margin: 0; max-width: 640px; }
+
+/* ---------------- the methodology page ---------------- */
+.prose { max-width: 760px; }
+.prose h1 { margin-bottom: var(--space-3); }
+.prose h2 { font-size: 20px; margin: var(--space-6) 0 var(--space-2); }
+.prose h3 { font-size: 16px; margin: var(--space-5) 0 var(--space-2); }
+.prose p, .prose ul { margin: 0 0 var(--space-3); line-height: 1.6; }
+.prose ul { padding-left: 20px; }
+.prose li { margin-bottom: 6px; }
+.prose table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.prose th, .prose td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.prose th { font-weight: 700; }
+.prose .table-scroll { margin-bottom: var(--space-3); }
+.prose :target { scroll-margin-top: 80px; }

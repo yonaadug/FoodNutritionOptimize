@@ -3,9 +3,10 @@ import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getFoodByFdcId, getRelatedFoods } from '@/lib/db';
 import type { Food } from '@/lib/food-types';
-import { categorySlug, datasetInfo, fdcUrl, fmt, foodPath, formatPublicationDate, parseFoodParam, resultNutrients } from '@/lib/food-page';
+import { categorySlug, datasetInfo, fdcUrl, fmt, foodPath, formatPublicationDate, nutrientName, parseFoodParam, resultNutrients } from '@/lib/food-page';
+import { filledKeys } from '@/lib/nutrient-fill';
 import { typicalServing } from '@/lib/servings';
-import { dataSourceLabel, hasCoreData, nv, splitFoodName } from '@/components/planner/nutrients';
+import { dataSourceLabel, displayFoodName, hasCoreData, nv, splitFoodName } from '@/components/planner/nutrients';
 import { DatasetBadge } from '@/components/explore/FoodResultRow';
 import FoodCard from '@/components/explore/FoodCard';
 import FoodDetail from '@/components/food/FoodDetail';
@@ -17,11 +18,7 @@ async function loadFood(idParam: string): Promise<Food | null> {
     return (await getFoodByFdcId(parsed.fdcId)) ?? null;
 }
 
-/** "Fish, salmon, sockeye, raw" -> "Salmon, sockeye, raw". */
-function displayName(food: Food): string {
-    const { name, detail } = splitFoodName(food.description);
-    return detail ? `${name}, ${detail}` : name;
-}
+const displayName = (food: Food) => displayFoodName(food.description);
 
 export async function generateMetadata({ params }: PageProps<'/food/[id]'>): Promise<Metadata> {
     const food = await loadFood((await params).id);
@@ -61,6 +58,8 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
     const dataset = datasetInfo(food.data_type);
     const published = formatPublicationDate(food.publication_date);
     const compareSuggestions = [...related.forms.slice(0, 5), ...related.similar.slice(0, 3)];
+    const filled = filledKeys(food);
+    const olderEntry = filled.length > 0 ? food.filledFrom![filled[0]] : null;
 
     return (
         <main className="container food-page">
@@ -137,6 +136,16 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
                         <div>
                             <dt>Release used</dt>
                             <dd>{food.source_release}</dd>
+                        </div>
+                    )}
+                    {olderEntry !== null && (
+                        <div>
+                            <dt>Older entry used</dt>
+                            <dd>
+                                {filled.slice(0, 4).map(nutrientName).join(', ')}{filled.length > 4 ? ` and ${filled.length - 4} more` : ''}: from{' '}
+                                <Link href={`/food/${olderEntry}`} prefetch={false}>USDA&apos;s older entry for this food</Link>,
+                                because this record has no value for {filled.length === 1 ? 'it' : 'them'}. Values measured in this record are never replaced.
+                            </dd>
                         </div>
                     )}
                     {related.equivalents.length > 0 && (

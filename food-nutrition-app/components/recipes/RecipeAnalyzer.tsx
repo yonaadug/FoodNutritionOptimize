@@ -2,11 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Icon from '@/components/ui/Icon';
+import { currentUserId, fetchHistoryItem, useCurrentUser } from '@/lib/auth/client';
+import { LOCAL_DATA_CLEARED_EVENT } from '@/lib/local-data';
+import { recipeFromHistory, recipeHref } from '@/lib/recipes/history';
 import { notify } from '@/hooks/useToasts';
 import {
     blankEditor, clampServings, editorFromParse, editorFromRecord, loadRecents, RECENTS_KEY, removeRecent, rowsNutrition,
     saveRecent, setRowAmount, setRowFood, toRecord, type EditorState,
 } from '@/lib/recipes/editor';
+import { UNTITLED_RECIPE } from '@/lib/recipes/nutrition';
 import type { AnalyzedIngredient, AnalyzedRecipe, ParseResponse, RecipeFood, RecipeNutrition } from '@/lib/recipes/types';
 import { fetchFood, matchLine, parseImage, parseText } from './api';
 import { downscaleForUpload } from './downscale';
@@ -29,7 +33,16 @@ function newId(): string {
 }
 
 const recentsListeners = new Set<() => void>();
-const subscribeRecents = (cb: () => void) => { recentsListeners.add(cb); return () => { recentsListeners.delete(cb); }; };
+const subscribeRecents = (cb: () => void) => {
+    recentsListeners.add(cb);
+    // Cleared or changed in another tab.
+    const onStorage = (e: StorageEvent) => { if (e.key === RECENTS_KEY) cb(); };
+    window.addEventListener('storage', onStorage);
+    return () => {
+        recentsListeners.delete(cb);
+        window.removeEventListener('storage', onStorage);
+    };
+};
 const recentsSnapshot = () => { try { return browserStorage()?.getItem(RECENTS_KEY) ?? null; } catch { return null; } };
 const emitRecents = () => recentsListeners.forEach(l => l());
 
@@ -38,9 +51,25 @@ const SAVE_DEBOUNCE_MS = 800;
 
 type Phase = 'start' | 'reading' | 'editing';
 
-export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?: (recipe: AnalyzedRecipe) => void }) {
+/** Put a recipe in the address, so Back, a reload and sign-in can all return to it. */
+function showInAddress(id: string | null) {
+    const url = id === null ? '/recipes' : recipeHref(id);
+    if (`${window.location.pathname}${window.location.search}` !== url) window.history.pushState(null, '', url);
+}
+
+interface RecipeAnalyzerProps {
+    onRecipeAnalyzed?: (recipe: AnalyzedRecipe) => void;
+    /** The recipe the address names: undefined until read, null when it names none. */
+    urlId?: string | null;
+}
+
+export default function RecipeAnalyzer({ onRecipeAnalyzed, urlId }: RecipeAnalyzerProps) {
+    const { user } = useCurrentUser();
     const [phase, setPhase] = useState<Phase>('start');
+    // What's in the paste box. Lives here so a failed or cancelled read doesn't lose it.
+    const [draft, setDraft] = useState('');
     const [readingPhoto, setReadingPhoto] = useState(false);
+    const [openingSaved, setOpeningSaved] = useState(false);
     const [editor, setEditor] = useState<EditorState | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -48,6 +77,8 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?
     const heading = useRef<HTMLHeadingElement>(null);
     const lastSaved = useRef<string>('');
     const pendingSave = useRef<{ editor: EditorState; nutrition: RecipeNutrition } | null>(null);
+    // The recipe on screen or on its way, to tell our own address changes from Back and links.
+    const shownId = useRef<string | null>(null);
 
     const rawRecents = useSyncExternalStore(subscribeRecents, recentsSnapshot, () => null);
     const recents = useMemo(() => (rawRecents ? loadRecents(browserStorage()) : []), [rawRecents]);
@@ -67,12 +98,16 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?
         if (!current) return;
         pendingSave.current = null;
         const record = toRecord(current.editor, current.nutrition, new Date().toISOString());
+        // Work that isn't this account's stays out of its history until they choose to save it.
+        const claimed = !current.editor.unclaimed;
+        const ownerId = claimed ? currentUserId() : null;
+        if (ownerId) record.ownerId = ownerId;
         const key = JSON.stringify({ ...record, updatedAt: '' });
         if (key === lastSaved.current) return;
         lastSaved.current = key;
         saveRecent(browserStorage(), record);
         emitRecents();
-        onRecipeAnalyzed?.(record);
+        if (claimed) onRecipeAnalyzed?.(record);
     }, [onRecipeAnalyzed]);
 
     useEffect(() => {
@@ -97,11 +132,16 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?
         abort.current = controller;
         setError(null);
         setReadingPhoto(isPhoto);
+        setOpeningSaved(false);
         setPhase('reading');
         try {
             const parsed = await run(controller.signal);
-            setEditor(editorFromParse(parsed, newId(), new Date().toISOString()));
+            const id = newId();
+            shownId.current = id;
+            setEditor(editorFromParse(parsed, id, new Date().toISOString()));
             setPhase('editing');
+            setDraft('');
+            showInAddress(id);
         } catch (e) {
             if ((e as Error).name === 'AbortError') return;
             setError((e as Error).message);
@@ -122,8 +162,11 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?
     const onBlank = useCallback(() => {
         setError(null);
         setPhotoUrl(null);
-        setEditor(blankEditor(newId(), new Date().toISOString()));
+        const id = newId();
+        shownId.current = id;
+        setEditor(blankEditor(id, new Date().toISOString()));
         setPhase('editing');
+        showInAddress(id);
     }, []);
 
     const cancelReading = useCallback(() => {
@@ -132,18 +175,29 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?
         setPhase('start');
     }, []);
 
-    const startOver = useCallback(() => {
+    const backToStart = useCallback(() => {
         flushSave();
         lastSaved.current = '';
+        shownId.current = null;
         setEditor(null);
         setPhotoUrl(null);
         setError(null);
         setPhase('start');
     }, [flushSave]);
 
+    const startOver = useCallback(() => {
+        backToStart();
+        showInAddress(null);
+    }, [backToStart]);
+
     const onOpenRecent = useCallback(async (record: AnalyzedRecipe) => {
+        flushSave();
+        lastSaved.current = '';
+        shownId.current = record.id;
+        showInAddress(record.id);
         setError(null);
         setReadingPhoto(false);
+        setOpeningSaved(true);
         setPhotoUrl(null);
         setPhase('reading');
         try {
@@ -157,6 +211,76 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?
             setError((e as Error).message);
             setPhase('start');
         }
+    }, [flushSave]);
+
+    // Open a recipe by its id: from this browser, or from the account on any other.
+    const openById = useCallback(async (id: string) => {
+        const local = loadRecents(browserStorage()).find(r => r.id === id);
+        if (local) {
+            await onOpenRecent(local);
+            return;
+        }
+        shownId.current = id;
+        setError(null);
+        setOpeningSaved(true);
+        setPhase('reading');
+        const found = await fetchHistoryItem('recipe', id);
+        if (shownId.current !== id) return;
+        const record = found.status === 'ok' ? recipeFromHistory(found.item) : null;
+        if (record) {
+            record.ownerId = currentUserId() ?? undefined;
+            await onOpenRecent(record);
+            return;
+        }
+        // Keep the address when signing in could still find it.
+        const keepAddress = found.status === 'signed-out' || found.status === 'failed';
+        if (!keepAddress) {
+            shownId.current = null;
+            window.history.replaceState(window.history.state, '', '/recipes');
+        }
+        setError(
+            found.status === 'signed-out' ? 'That recipe isn’t saved in this browser. Sign in to the account that saved it to open it here.'
+                : found.status === 'failed' ? 'We couldn’t open that recipe. Check your connection, then try again.'
+                    : found.status === 'ok' ? 'That recipe was too long to keep in full, so it can only be opened in the browser where you made it.'
+                        : 'We couldn’t find that recipe. It may have been removed.',
+        );
+        setPhase('start');
+    }, [onOpenRecent]);
+
+    // The address changed: Back, Forward, a link, or arriving at this page.
+    const followAddress = useCallback((id: string | null) => {
+        if (id === shownId.current) return;
+        if (id === null) backToStart();
+        else void openById(id);
+    }, [backToStart, openById]);
+
+    useEffect(() => {
+        if (urlId !== undefined) followAddress(urlId); // eslint-disable-line react-hooks/set-state-in-effect -- following the address
+    }, [urlId, followAddress]);
+
+    // Back and Forward directly too: the router's copy of the address can lag behind a quick press.
+    useEffect(() => {
+        const onPop = () => followAddress(new URLSearchParams(window.location.search).get('id'));
+        window.addEventListener('popstate', onPop);
+        return () => window.removeEventListener('popstate', onPop);
+    }, [followAddress]);
+
+    // Signed out here: what was on screen went with the rest of this browser's data.
+    useEffect(() => {
+        const onCleared = () => {
+            abort.current?.abort();
+            pendingSave.current = null;
+            lastSaved.current = '';
+            shownId.current = null;
+            setEditor(null);
+            setDraft('');
+            setPhotoUrl(null);
+            setError(null);
+            setPhase('start');
+            emitRecents();
+        };
+        window.addEventListener(LOCAL_DATA_CLEARED_EVENT, onCleared);
+        return () => window.removeEventListener(LOCAL_DATA_CLEARED_EVENT, onCleared);
     }, []);
 
     const onRemoveRecent = useCallback((id: string) => {
@@ -200,6 +324,8 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?
             <main className={`container ${styles.page}`}>
                 <RecipeStart
                     error={error}
+                    text={draft}
+                    onTextChange={setDraft}
                     recents={recents}
                     onText={onText}
                     onPhoto={onPhoto}
@@ -221,7 +347,7 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?
                         <img className={styles.readingPhoto} src={photoUrl} alt="Your photo" />
                     )}
                     <span className="spinner" aria-hidden="true" />
-                    <p className={styles.readingText}>Reading your recipe…</p>
+                    <p className={styles.readingText}>{openingSaved ? 'Opening your recipe…' : 'Reading your recipe…'}</p>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={cancelReading}>Cancel</button>
                 </div>
             </main>
@@ -240,6 +366,19 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?
                 </button>
             </div>
 
+            {user && editor!.unclaimed && (
+                <div className={styles.noticeInfo} role="note" data-testid="recipe-unclaimed">
+                    <Icon name="info" size={18} />
+                    <div>
+                        This recipe was made before you signed in, so it&apos;s only in this browser.{' '}
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => {
+                            patch(s => ({ ...s, unclaimed: false }));
+                            notify('Saved to your account.');
+                        }}>Save to my account</button>
+                    </div>
+                </div>
+            )}
+
             <Notices state={editor!} photoUrl={photoUrl} />
 
             <div className={styles.editorGrid}>
@@ -248,7 +387,7 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed }: { onRecipeAnalyzed?
                         <div className={`field ${styles.titleField}`}>
                             <label className="field-label" htmlFor="recipe-title">Recipe name</label>
                             <input
-                                id="recipe-title" className="input" value={editor!.title} maxLength={120}
+                                id="recipe-title" className="input" value={editor!.title} maxLength={120} placeholder={UNTITLED_RECIPE}
                                 onChange={e => { const title = e.target.value; patch(s => ({ ...s, title })); }}
                             />
                         </div>

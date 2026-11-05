@@ -12,7 +12,7 @@ import {
 
 type DB = Database.Database;
 
-export const METHODOLOGY_URL = 'https://github.com/yonaadug/FoodNutritionOptimize/blob/main/docs/CONTAMINANT_DATA.md';
+export const METHODOLOGY_URL = '/methodology';
 export const DISCLAIMER = 'This is general information from public food testing, not medical advice. It shows typical levels, not what is in any one package. '
     + 'Reference levels are cautious planning values, not a line between safe and harmful. If you are pregnant, feeding young children or have health concerns, talk to your clinician.';
 
@@ -212,7 +212,7 @@ function alternatesFor(ctx: Context, contaminant: string, amount: number): Alter
         const pct = percentOf(amount, referenceAmount(r));
         if (pct === null) return [];
         const allowance = formatAmount(referenceAmount(r));
-        return [{ label: `${r.authority}, ${r.population.toLowerCase()}: ${allowance} µg per ${r.period}`, percent: pct }];
+        return [{ label: `${r.authority}, ${r.population.toLowerCase()}: ${allowance} mcg per ${r.period}`, percent: pct }];
     });
 }
 
@@ -238,7 +238,7 @@ function metalItem(
         name: opts.name,
         status: notDetected ? 'not_detected' : 'measured',
         explanation: '',
-        perServing: { amount: notDetected ? null : amount, upperBound: upper, unit: 'µg', low, high },
+        perServing: { amount: notDetected ? null : amount, upperBound: upper, unit: 'mcg', low, high },
         concentration: {
             value: m.value, unit: m.unit, statistic: m.statistic, upperBound: m.upper_bound, median: m.median,
             low: m.low, high: m.high, reportingLimit: m.reporting_limit,
@@ -271,7 +271,7 @@ function metalItem(
             item.alternates = alternatesFor(ctx, ref.contaminant, amount);
             const level = levelLabel(levelFor(pct, opts.edges), 'reference').toLowerCase();
             const prefix = opts.upperBoundOnly ? 'At most about' : 'About';
-            const share = `${prefix} ${formatAmount(amount)} µg per serving, ${formatPercent(pct)} of ${ref.authority}'s ${ref.period === 'week' ? 'weekly' : 'daily'} reference.`;
+            const share = `${prefix} ${formatAmount(amount)} mcg per serving, ${formatPercent(pct)} of ${ref.authority}'s ${ref.period === 'week' ? 'weekly' : 'daily'} reference.`;
             item.explanation = share;
             item.meter = makeMeter(pct, opts.edges, 'reference', `${opts.name}: ${level}. ${share}`);
         }
@@ -325,7 +325,7 @@ function arsenicItem(ctx: Context): ContaminantItem {
             ...emptyItem('arsenic', 'Total arsenic'),
             status: 'not_rated',
             explanation: 'Not rated. Arsenic in seafood is mostly organic forms considered far less harmful, and this test can\'t separate them.',
-            perServing: { amount, upperBound: null, unit: 'µg', low: null, high: null },
+            perServing: { amount, upperBound: null, unit: 'mcg', low: null, high: null },
             concentration: {
                 value: total.m.value, unit: total.m.unit, statistic: total.m.statistic, upperBound: total.m.upper_bound,
                 median: null, low: null, high: total.m.high, reportingLimit: total.m.reporting_limit,
@@ -438,7 +438,7 @@ function pesticideItem(ctx: Context): ContaminantItem {
         ...base,
         status: 'measured',
         explanation: `${foundOn}${share}`,
-        perServing: { amount: groups.reduce((s, g) => s + g.amountUg, 0), upperBound: null, unit: 'µg', low: null, high: null },
+        perServing: { amount: groups.reduce((s, g) => s + g.amountUg, 0), upperBound: null, unit: 'mcg', low: null, high: null },
         percentOfReference: hi,
         servingsLine: servingsLine(hi, 'day'),
         meter: makeMeter(hi, REFERENCE_DAILY_EDGES, 'reference', `Pesticide residues: ${level}. ${foundOn}${share}`),

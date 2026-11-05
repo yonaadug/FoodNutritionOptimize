@@ -1,18 +1,22 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useId, useMemo, useRef } from 'react';
 import type { Food } from '@/lib/food-types';
+import { isFilled } from '@/lib/nutrient-fill';
+import FoodLink, { OlderEntryMark } from '@/components/food/FoodLink';
+import { useCurrentUser } from '@/lib/auth/client';
 import Icon from '@/components/ui/Icon';
 import NutrientBreakdown, { type BreakdownItem } from '@/components/NutrientBreakdown';
 import { plannerActions, type FixedFood, type PlannerState } from '@/hooks/usePlannerState';
-import type { PlanResult, PlanRunInfo, PlanStatus } from '@/hooks/usePlan';
+import { savePlanNow, type PlanResult, type PlanRunInfo, type PlanStatus } from '@/hooks/usePlan';
 import { notify } from '@/hooks/useToasts';
 import { presetTitle } from '@/components/planner/goals';
 import {
     GOAL_KEYS, amountFor, fmtNumber, householdAmount, nutrientLabel, nutrientUnit, num, shortFoodName, splitFoodName,
 } from '@/components/planner/nutrients';
 import { typicalServing } from '@/lib/servings';
-import { goalProgress, goalSummary, parseIssues, unusedFoods, warningText, type GoalProgress } from './analysis';
+import { goalProgress, goalSummary, olderEntryUse, parseIssues, recipeCaveats, unusedFoods, warningText, type GoalProgress } from './analysis';
 import InfeasibleHelp from './InfeasibleHelp';
 
 interface PlanStepProps {
@@ -27,6 +31,9 @@ interface PlanStepProps {
     onRun: () => void;
     onEditFoods: () => void;
     onEditGoals: () => void;
+    onTrySample: () => void;
+    sampleLoading: boolean;
+    sampleError: string | null;
 }
 
 function timeAgo(ms: number): string {
@@ -38,7 +45,7 @@ function timeAgo(ms: number): string {
     return new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-export default function PlanStep({ state, status, result, error, stale, runInfo, finished, onRun, onEditFoods, onEditGoals }: PlanStepProps) {
+export default function PlanStep({ state, status, result, error, stale, runInfo, finished, onRun, onEditFoods, onEditGoals, onTrySample, sampleLoading, sampleError }: PlanStepProps) {
     const headingRef = useRef<HTMLHeadingElement>(null);
     const headingId = useId();
 
@@ -51,6 +58,8 @@ export default function PlanStep({ state, status, result, error, stale, runInfo,
     const showResult = (status === 'success' || (status === 'loading' && result?.success)) && result;
     const showInfeasible = (status === 'infeasible' || (status === 'loading' && result && !result.success)) && result;
     const restored = finished === 0 && !!runInfo;
+    // Recipes that left ingredients out, whether or not the plan worked out.
+    const caveats = recipeCaveats(status === 'idle' ? [] : [...(runInfo?.fixed ?? []), ...(result?.diet ?? [])]);
 
     return (
         <section aria-labelledby={headingId} className="stack-lg">
@@ -76,11 +85,19 @@ export default function PlanStep({ state, status, result, error, stale, runInfo,
                     <div className="empty-icon"><Icon name="sparkle" /></div>
                     <h2 className="panel-title" id={headingId} ref={headingRef} tabIndex={-1}>No plan yet</h2>
                     <p className="small" style={{ margin: '6px auto 16px', maxWidth: 420 }}>
-                        {hasFoods ? 'Your foods and goals are ready. Build a plan whenever you like; it takes a second.' : 'Add a few foods you like first, then come back here.'}
+                        {hasFoods ? 'Your foods and goals are ready. Build a plan whenever you like; it takes a second.' : 'A plan needs at least one food. Add a few you like, or start from a ready-made day.'}
                     </p>
                     {hasFoods
                         ? <button type="button" className="btn btn-primary btn-lg" onClick={onRun}>Make my plan</button>
-                        : <button type="button" className="btn btn-secondary" onClick={onEditFoods}><Icon name="arrowLeft" size={16} /> Pick foods</button>}
+                        : (
+                            <div className="row-wrap" style={{ justifyContent: 'center' }}>
+                                <button type="button" className="btn btn-primary" onClick={onEditFoods}><Icon name="arrowLeft" size={16} /> Pick foods</button>
+                                <button type="button" className="btn btn-secondary" onClick={onTrySample} disabled={sampleLoading}>
+                                    {sampleLoading ? <><span className="spinner" /> Building a sample day…</> : <><Icon name="sparkle" size={16} /> Try a sample day</>}
+                                </button>
+                            </div>
+                        )}
+                    {!hasFoods && sampleError && <p role="alert" className="small" style={{ color: 'var(--danger)', marginTop: 10 }}>{sampleError}</p>}
                 </div>
             )}
 
@@ -111,6 +128,19 @@ export default function PlanStep({ state, status, result, error, stale, runInfo,
                     </div>
                 </div>
             )}
+
+            {caveats.map(c => (
+                <div key={c.recipeId} className="callout callout-warn" role="note" data-testid="recipe-not-counted">
+                    <span className="callout-icon"><Icon name="alert" /></span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                        <div className="callout-title">{c.name} leaves out {c.uncounted.join(', ')}</div>
+                        <p className="small secondary">
+                            {c.uncounted.length === 1 ? 'It has' : 'They have'} no amount or no matched food, so {c.uncounted.length === 1 ? "it isn't" : "they aren't"} counted in this plan, and real totals can be higher.{' '}
+                            <Link href={`/recipes?id=${encodeURIComponent(c.recipeId)}`} prefetch={false}>Edit the recipe</Link>
+                        </p>
+                    </div>
+                </div>
+            ))}
 
             {showInfeasible && (
                 <div className={status === 'loading' ? 'is-updating' : undefined} aria-busy={status === 'loading'}>
@@ -187,9 +217,15 @@ function PlanResultView({ state, result, runInfo, stale, restored, updating, hea
     const unused = unusedFoods(chosen, result, goalRows.map(g => g.key));
     const chosenCount = chosen.length + fixedAtRun.length;
 
+    const goalKeys = goalRows.map(g => g.key);
+    const olderUse = olderEntryUse(items, goalKeys);
+    const { user } = useCurrentUser();
+    const canSaveToAccount = restored && !stale && !!user && !!runInfo && !runInfo.ownerId;
+
     const breakdown: BreakdownItem[] = items.map(i => ({
         name: i.food.description,
         fixed: i.fixed,
+        food: i.food,
         amounts: Object.fromEntries(['calories', ...GOAL_KEYS].map(k => [k, amountFor(i.food, k, i.grams)])),
     }));
 
@@ -209,7 +245,7 @@ function PlanResultView({ state, result, runInfo, stale, restored, updating, hea
                         </h2>
                         <p className="panel-sub">
                             {items.length} {items.length === 1 ? 'food' : 'foods'}, about {fmtNumber(totalGrams, { decimals: 0 })} g in total. Amounts are for the whole day.
-                            {restored && runInfo && <span className="muted"> Saved on this device · made {timeAgo(runInfo.at)}.</span>}
+                            {restored && runInfo && <span className="muted"> {runInfo.ownerId ? 'Saved to your account' : 'Saved on this device'} · made {timeAgo(runInfo.at)}.</span>}
                         </p>
                     </div>
                     <div className="row-wrap">
@@ -262,6 +298,18 @@ function PlanResultView({ state, result, runInfo, stale, restored, updating, hea
                 </div>
             </div>
 
+            {canSaveToAccount && (
+                <div className="callout callout-info" role="note" data-testid="plan-unclaimed">
+                    <span className="callout-icon"><Icon name="info" /></span>
+                    <div className="row-wrap" style={{ flex: 1 }}>
+                        <span style={{ flex: 1, minWidth: 200 }}>This plan was made before you signed in, so it&apos;s only in this browser.</span>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => {
+                            void savePlanNow(state).then(() => notify('Saved to your account.'));
+                        }}>Save to my account</button>
+                    </div>
+                </div>
+            )}
+
             {warnings.length > 0 && (
                 <div className="callout callout-warn" role="note">
                     <span className="callout-icon"><Icon name="alert" /></span>
@@ -286,6 +334,28 @@ function PlanResultView({ state, result, runInfo, stale, restored, updating, hea
                 </div>
             )}
 
+            {olderUse.length > 0 && (
+                <div className="callout callout-info" role="note" data-testid="plan-older-entries">
+                    <span className="callout-icon"><Icon name="info" /></span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                        <div className="callout-title">Values marked † are from USDA&apos;s older entry for the food</div>
+                        <p className="small secondary">
+                            The newest entry has no measurement for them, so we use the older one. <Link href="/methodology#older-entries">Why we do this</Link>
+                        </p>
+                        <details className="disclosure disclosure-plain" style={{ marginTop: 4 }}>
+                            <summary>See which foods</summary>
+                            <div className="disclosure-body">
+                                <ul style={{ margin: 0, paddingLeft: 18 }} className="small">
+                                    {olderUse.map(u => (
+                                        <li key={u.food.id}><FoodLink food={u.food}>{shortFoodName(u.food.description)}</FoodLink>: {u.nutrients.map(nutrientLabel).join(', ')}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            )}
+
             <div className="layout-2col">
                 <section className="panel" aria-labelledby={`${headingId}-eat`}>
                     <h3 className="panel-title" id={`${headingId}-eat`} style={{ marginBottom: 4 }}>What to eat</h3>
@@ -301,7 +371,7 @@ function PlanResultView({ state, result, runInfo, stale, restored, updating, hea
                     <h3 className="panel-title" id={`${headingId}-progress`} style={{ marginBottom: 12 }}>Goal progress</h3>
                     {progress.filter(p => p.kind === 'goal').length === 0
                         ? <p className="small muted">No goals are switched on.</p>
-                        : <div className="stack" style={{ gap: 14 }}>{goalRows.map(p => <ProgressBar key={p.key} p={p} />)}</div>}
+                        : <div className="stack" style={{ gap: 14 }}>{goalRows.map(p => <ProgressBar key={p.key} p={p} usesOlderEntry={items.some(i => isFilled(i.food, p.key))} />)}</div>}
                     {summary.safety.length > 0 && <SafetyLimits rows={summary.safety} />}
                 </section>
             </div>
@@ -337,8 +407,12 @@ function UnusedFoods({ unused, chosenCount, state }: { unused: ReturnType<typeof
                     return (
                         <li key={food.id}>
                             <div style={{ minWidth: 0, flex: 1 }}>
-                                <div className="food-name-line"><strong>{shortFoodName(food.description)}</strong>
-                                    {splitFoodName(food.description).detail && <span className="food-detail">, {splitFoodName(food.description).detail}</span>}</div>
+                                <div className="food-name-line">
+                                    <FoodLink food={food}>
+                                        <strong>{shortFoodName(food.description)}</strong>
+                                        {splitFoodName(food.description).detail && <span className="food-detail">, {splitFoodName(food.description).detail}</span>}
+                                    </FoodLink>
+                                </div>
                                 <div className="tiny muted">{reason}</div>
                             </div>
                             {!stillChosen ? <span className="tiny muted">Removed</span>
@@ -369,7 +443,9 @@ function MealRow({ item, index }: { item: MealItem; index: number }) {
         <li className="meal-row" style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}>
             <div style={{ minWidth: 0 }}>
                 <div className="food-name-line" title={item.food.description}>
-                    <span className="food-name">{name}</span>{detail && <span className="food-detail">, {detail}</span>}
+                    <FoodLink food={item.food}>
+                        <span className="food-name">{name}</span>{detail && <span className="food-detail">, {detail}</span>}
+                    </FoodLink>
                 </div>
                 <div className="food-meta">
                     {item.fixed && <span className="chip chip-primary"><Icon name="pin" size={11} /> Fixed amount</span>}
@@ -384,7 +460,7 @@ function MealRow({ item, index }: { item: MealItem; index: number }) {
     );
 }
 
-function ProgressBar({ p }: { p: GoalProgress }) {
+function ProgressBar({ p, usesOlderEntry }: { p: GoalProgress; usesOlderEntry: boolean }) {
     const unit = nutrientUnit(p.key);
     const label = nutrientLabel(p.key);
     const ref = p.max ?? p.min ?? p.value ?? 1;
@@ -409,7 +485,7 @@ function ProgressBar({ p }: { p: GoalProgress }) {
     return (
         <div className="progress-item">
             <div className="progress-head">
-                <span className="progress-name">{label}</span>
+                <span className="progress-name">{label}{usesOlderEntry && <OlderEntryMark />}</span>
                 <span className="progress-value">
                     {floor && <span className="muted" title="At least this much: some foods have no data">≥ </span>}
                     <strong style={{ color: 'var(--text-primary)' }}>{fmtNumber(p.value)}</strong> {unit} <span className="muted">/ {target}</span>

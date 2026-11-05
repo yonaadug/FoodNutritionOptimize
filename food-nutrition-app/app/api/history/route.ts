@@ -4,7 +4,10 @@ import { accountRoute } from '@/lib/auth/server';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** GET /api/history?kind=food&limit=20&cursor=...  200: { items, nextCursor } (newest first) */
+/**
+ * GET /api/history?kind=food&limit=20&cursor=...  200: { items, nextCursor } (newest first)
+ * GET /api/history?kind=plan&itemId=abc           200: { item }, or 404
+ */
 export const GET = accountRoute('history', getHistory);
 
 /** POST /api/history { kind, itemId, title, href, data? }  200: { item } (upsert) */

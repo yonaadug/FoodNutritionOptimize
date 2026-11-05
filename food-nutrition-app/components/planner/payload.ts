@@ -22,7 +22,7 @@ export function buildPayload(s: PlannerState) {
 export function payloadKey(s: PlannerState): string {
     return JSON.stringify({
         f: s.foods.map(f => f.id),
-        x: s.fixedFoods.map(f => [f.food.id, f.grams]),
+        x: s.fixedFoods.map(f => [f.food.id, f.grams, f.food.recipe?.fingerprint]),
         g: s.goals, c: s.calories, p: s.portionCap, l: s.foodLimits, u: s.upperLimits,
     });
 }

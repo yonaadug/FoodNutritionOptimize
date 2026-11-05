@@ -46,6 +46,24 @@ for (const backend of backends) {
             }
         });
 
+        it('reads one item by kind and id, for a second browser reopening it', async () => {
+            const a = await newUser();
+            const b = await newUser();
+            await post(a.cookie, { kind: 'plan', itemId: 'p1', title: 'My plan', href: '/plan?open=p1', data: { reopen: { foods: [1] } } });
+            const res = await call(h, getHistory, siteRequest('/api/history?kind=plan&itemId=p1', { cookie: a.cookie }));
+            assert.equal(res.status, 200);
+            const { item } = await res.json();
+            assert.equal(item.title, 'My plan');
+            assert.deepEqual(item.data, { reopen: { foods: [1] } });
+
+            const missing = await call(h, getHistory, siteRequest('/api/history?kind=plan&itemId=nope', { cookie: a.cookie }));
+            assert.equal(missing.status, 404);
+            const other = await call(h, getHistory, siteRequest('/api/history?kind=plan&itemId=p1', { cookie: b.cookie }));
+            assert.equal(other.status, 404, 'another person cannot read it');
+            const noKind = await call(h, getHistory, siteRequest('/api/history?itemId=p1', { cookie: a.cookie }));
+            assert.equal(noKind.status, 400);
+        });
+
         it('/api/me is { user: null } when signed out', async () => {
             const res = await call(h, getMe, siteRequest('/api/me'));
             assert.equal(res.status, 200);

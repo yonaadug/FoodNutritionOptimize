@@ -2,10 +2,11 @@
 
 import { useId, useState } from 'react';
 import type { Food } from '@/lib/food-types';
+import FoodLink from '@/components/food/FoodLink';
+import { servingOptions } from '@/lib/food-page';
 import NutritionLabel from './NutritionLabel';
 import Icon from '@/components/ui/Icon';
 import { splitFoodName } from '@/components/planner/nutrients';
-import { friendlyServingLabel } from '@/lib/servings';
 
 interface ComparisonViewProps {
     foods: Food[];
@@ -36,29 +37,27 @@ export default function ComparisonView({ foods, onClose }: ComparisonViewProps) 
 }
 
 function LabelCard({ food }: { food: Food }) {
-    const servings = (food.serving_sizes ?? []).filter(s => s.weight_g > 0 && !/^100\s?g$/i.test(s.label.trim()));
-    const [servingId, setServingId] = useState<string>('100');
+    // The same choices and starting serving as the food's own page.
+    const { options, defaultId } = servingOptions(food);
+    const [servingId, setServingId] = useState<string>(defaultId);
     const selectId = useId();
-    const chosen = servings.find(s => String(s.id) === servingId);
-    const grams = chosen ? chosen.weight_g : 100;
-    const label = chosen ? `${friendlyServingLabel(chosen.label)} (${Math.round(chosen.weight_g)} g)` : '100 g';
+    const chosen = options.find(o => o.id === servingId) ?? options[0];
     const { name, detail } = splitFoodName(food.description);
 
     return (
         <div role="listitem" className="stack" style={{ gap: 10 }}>
             <div>
-                <h3 style={{ fontSize: 15, fontWeight: 700 }} title={food.description}>{name}</h3>
+                <h3 style={{ fontSize: 15, fontWeight: 700 }} title={food.description}><FoodLink food={food}>{name}</FoodLink></h3>
                 {detail && <p className="small secondary food-name-line">{detail}</p>}
                 {food.food_category && <span className="chip" style={{ marginTop: 6 }}>{food.food_category}</span>}
             </div>
             <div className="field">
                 <label className="field-label" htmlFor={selectId}>Serving size</label>
                 <select id={selectId} className="select" value={servingId} onChange={e => setServingId(e.target.value)}>
-                    <option value="100">100 g</option>
-                    {servings.map(s => <option key={s.id} value={String(s.id)}>{friendlyServingLabel(s.label)} ({Math.round(s.weight_g)} g)</option>)}
+                    {options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                 </select>
             </div>
-            <NutritionLabel food={food} grams={grams} servingLabel={label} />
+            <NutritionLabel food={food} grams={chosen.grams} servingLabel={chosen.label} />
         </div>
     );
 }

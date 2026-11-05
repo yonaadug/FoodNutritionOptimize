@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { historySummary } from '@/lib/auth/history-summary';
 import { HISTORY_LIMITS, validateHistoryInput } from '@/lib/user-store/history';
-import { recipeHistoryItem } from './history';
+import { recipeFromHistory, recipeHistoryItem, recipeHref } from './history';
 import type { AnalyzedRecipe } from './types';
 
 const recipe = (over: Partial<AnalyzedRecipe> = {}): AnalyzedRecipe => ({
@@ -22,13 +22,19 @@ const recipe = (over: Partial<AnalyzedRecipe> = {}): AnalyzedRecipe => ({
     ...over,
 } as AnalyzedRecipe);
 
+const ingredient = (over: Partial<AnalyzedRecipe['ingredients'][number]> = {}): AnalyzedRecipe['ingredients'][number] => ({
+    name: 'lentils', quantity: 2, unit: 'cup', preparation: 'cooked', notes: null, confidence: 0.9,
+    fdcId: 172421, foodDescription: 'Lentils, mature seeds, cooked', grams: 396, conversion: 'exact', ...over,
+});
+
 describe('recipeHistoryItem', () => {
     it('keeps the same id across edits and links to the analyzer', () => {
         const item = recipeHistoryItem(recipe());
         assert.equal(item.kind, 'recipe');
         assert.equal(item.itemId, recipe().id);
         assert.equal(item.title, 'Lentil soup');
-        assert.equal(item.href, '/recipes');
+        assert.equal(item.href, `/recipes?id=${recipe().id}`);
+        assert.equal(recipeHref('abc'), '/recipes?id=abc');
     });
 
     it('shows per-serving calories and protein on the history row', () => {
@@ -63,12 +69,48 @@ describe('recipeHistoryItem', () => {
     });
 
     it('always passes the API validation, even with a very long title and many ingredients', () => {
-        const ingredients = Array.from({ length: 500 }, () => ({ name: 'x'.repeat(200) })) as unknown as AnalyzedRecipe['ingredients'];
+        const ingredients = Array.from({ length: 500 }, () => ingredient({ name: 'x'.repeat(200) }));
         const item = recipeHistoryItem(recipe({ title: 'T'.repeat(5000), ingredients }));
         const valid = validateHistoryInput(item);
         assert.equal(valid.title.length, HISTORY_LIMITS.titleLength);
-        assert.ok(JSON.stringify(valid.data).length < 500, 'a summary, not the recipe');
-        assert.ok(!JSON.stringify(valid.data).includes('xxx'), 'ingredients stay out of history');
+        assert.ok(Buffer.byteLength(JSON.stringify(valid.data)) <= HISTORY_LIMITS.dataBytes);
+    });
+
+    it('keeps enough to reopen the recipe on another device', () => {
+        const original = recipe({ ingredients: [ingredient(), ingredient({ name: 'salt', quantity: null, unit: null, fdcId: null, foodDescription: null, grams: null, conversion: 'unknown', notes: 'to taste' })], platedMeal: true, source: 'image', provider: 'mock' });
+        const item = validateHistoryInput(recipeHistoryItem(original));
+        const reopened = recipeFromHistory({ ...item, data: item.data ?? null, createdAt: 'c', updatedAt: 'u' })!;
+        assert.equal(reopened.id, original.id);
+        assert.equal(reopened.title, 'Lentil soup');
+        assert.equal(reopened.servings, 4);
+        assert.equal(reopened.source, 'image');
+        assert.equal(reopened.platedMeal, true);
+        assert.equal(reopened.provider, 'mock');
+        assert.deepEqual(reopened.ingredients.map(i => [i.name, i.quantity, i.unit, i.preparation, i.notes, i.confidence, i.fdcId]), [
+            ['lentils', 2, 'cup', 'cooked', null, 0.9, 172421],
+            ['salt', null, null, 'cooked', 'to taste', 0.9, null],
+        ]);
+    });
+
+    it('with too many ingredients, drops the notes first and then the ingredient list, and says so', () => {
+        const longNotes = Array.from({ length: 40 }, (_, i) => ingredient({ name: `item ${i}`, notes: 'n'.repeat(250) }));
+        const trimmed = validateHistoryInput(recipeHistoryItem(recipe({ ingredients: longNotes })));
+        const reopened = recipeFromHistory({ ...trimmed, data: trimmed.data ?? null, createdAt: 'c', updatedAt: 'u' })!;
+        assert.equal(reopened.ingredients.length, 40, 'every ingredient still fits');
+        assert.equal(reopened.ingredients[0].notes, null);
+
+        const huge = Array.from({ length: 500 }, (_, i) => ingredient({ name: `ingredient number ${i}` }));
+        const summary = validateHistoryInput(recipeHistoryItem(recipe({ ingredients: huge })));
+        assert.equal(recipeFromHistory({ ...summary, data: summary.data ?? null, createdAt: 'c', updatedAt: 'u' }), null, 'never a partial recipe');
+        assert.equal((summary.data as { tooLong?: boolean }).tooLong, true);
+        assert.equal(historySummary(summary.data)[0].value, '320 kcal per serving', 'the summary row still works');
+    });
+
+    it('recipeFromHistory rejects anything malformed', () => {
+        const base = { kind: 'recipe', itemId: 'r1', title: 'T', href: '/recipes', createdAt: 'c', updatedAt: 'u' };
+        for (const data of [null, 'x', [], {}, { recipe: null }, { recipe: {} }, { recipe: { ingredients: 'x' } }, { recipe: { ingredients: [1] } }, { recipe: { ingredients: [{ n: 5 }] } }]) {
+            assert.equal(recipeFromHistory({ ...base, data }), null, JSON.stringify(data));
+        }
     });
 
     it('fits the fallback id the analyzer uses outside a secure context', () => {

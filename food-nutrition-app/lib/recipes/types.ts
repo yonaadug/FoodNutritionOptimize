@@ -59,8 +59,6 @@ export interface Portion {
 /** A matched food sent to the client: the full Food plus conversion portions. */
 export type RecipeFood = Food & {
     portions: Portion[];
-    /** Nutrients this food lacks that were filled from the equivalent SR Legacy food it supersedes. */
-    filledNutrients: string[];
 };
 
 export interface MatchCandidate {
@@ -117,6 +115,8 @@ export interface RecipeNutrition {
     perServing: Record<string, NutrientTotal>;
     /** Ingredients that could not be counted (no food or unknown weight). */
     uncounted: string[];
+    /** Nutrients where a counted ingredient's value came from USDA's older entry (see Food.filledFrom). */
+    filledFrom?: Record<string, number>;
 }
 
 /** Compact, JSON-serializable record of an analysis (history, localStorage, onRecipeAnalyzed). */
@@ -148,4 +148,9 @@ export interface AnalyzedRecipe {
     incomplete: string[];
     servingGrams: number;
     provider: string | null;
+    /**
+     * The account this was made under, in this browser. Absent for work done before
+     * signing in, which is not added to anyone's history unless they choose to save it.
+     */
+    ownerId?: string;
 }

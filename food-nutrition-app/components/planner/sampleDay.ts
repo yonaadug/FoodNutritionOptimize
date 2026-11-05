@@ -30,8 +30,8 @@ export const SAMPLE_DAY: SampleItem[] = [
     { q: 'broccoli', head: ['broccoli'], prefer: ['broccoli, raw'], avoid: ['frozen', 'raab', 'chinese', 'cooked', 'soup', 'cheese', 'casserole', 'stalks', 'leaves', 'flower clusters'], need: ['vitamin_c_mg', 'vitamin_a_ug'] },
     { q: 'chicken breast', head: ['chicken'], prefer: ['meat only', 'roasted', 'cooked'], avoid: ['skin', 'nugget', 'ground', 'fried', 'breaded', 'tenders', 'uncooked', 'raw', 'patty', 'sandwich', 'deli', 'rotisserie', 'canned', 'lunch'], need: ['saturated_g', 'iron_mg'] },
     { q: 'orange', head: ['oranges'], prefer: ['raw', 'navel', 'all commercial varieties'], avoid: ['juice', 'peel', 'mandarin', 'chicken', 'drink', 'sherbet', 'marmalade', 'roughy'], need: ['vitamin_c_mg'] },
-    { q: 'whole wheat bread', head: ['bread'], prefer: ['whole-wheat', 'commercially prepared'], avoid: ['flour', 'crumbs', 'pita', 'toasted', 'roll', 'sandwich', 'french', 'stuffing'], need: ['fiber_g', 'iron_mg'] },
-    { q: 'carrots', head: ['carrots'], prefer: ['carrots, raw', 'baby'], avoid: ['juice', 'canned', 'cooked', 'frozen', 'dehydrated', 'cake', 'pickled'], need: ['vitamin_a_ug'] },
+    { q: 'whole wheat bread', head: ['bread'], prefer: ['100% whole wheat', 'whole-wheat', 'commercial'], avoid: ['flour', 'crumbs', 'pita', 'toasted', 'roll', 'sandwich', 'french', 'stuffing', 'recipe', 'chapati', 'naan', 'paratha'], need: ['fiber_g', 'iron_mg'] },
+    { q: 'carrots', head: ['carrots'], prefer: ['mature, raw', 'carrots, raw', 'baby'], avoid: ['juice', 'canned', 'cooked', 'frozen', 'dehydrated', 'cake', 'pickled'], need: ['vitamin_a_ug'] },
     { q: 'sunflower', head: ['seeds, sunflower'], prefer: ['kernels', 'dry roasted', 'without salt'], avoid: ['oil', 'butter', 'flour', 'toasted', 'with salt'], need: ['iron_mg'] },
     { q: 'egg whole', head: ['egg'], prefer: ['egg, whole', 'hard-boiled', 'cooked', 'raw, fresh'], avoid: ['white', 'yolk', 'dried', 'plant', 'eggplant', 'substitute', 'duck', 'goose', 'quail', 'turkey', 'frozen', 'omelet', 'salad', 'fried', 'scrambled', 'sandwich', 'roll', 'noodle'], need: ['saturated_g', 'vitamin_a_ug'] },
     { q: 'kale', head: ['kale'], prefer: ['kale, raw'], avoid: ['frozen', 'chips', 'cooked', 'scotch'], need: ['vitamin_c_mg', 'calcium_mg'] },
@@ -69,9 +69,9 @@ export function pickSampleFood(foods: Food[], item: SampleItem): Food | null {
 export async function loadSampleDay(): Promise<Food[]> {
     const picks = await Promise.all(SAMPLE_DAY.map(async item => {
         try {
-            // Include SR Legacy rows that a newer Foundation entry replaced: they
-            // often have the fuller nutrient profile (e.g. saturated fat, vitamin D).
-            const { foods } = await fetchSearch(item.q, 1, 60, undefined, { includeSuperseded: true });
+            // Current entries only. Gaps in them are filled from the older entry on the
+            // server (lib/nutrient-fill.ts), so nothing is gained by picking the older row.
+            const { foods } = await fetchSearch(item.q, 1, 60);
             return pickSampleFood(foods, item);
         } catch {
             return null;

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import Icon from '@/components/ui/Icon';
 import { plannerActions, type PlannerState } from '@/hooks/usePlannerState';
@@ -7,6 +8,7 @@ import { notify } from '@/hooks/useToasts';
 import { biggerPortions, describePortionCap, presetTitle, type GoalRange } from '@/components/planner/goals';
 import { useTopFoods, type TopFood } from '@/hooks/useTopFoods';
 import { fmtNumber, nutrientLabel, nutrientUnit, nv, shortFoodName } from '@/components/planner/nutrients';
+import { foodPath } from '@/lib/food-page';
 import type { PlanIssue } from './analysis';
 
 interface InfeasibleHelpProps {
@@ -236,7 +238,8 @@ function Suggestions({ nutrient, selectedIds, excludeIds, updateAction }: {
             {picks.map(f => {
                 const isAdded = selectedIds.has(f.id);
                 return (
-                    <button key={f.id} type="button" className="chip chip-btn suggestion" title={f.description} aria-pressed={isAdded}
+                    <span key={f.id} className="suggestion-wrap">
+                    <button type="button" className="chip chip-btn suggestion" title={f.description} aria-pressed={isAdded}
                         aria-label={`${isAdded ? 'Remove' : 'Add'} ${f.description} (${perServingText(f, nutrient, unit)})`}
                         onClick={() => {
                             if (isAdded) {
@@ -251,6 +254,10 @@ function Suggestions({ nutrient, selectedIds, excludeIds, updateAction }: {
                         <span className="suggestion-name">{isAdded ? 'Added: ' : ''}{shortName(f.description)}</span>
                         <span className="muted">{perServingText(f, nutrient, unit)}</span>
                     </button>
+                    <Link href={foodPath(f)} prefetch={false} className="suggestion-info" aria-label={`About ${f.description}`} title="See this food's nutrients and contaminants">
+                        <Icon name="info" size={14} />
+                    </Link>
+                    </span>
                 );
             })}
             {added > 0 && <span className="tiny secondary" style={{ alignSelf: 'center' }}>Update the plan to check.</span>}

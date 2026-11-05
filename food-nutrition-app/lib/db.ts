@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Food, ServingSize } from './food-types';
 import { ALL_NUTRIENT_CONFIG } from './nutrient-defaults';
+import { fillFromOlderEntries } from './nutrient-fill';
 import { pickSources, scoreSources, type RankedSource, type RankOptions } from './best-sources';
 import { basePrefixes, categorySlug, rankRelated, type RelatedResult } from './food-page';
 
@@ -156,6 +157,42 @@ function attachServingSizes(foods: Food[], conn: Connection): void {
         else byFood.set(s.food_id, [s]);
     }
     for (const f of foods) f.serving_sizes = byFood.get(f.id) ?? [];
+}
+
+/** Older USDA entries by the fdc_id that superseded them, loaded once per connection (the DB is read-only). */
+const olderEntriesCache = new WeakMap<Connection, Map<number, Food[]>>();
+
+function olderEntriesByFood(conn: Connection): Map<number, Food[]> {
+    let byFood = olderEntriesCache.get(conn);
+    if (!byFood) {
+        byFood = new Map();
+        if (conn.schema.foodColumns.has('superseded_by_fdc_id')) {
+            const rows = conn.db.prepare('SELECT * FROM foods WHERE superseded_by_fdc_id IS NOT NULL ORDER BY id').all() as Food[];
+            attachServingSizes(rows, conn);
+            for (const r of rows) {
+                const list = byFood.get(r.superseded_by_fdc_id!);
+                if (list) list.push(r);
+                else byFood.set(r.superseded_by_fdc_id!, [r]);
+            }
+        }
+        olderEntriesCache.set(conn, byFood);
+    }
+    return byFood;
+}
+
+/** The older USDA entries a food supersedes, oldest row first. */
+export function olderEntriesIn(conn: Connection, fdcId: number): Food[] {
+    return olderEntriesByFood(conn).get(fdcId) ?? [];
+}
+
+/**
+ * Apply the one rule for nutrition gaps (lib/nutrient-fill.ts). Every function here that
+ * returns foods goes through this, so food pages, search, rankings, the planner and
+ * recipes all see the same values.
+ */
+export function withFilledNutrientsIn(conn: Connection, foods: Food[]): Food[] {
+    const byFood = olderEntriesByFood(conn);
+    return byFood.size === 0 ? foods : foods.map(f => fillFromOlderEntries(f, byFood.get(f.fdc_id) ?? []));
 }
 
 export interface SearchResult {
@@ -381,7 +418,7 @@ export function getFoodsByIdsIn(conn: Connection, ids: number[]): Food[] {
     const placeholders = unique.map(() => '?').join(',');
     const foods = conn.db.prepare(`SELECT * FROM foods WHERE id IN (${placeholders})`).all(...unique) as Food[];
     attachServingSizes(foods, conn);
-    return foods;
+    return withFilledNutrientsIn(conn, foods);
 }
 
 export async function getFoodById(id: number): Promise<Food | undefined> {
@@ -405,11 +442,13 @@ export function getTopFoodsByNutrientIn(conn: Connection, nutrient: string, limi
         throw new RangeError(`Unknown nutrient: ${nutrient}`);
     }
     const safeLimit = Math.min(Math.max(1, Math.floor(limit) || 50), SEARCH_MAX_LIMIT);
-    const foods = conn.db
-        .prepare(`SELECT * FROM foods WHERE "${nutrient}" > 0 ORDER BY "${nutrient}" DESC, length(description), id LIMIT ?`)
-        .all(safeLimit) as Food[];
-    attachServingSizes(foods, conn);
-    return foods;
+    // In code rather than SQL because filled values aren't in the table. A superseded row is
+    // left out, as in search: it would only repeat the food that replaced it.
+    const value = (f: Food) => (f as unknown as Record<string, number>)[nutrient];
+    return allFoodsIn(conn)
+        .filter(f => value(f) > 0 && !f.superseded_by_fdc_id)
+        .sort((a, b) => value(b) - value(a) || a.description.length - b.description.length || a.id - b.id)
+        .slice(0, safeLimit);
 }
 
 /** Every food with serving sizes, loaded once per connection (the DB is read-only). */
@@ -421,6 +460,7 @@ function allFoodsIn(conn: Connection): Food[] {
     if (!foods) {
         foods = conn.db.prepare('SELECT * FROM foods').all() as Food[];
         attachServingSizes(foods, conn);
+        foods = withFilledNutrientsIn(conn, foods);
         allFoodsCache.set(conn, foods);
     }
     return foods;
@@ -484,8 +524,9 @@ export function hydrateFoodsIn<T extends { id: number; fdc_id?: number | null }>
     }
     if (ids.length > 0) rows.push(...getFoodsByIdsIn(conn, ids));
     attachServingSizes(rows, conn);
-    const byFdc = new Map(rows.map(r => [r.fdc_id, r]));
-    const byId = new Map(rows.map(r => [r.id, r]));
+    const filled = withFilledNutrientsIn(conn, rows);
+    const byFdc = new Map(filled.map(r => [r.fdc_id, r]));
+    const byId = new Map(filled.map(r => [r.id, r]));
     return foods.map(f => {
         const row = Number.isSafeInteger(f.fdc_id) ? byFdc.get(f.fdc_id as number) : byId.get(f.id);
         if (!row) return f;
@@ -523,8 +564,22 @@ export function getDbInfo(): { searchMode: 'fts' | 'like'; foodCount: number } {
 export function getFoodByFdcIdIn(conn: Connection, fdcId: number): Food | undefined {
     if (!Number.isSafeInteger(fdcId)) return undefined;
     const food = conn.db.prepare('SELECT * FROM foods WHERE fdc_id = ?').get(fdcId) as Food | undefined;
-    if (food) attachServingSizes([food], conn);
-    return food;
+    if (!food) return undefined;
+    attachServingSizes([food], conn);
+    return withFilledNutrientsIn(conn, [food])[0];
+}
+
+/** Several foods by FoodData Central id, with serving sizes. Unknown ids are left out. */
+export function getFoodsByFdcIdsIn(conn: Connection, fdcIds: number[]): Food[] {
+    const unique = Array.from(new Set(fdcIds.filter(id => Number.isSafeInteger(id)))).slice(0, MAX_IDS);
+    if (unique.length === 0) return [];
+    const foods = conn.db.prepare(`SELECT * FROM foods WHERE fdc_id IN (${unique.map(() => '?').join(',')})`).all(...unique) as Food[];
+    attachServingSizes(foods, conn);
+    return withFilledNutrientsIn(conn, foods);
+}
+
+export async function getFoodsByFdcIds(fdcIds: number[]): Promise<Food[]> {
+    return getFoodsByFdcIdsIn(connection(), fdcIds);
 }
 
 export async function getFoodByFdcId(fdcId: number): Promise<Food | undefined> {
@@ -565,7 +620,7 @@ export function getRelatedFoodsIn(conn: Connection, food: Food, limits: { forms?
     const candidates = conn.db
         .prepare(`SELECT * FROM foods WHERE id != @id AND (${ors.join(' OR ')}) LIMIT 1500`)
         .all(params) as Food[];
-    const result = rankRelated(food, candidates, limits);
+    const result = rankRelated(food, withFilledNutrientsIn(conn, candidates), limits);
     attachServingSizes([...result.equivalents, ...result.forms, ...result.similar], conn);
     return result;
 }
@@ -609,7 +664,7 @@ export function getFoodsInCategoryIn(conn: Connection, category: string, page = 
         ORDER BY ${dataTypeRank(conn.schema)}, length(f.description), f.description, f.id LIMIT ? OFFSET ?`)
         .all(category, safeLimit, (safePage - 1) * safeLimit) as Food[];
     attachServingSizes(foods, conn);
-    return { foods, total, page: safePage, totalPages: Math.ceil(total / safeLimit), limit: safeLimit };
+    return { foods: withFilledNutrientsIn(conn, foods), total, page: safePage, totalPages: Math.ceil(total / safeLimit), limit: safeLimit };
 }
 
 export async function getFoodsInCategory(category: string, page = 1, limit = 48): Promise<SearchResult> {

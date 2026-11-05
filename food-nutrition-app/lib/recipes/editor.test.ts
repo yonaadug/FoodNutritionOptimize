@@ -11,12 +11,10 @@ import type { AnalyzedIngredient, AnalyzedRecipe, ParseResponse, RecipeFood } fr
 const rice: RecipeFood = {
     ...makeFood({ id: 1, description: 'Rice, white, cooked', calories: 130, protein_g: 2.7 }),
     portions: [{ label: '1 cup', grams: 158, source: 'food' }],
-    filledNutrients: [],
 };
 const oil: RecipeFood = {
     ...makeFood({ id: 2, description: 'Oil, olive', calories: 884, total_fat_g: 100 }),
     portions: [{ label: '1 tbsp', grams: 13.5, source: 'food' }],
-    filledNutrients: [],
 };
 
 function row(o: Partial<AnalyzedIngredient> = {}): AnalyzedIngredient {
@@ -28,6 +26,25 @@ const storage = () => {
     const map = new Map<string, string>();
     return { map, getItem: (k: string) => map.get(k) ?? null, setItem: (k: string, v: string) => { map.set(k, v); } };
 };
+
+describe('whose recipe it is', () => {
+    const record = (ownerId?: string) => ({
+        version: 1, id: 'r1', title: 'Soup', servings: 2, source: 'text', platedMeal: false, createdAt: 'c', updatedAt: 'u',
+        ingredients: [], perServing: {}, incomplete: [], servingGrams: 0, provider: null, ...(ownerId ? { ownerId } : {}),
+    } as AnalyzedRecipe);
+
+    it('one with no account stays unclaimed when reopened, so it is not uploaded by being opened', () => {
+        assert.equal(editorFromRecord(record(), new Map()).unclaimed, true);
+    });
+    it('one made under an account is not', () => {
+        assert.equal(editorFromRecord(record('u1'), new Map()).unclaimed, false);
+    });
+    it('a new blank recipe has no name yet, and a record calls it Untitled recipe', () => {
+        const blank = blankEditor('r2', 'now');
+        assert.equal(blank.title, '');
+        assert.equal(toRecord(blank, rowsNutrition([], 1), 'now').title, 'Untitled recipe');
+    });
+});
 
 describe('row edits', () => {
     it('editing the amount re-converts and clears the check flag', () => {

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 interface MetaInfo { foodCount: number; release: string | null; downloadPage: string | null }
@@ -45,7 +46,8 @@ export default function SiteFooter() {
                 {info?.foodCount ? `${info.foodCount.toLocaleString()} foods · ` : ''}
                 Nutrition data from{' '}
                 <a href={info?.downloadPage ?? 'https://fdc.nal.usda.gov/'} target="_blank" rel="noreferrer">USDA FoodData Central</a>
-                {info?.release ? `, ${info.release}` : ''} (public domain).
+                {info?.release ? `, ${info.release}` : ''} (public domain).{' '}
+                <Link href="/methodology">How we source and match our data</Link>.
             </p>
             <p>Nutrition values and plans are estimates for general information, not medical advice.</p>
         </footer>

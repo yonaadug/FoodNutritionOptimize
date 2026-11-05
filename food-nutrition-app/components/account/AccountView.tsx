@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/Icon';
 import { apiFetch, clearCurrentUser, primeCurrentUser, refreshCurrentUser, signOut, type CurrentUser } from '@/lib/auth/client';
+import { signInPath } from '@/lib/auth/next-path';
 import { userInitial } from './AccountMenu';
 import HistoryView from './HistoryView';
 import styles from './account.module.css';
@@ -13,6 +14,12 @@ const longDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { 
 export function PrimeUser({ user }: { user: CurrentUser }) {
     useEffect(() => {
         primeCurrentUser(user);
+        // Signed out in another tab: this page isn't theirs to see any more.
+        const onStorage = (e: StorageEvent) => {
+            if (e.key === 'md.signedIn' && e.newValue === null) window.location.replace(signInPath(window.location.pathname));
+        };
+        window.addEventListener('storage', onStorage);
+        return () => window.removeEventListener('storage', onStorage);
     }, [user]);
     return null;
 }
@@ -88,6 +95,7 @@ export default function AccountView({ user: initialUser }: { user: CurrentUser }
                         {signingOut ? 'Signing out…' : 'Sign out'}
                     </button>
                 </div>
+                <p className={styles.note}>Signing out also clears your foods, recipes and plan from this browser. Anything saved to your account stays there.</p>
                 <p className={styles.status} role="status">{status}</p>
             </section>
 

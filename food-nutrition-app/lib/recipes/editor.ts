@@ -4,7 +4,7 @@
  */
 import type { AnalyzedIngredient, AnalyzedRecipe, ParseResponse, RecipeFood, RecipeNutrition, RecipeSource } from './types';
 import { convertToGrams } from './grams';
-import { computeRecipeNutrition, MAX_SERVINGS, summarizeForRecord } from './nutrition';
+import { computeRecipeNutrition, MAX_SERVINGS, summarizeForRecord, UNTITLED_RECIPE } from './nutrition';
 
 export interface EditorState {
     id: string;
@@ -16,12 +16,18 @@ export interface EditorState {
     provider: string | null;
     createdAt: string;
     rows: AnalyzedIngredient[];
+    /**
+     * Opened from this browser's recent recipes, but not made under the signed-in account:
+     * work from before signing in, or by whoever used this browser before. It stays out of
+     * their history unless they press "Save to my account".
+     */
+    unclaimed?: boolean;
 }
 
 export const DEFAULT_BLANK_SERVINGS = 4;
 
 export function blankEditor(id: string, now: string): EditorState {
-    return { id, title: 'My recipe', servings: DEFAULT_BLANK_SERVINGS, source: 'blank', platedMeal: false, warnings: [], provider: null, createdAt: now, rows: [] };
+    return { id, title: '', servings: DEFAULT_BLANK_SERVINGS, source: 'blank', platedMeal: false, warnings: [], provider: null, createdAt: now, rows: [] };
 }
 
 export function editorFromParse(parse: ParseResponse, id: string, now: string): EditorState {
@@ -62,7 +68,7 @@ export function toRecord(state: EditorState, nutrition: RecipeNutrition, now: st
     return {
         version: 1,
         id: state.id,
-        title: state.title.trim() || 'Untitled recipe',
+        title: state.title.trim() || UNTITLED_RECIPE,
         servings: state.servings,
         source: state.source,
         platedMeal: state.platedMeal,
@@ -96,6 +102,7 @@ export function editorFromRecord(record: AnalyzedRecipe, foods: Map<number, Reci
         warnings: [],
         provider: record.provider,
         createdAt: record.createdAt,
+        unclaimed: !record.ownerId,
         rows: record.ingredients.map((ing, i) => {
             const food = ing.fdcId !== null ? foods.get(ing.fdcId) ?? null : null;
             return {

@@ -5,7 +5,7 @@ import AccountFrame from '@/components/account/AccountFrame';
 import SignInForm from '@/components/account/SignInForm';
 import styles from '@/components/account/account.module.css';
 import Icon from '@/components/ui/Icon';
-import { isSafeHref } from '@/lib/auth/history-summary';
+import { DEFAULT_AFTER_SIGN_IN, safeNextPath } from '@/lib/auth/next-path';
 import { getPageUser, getSignInOptions } from '@/lib/auth/pages';
 
 export const dynamic = 'force-dynamic';
@@ -21,8 +21,7 @@ function errorMessage(code: string | undefined): string | null {
 
 export default async function SignInPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
     const params = await searchParams;
-    const rawNext = single(params.next);
-    const next = isSafeHref(rawNext) ? rawNext : '/account';
+    const next = safeNextPath(single(params.next));
 
     if (await getPageUser()) redirect(next);
 
@@ -58,7 +57,7 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
                     )}
                 <p className={styles.note}>
                     We store your email and what you choose to keep here, and you can export or delete it at any time.
-                    The whole site works without an account. <Link href="/">Continue without signing in</Link>
+                    The whole site works without an account. <Link href={next === DEFAULT_AFTER_SIGN_IN ? '/' : next}>Continue without signing in</Link>
                 </p>
             </section>
         </AccountFrame>

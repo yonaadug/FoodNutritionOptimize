@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/Icon';
-import { apiFetch } from '@/lib/auth/client';
+import { apiFetch, clearCurrentUser } from '@/lib/auth/client';
+import { signInPath } from '@/lib/auth/next-path';
 import { historySummary, isSafeHref } from '@/lib/auth/history-summary';
 import type { HistoryItem } from '@/lib/user-store/history';
 import styles from './account.module.css';
@@ -11,7 +12,7 @@ import styles from './account.module.css';
 const TABS = [
     { kind: 'food', label: 'Foods', empty: 'Foods you look at will show up here.', browse: '/', browseLabel: 'Look up a food' },
     { kind: 'recipe', label: 'Recipes', empty: 'Recipes you analyze will show up here, with their nutrition.', browse: '/recipes', browseLabel: 'Analyze a recipe' },
-    { kind: 'plan', label: 'Plans', empty: 'Plans you make will show up here.', browse: '/plan', browseLabel: 'Make a plan' },
+    { kind: 'plan', label: 'Plans', empty: 'Plans you make while signed in will show up here, and you can reopen them on any device.', browse: '/plan', browseLabel: 'Make a plan' },
 ] as const;
 
 type Kind = (typeof TABS)[number]['kind'];
@@ -40,6 +41,11 @@ export default function HistoryView() {
         const params = new URLSearchParams({ kind, limit: String(PAGE_SIZE) });
         if (cursor) params.set('cursor', cursor);
         const res = await apiFetch(`/api/history?${params}`);
+        if (res.status === 401) {
+            // Signed out in another tab or expired: this page isn't theirs to see any more.
+            clearCurrentUser();
+            window.location.replace(signInPath(window.location.pathname));
+        }
         if (!res.ok) throw new Error(String(res.status));
         return (await res.json()) as { items: HistoryItem[]; nextCursor: string | null };
     }, []);

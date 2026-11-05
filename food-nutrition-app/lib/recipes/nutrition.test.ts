@@ -98,8 +98,42 @@ describe('recipeAsFood', () => {
     });
     it('survives an empty recipe', () => {
         const food = recipeAsFood(computeRecipeNutrition([], 1), '', -1);
-        assert.equal(food.description, 'Recipe: Untitled');
+        assert.equal(food.description, 'Recipe: Untitled recipe');
         assert.deepEqual(food.serving_sizes, []);
+    });
+});
+
+describe('a recipe as a planner food', () => {
+    const noIron = makeFood({ id: 9, description: 'Mystery', calories: 100, iron_mg: null });
+    const milk = makeFood({ id: 10, description: 'Milk', calories: 50, filledFrom: { sugars_g: 555 }, sugars_g: 5 });
+    const items = [
+        { name: 'mystery', food: noIron, grams: 100 },
+        { name: 'milk', food: milk, grams: 100 },
+        { name: 'salt', food: null, grams: null },
+    ];
+    const food = recipeAsFood(computeRecipeNutrition(items, 2), 'Dinner', recipeFoodId('rec-1'), 'rec-1');
+
+    it('knows which recipe it came from, and how big a serving is', () => {
+        assert.equal(food.recipe?.id, 'rec-1');
+        assert.equal(food.recipe?.servingGrams, 100);
+    });
+    it('carries what was not counted, and which totals are only lower bounds', () => {
+        assert.deepEqual(food.recipe?.uncounted, ['salt']);
+        assert.ok(food.recipe?.incomplete.includes('iron_mg'));
+        assert.ok(!food.recipe?.incomplete.includes('calories'));
+    });
+    it('says which values came from an older USDA entry', () => {
+        assert.deepEqual(food.filledFrom, { sugars_g: 555 });
+    });
+    it('the fingerprint moves when the nutrition, the serving or what is left out does', () => {
+        const again = recipeAsFood(computeRecipeNutrition(items, 2), 'Dinner', -1, 'rec-1');
+        assert.equal(again.recipe?.fingerprint, food.recipe?.fingerprint);
+        const servings = recipeAsFood(computeRecipeNutrition(items, 1), 'Dinner', -1, 'rec-1');
+        assert.notEqual(servings.recipe?.fingerprint, food.recipe?.fingerprint);
+        const more = recipeAsFood(computeRecipeNutrition([...items, { name: 'broccoli', food: broccoli, grams: 50 }], 2), 'Dinner', -1, 'rec-1');
+        assert.notEqual(more.recipe?.fingerprint, food.recipe?.fingerprint);
+        const left = recipeAsFood(computeRecipeNutrition(items.slice(0, 2), 2), 'Dinner', -1, 'rec-1');
+        assert.notEqual(left.recipe?.fingerprint, food.recipe?.fingerprint);
     });
 });
 

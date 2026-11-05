@@ -42,7 +42,8 @@ export async function POST(request: Request) {
 
         const result = optimizeDiet(params);
         if (result.error) return jsonError(400, 'invalid_input', result.error);
-        return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
+        // The fixed foods as used here, so the plan's rows agree with its totals whatever the browser had saved.
+        return NextResponse.json({ ...result, guaranteedFoods: params.guaranteedFoods ?? [] }, { headers: { 'Cache-Control': 'no-store' } });
     } catch (error) {
         return handleError(error, 'optimize');
     }

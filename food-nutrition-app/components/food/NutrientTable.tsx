@@ -2,7 +2,10 @@
 
 import { useMemo } from 'react';
 import type { Food } from '@/lib/food-types';
+import Link from 'next/link';
 import { fmt, nutrientTable } from '@/lib/food-page';
+import { filledKeys, isFilled, OLDER_ENTRY_NOTE } from '@/lib/nutrient-fill';
+import { OlderEntryMark } from './FoodLink';
 
 /**
  * Every nutrient we have for this food, scaled to the chosen serving and grouped.
@@ -10,6 +13,7 @@ import { fmt, nutrientTable } from '@/lib/food-page';
  */
 export default function NutrientTable({ food, grams, servingLabel }: { food: Food; grams: number; servingLabel: string }) {
     const groups = useMemo(() => nutrientTable(food, grams), [food, grams]);
+    const olderIds = Array.from(new Set(filledKeys(food).map(k => food.filledFrom![k])));
     return (
         <section className="panel" aria-labelledby="nutrients-table-title">
             <div className="panel-header">
@@ -36,6 +40,7 @@ export default function NutrientTable({ food, grams, servingLabel }: { food: Foo
                                     <th scope="row" data-indent={r.indent}>{r.label}</th>
                                     <td className="num tabular" title={r.amount === null ? 'Not measured by USDA for this food' : undefined}>
                                         {r.amount === null ? <span className="muted">—</span> : `${fmt(r.amount)} ${r.unit}`}
+                                        {isFilled(food, r.key) && <OlderEntryMark />}
                                     </td>
                                     <td className="num tabular">
                                         {r.dvPct === null ? <span className="muted">{r.amount === null ? '—' : ''}</span> : (
@@ -52,6 +57,14 @@ export default function NutrientTable({ food, grams, servingLabel }: { food: Foo
                     ))}
                 </table>
             </div>
+            {olderIds.length > 0 && (
+                <p className="small secondary" style={{ marginTop: 10 }} data-testid="older-entry-note">
+                    <span aria-hidden="true">† </span>
+                    Values marked † are {OLDER_ENTRY_NOTE}, because the newest entry has no measurement for them.{' '}
+                    {olderIds.map((id, i) => <span key={id}>{i > 0 && ', '}<Link href={`/food/${id}`} prefetch={false}>See the older entry</Link></span>)}
+                    {' · '}<Link href="/methodology#older-entries">Why we do this</Link>
+                </p>
+            )}
             <p className="tiny muted" style={{ marginTop: 10 }}>
                 % DV = share of the FDA Daily Value for adults (a 2,000-calorie reference diet; adequate intake where no Daily Value exists).
                 &ldquo;—&rdquo; means USDA has no measurement for this nutrient, which is not the same as zero.

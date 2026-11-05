@@ -1,5 +1,6 @@
 import type { Food, ServingSize } from '@/lib/food-types';
 import { ALL_NUTRIENT_CONFIG, NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
+import { friendlyServingLabel } from '@/lib/servings';
 
 /**
  * UI-side nutrient helpers.
@@ -109,7 +110,9 @@ export function hasCoreData(food: Food): boolean {
     const cal = nv(food, 'calories');
     if (cal === null) return false;
     if (cal > 0) return true;
-    return ['protein_g', 'total_fat_g', 'carbohydrate_g'].some(k => (nv(food, k) ?? 0) > 0);
+    if (['protein_g', 'total_fat_g', 'carbohydrate_g'].some(k => (nv(food, k) ?? 0) > 0)) return true;
+    // A measured 0 kcal with measured macros or water (tea, water, table salt) is a real zero.
+    return ['protein_g', 'total_fat_g', 'carbohydrate_g', 'water_g'].some(k => nv(food, k) !== null);
 }
 
 /** Format a number for humans: 0-1 decimals depending on size. */
@@ -126,23 +129,61 @@ export function fmtAmount(v: number | null | undefined, unit: string): string {
     return s === '—' ? s : `${s} ${unit}`;
 }
 
-/** Split a USDA description into a short name and the qualifying detail. */
+/**
+ * USDA group words that come before the actual food ("Fish, salmon, ...",
+ * "Beverages, tea, green"); the food is the next segment.
+ */
+const GROUP_PREFIXES = /^(fish|nuts|seeds|spices|beverages|mollusks|crustaceans|game meat|alcoholic beverage|cereals ready-to-eat|cereals|cheese|beans)$/i;
+
+/** Filler segments that say nothing to a cook ("broilers or fryers"). */
+const FILLER = /^(broilers? or fryers|all classes|mixed species|commercial|nfs|ns as to .*)$/i;
+
+function capitalize(s: string): string {
+    return s ? s[0].toUpperCase() + s.slice(1) : s;
+}
+
+/**
+ * Split a USDA description into a short name and the qualifying detail:
+ * "Fish, salmon, sockeye, raw" -> "Salmon" + "sockeye, raw (fish)";
+ * "Chicken, broilers or fryers, breast, meat only" -> "Chicken" + "breast, meat only".
+ * Cheese and beans keep their group word ("Cheese, cheddar" -> "Cheddar cheese").
+ */
 export function splitFoodName(description: string): { name: string; detail: string } {
-    const idx = description.indexOf(',');
-    if (idx === -1) return { name: description, detail: '' };
-    return { name: description.slice(0, idx).trim(), detail: description.slice(idx + 1).trim() };
+    description = description.replace(/\s*\(includes foods for usda's food distribution program\)/i, '');
+    const segs = description.split(',').map(x => x.trim()).filter(Boolean);
+    if (segs.length <= 1) return { name: description.trim(), detail: '' };
+    let name = segs[0];
+    let rest = segs.slice(1);
+    if (GROUP_PREFIXES.test(segs[0]) && segs[1]) {
+        const group = segs[0].toLowerCase();
+        if (group === 'cheese') name = `${capitalize(segs[1])} cheese`;
+        else if (group === 'beans') name = `${capitalize(segs[1])} beans`;
+        else name = capitalize(segs[1]);
+        rest = segs.slice(2);
+    }
+    rest = rest.filter(x => !FILLER.test(x));
+    return { name, detail: rest.join(', ') };
 }
 
-const SKIP_SERVING = /(^100\s?g$|100\s?g serving|nlea|racc|quart|pint|100 milliliter|as purchased|quantity not specified|yield from|surface inch|^1 lb\b|^1 serving$)/i;
+/** Just the short name ("Salmon", "Chicken"). */
+export function shortFoodName(description: string): string {
+    return splitFoodName(description).name;
+}
 
-/** Household servings worth showing (drops "100g serving", NLEA, etc.). */
+const SKIP_SERVING = /(^100\s?g$|100\s?g serving|nlea|racc|quart|pint|100 milliliter|as purchased|quantity not specified|yield from|surface inch|cubic inch|^1 lb\b|^1 serving$|^\d+(\.\d+)?\s*(oz|lb|g)$|package|\bcan\b|container \(|bunch|\bhead\b)/i;
+
+/** Household servings worth showing (drops "100g serving", NLEA, plain weights, etc.). */
 export function householdServings(food: Food): ServingSize[] {
-    return (food.serving_sizes ?? []).filter(s => s.weight_g > 0 && !SKIP_SERVING.test(s.label));
+    return (food.serving_sizes ?? []).filter(s => s.weight_g > 0 && !SKIP_SERVING.test(s.label) && !/^(\d+(\.\d+)?\s+)?extra (small|large)\b/i.test(s.label));
 }
+
+/** Countable units read better than volumes ("3 eggs" rather than "1 cup, chopped"). */
+const COUNT_UNIT = /^(\d+(\.\d+)?\s+)?(large|medium|small|extra large|jumbo|egg|banana|fruit|piece|slice|fillet|breast|thigh|drumstick|wing|leg|chop|steak|patty|link|spear|clove|cookie|muffin|bagel|tortilla|pita|bar|wedge)\b/i;
 
 const FRACTIONS: [number, string][] = [[0, ''], [0.25, '¼'], [0.5, '½'], [0.75, '¾'], [1, '']];
 
 function fmtQty(q: number): string {
+    if (q >= 4) return String(Math.round(q));
     const rounded = Math.round(q * 4) / 4;
     const whole = Math.floor(rounded);
     const frac = rounded - whole;
@@ -152,35 +193,51 @@ function fmtQty(q: number): string {
 }
 
 const PLURALS: Record<string, string> = {
-    cup: 'cups', slice: 'slices', piece: 'pieces', tablespoon: 'tablespoons', teaspoon: 'teaspoons', link: 'links',
+    cup: 'cups', slice: 'slices', piece: 'pieces', tablespoon: 'tablespoons', teaspoon: 'teaspoons', link: 'links', tbsp: 'tbsp', tsp: 'tsp',
     fillet: 'fillets', leaf: 'leaves', egg: 'eggs', container: 'containers', banana: 'bananas', fruit: 'fruits', serving: 'servings', stick: 'sticks', steak: 'steaks', wedge: 'wedges', strip: 'strips', head: 'heads', bunch: 'bunches',
+    breast: 'breasts', thigh: 'thighs', drumstick: 'drumsticks', wing: 'wings', chop: 'chops', patty: 'patties', stalk: 'stalks', spear: 'spears',
+    floweret: 'flowerets', clove: 'cloves', cookie: 'cookies', muffin: 'muffins', bagel: 'bagels', tortilla: 'tortillas', pita: 'pitas', bar: 'bars',
+    large: 'large', medium: 'medium', small: 'small',
 };
 
+/** A label as it reads inside a sentence: plain words, lower-case qualifiers ("1 banana, peeled"). */
+function readableLabel(label: string): string {
+    return friendlyServingLabel(label)
+        .replace(/, ([A-Z])([a-z])/g, (_m, a: string, b: string) => `, ${a.toLowerCase()}${b}`)
+        // Drop measurements in brackets ('(2-7/8" dia)', '(less than 6" long)', '(4" x 5")').
+        .replace(/\s*\([^)]*(["”]|\bdia\b|\binch)[^)]*\)/gi, '')
+        .replace(/\s*\(\s*\)/g, '')
+        .trim();
+}
+
 /**
- * Express grams as a household amount, e.g. 228 g broccoli → "≈ 3 cups, chopped".
- * Returns null if there is no sensible household serving.
+ * Express grams as a household amount, e.g. 228 g broccoli → "≈ 3 cups, chopped",
+ * 150 g egg → "≈ 3 large". Returns null if there is no sensible household serving.
  */
 export function householdAmount(food: Food, grams: number): string | null {
     const servings = householdServings(food);
     if (!servings.length || grams <= 0) return null;
-    // Choose the serving that makes the count closest to ~1.5 units.
+    // Choose the serving that makes the count closest to ~1.5 units, preferring countable units.
     let best: ServingSize | null = null;
     let bestScore = Infinity;
     for (const s of servings) {
         const m = s.label.match(/^(\d+(?:\.\d+)?)\s+(.*)$/);
         const baseQty = m ? parseFloat(m[1]) : 1;
         const units = (grams / s.weight_g) * baseQty;
-        const score = Math.abs(Math.log(Math.max(units, 0.01) / 1.5));
+        let score = Math.abs(Math.log(Math.max(units, 0.01) / 1.5));
+        if (COUNT_UNIT.test(s.label) && units >= 0.75 && units <= 8) score *= 0.4;
+        if (/^(\d+(\.\d+)?\s+)?medium\b/i.test(s.label)) score *= 0.9;
+        if (units > 8) score += 1;
         if (score < bestScore) { bestScore = score; best = s; }
     }
     if (!best) return null;
     const m = best.label.match(/^(\d+(?:\.\d+)?)\s+(.*)$/);
     const baseQty = m ? parseFloat(m[1]) : 1;
-    let rest = m ? m[2] : best.label;
+    let rest = readableLabel(m ? m[2] : best.label);
     const units = (grams / best.weight_g) * baseQty;
     if (units < 0.2) return `a little (< ¼ ${rest})`;
     if (units > 1.125) {
-        const [first, ...others] = rest.split(/(?=[ ,])/);
+        const [first, ...others] = rest.split(/(?=[ ,(])/);
         const plural = PLURALS[first.toLowerCase()];
         if (plural) rest = plural + others.join('');
     }

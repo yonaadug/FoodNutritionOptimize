@@ -6,6 +6,7 @@ import Icon from '@/components/ui/Icon';
 import NumberInput from '@/components/ui/NumberInput';
 import { plannerActions, type FixedFood, type FoodLimits } from '@/hooks/usePlannerState';
 import { householdAmount, splitFoodName, hasCoreData } from '@/components/planner/nutrients';
+import { friendlyServingLabel } from '@/lib/servings';
 
 interface YourFoodsProps {
     foods: Food[];
@@ -14,9 +15,12 @@ interface YourFoodsProps {
     onCompare: () => void;
     onTrySample: () => void;
     sampleLoading: boolean;
+    sampleError?: string | null;
+    /** Called after "Clear all" (the page keeps the welcome panel away so nothing jumps). */
+    onCleared?: () => void;
 }
 
-export default function YourFoods({ foods, fixedFoods, foodLimits, onCompare, onTrySample, sampleLoading }: YourFoodsProps) {
+export default function YourFoods({ foods, fixedFoods, foodLimits, onCompare, onTrySample, sampleLoading, sampleError, onCleared }: YourFoodsProps) {
     const [undo, setUndo] = useState<{ foods: Food[]; fixedFoods: FixedFood[]; foodLimits: FoodLimits } | null>(null);
     const titleId = useId();
     const count = foods.length + fixedFoods.length;
@@ -25,6 +29,7 @@ export default function YourFoods({ foods, fixedFoods, foodLimits, onCompare, on
     const clearAll = () => {
         setUndo({ foods, fixedFoods, foodLimits });
         plannerActions.clearFoods();
+        onCleared?.();
     };
 
     return (
@@ -38,7 +43,7 @@ export default function YourFoods({ foods, fixedFoods, foodLimits, onCompare, on
 
             {undo && count === 0 && (
                 <div className="undo-bar" role="status">
-                    <span style={{ flex: 1 }}>Cleared your foods.</span>
+                    <span style={{ flex: 1 }}>Cleared {undo.foods.length + undo.fixedFoods.length} {undo.foods.length + undo.fixedFoods.length === 1 ? 'food' : 'foods'}.</span>
                     <button type="button" className="btn btn-secondary btn-sm"
                         onClick={() => { plannerActions.restoreFoods(undo.foods, undo.fixedFoods, undo.foodLimits); setUndo(null); }}>Undo</button>
                 </div>
@@ -50,8 +55,9 @@ export default function YourFoods({ foods, fixedFoods, foodLimits, onCompare, on
                     <h3>No foods yet</h3>
                     <p className="small" style={{ marginBottom: 12 }}>Search and tap <strong>Add</strong>, or start from a ready-made day.</p>
                     <button type="button" className="btn btn-secondary" onClick={onTrySample} disabled={sampleLoading}>
-                        {sampleLoading ? <><span className="spinner" /> Loading…</> : <><Icon name="sparkle" size={16} /> Try a sample day</>}
+                        {sampleLoading ? <><span className="spinner" /> Building a sample day…</> : <><Icon name="sparkle" size={16} /> Try a sample day</>}
                     </button>
+                    {sampleError && <p role="alert" className="small" style={{ color: 'var(--danger)', marginTop: 10 }}>{sampleError}</p>}
                 </div>
             )}
 
@@ -155,11 +161,13 @@ function BasketItem({ food, fixedGrams, limits }: { food: Food; fixedGrams: numb
 }
 
 function ServingHints({ food }: { food: Food }) {
-    const servings = (food.serving_sizes ?? []).filter(s => s.weight_g > 0 && !/^100\s?g/i.test(s.label)).slice(0, 4);
+    const servings = (food.serving_sizes ?? [])
+        .filter(s => s.weight_g > 0 && !/^100\s?g/i.test(s.label) && !/yield from|surface inch|cubic inch/i.test(s.label))
+        .slice(0, 4);
     if (!servings.length) return null;
     return (
         <p className="tiny muted">
-            For reference: {servings.map(s => `${s.label} = ${Math.round(s.weight_g)} g`).join(' · ')}
+            For reference: {servings.map(s => `${friendlyServingLabel(s.label)} = ${Math.round(s.weight_g)} g`).join(' · ')}
         </p>
     );
 }

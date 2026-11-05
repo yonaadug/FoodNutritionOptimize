@@ -2,8 +2,9 @@
 
 import Icon from '@/components/ui/Icon';
 import ThemeToggle from '@/components/ThemeToggle';
+import type { StepId } from '@/hooks/useStep';
 
-export type StepId = 'foods' | 'goals' | 'plan';
+export type { StepId };
 
 export function SiteHeader({ onHome }: { onHome: () => void }) {
     return (

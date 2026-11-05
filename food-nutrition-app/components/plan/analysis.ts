@@ -1,6 +1,7 @@
 import { NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
 import type { Food } from '@/lib/food-types';
 import type { PlanResult, PlanWarning } from '@/hooks/usePlan';
+import { filledKeys } from '@/lib/nutrient-fill';
 import { hasCoreData, nutrientLabel, num, shortFoodName } from '@/components/planner/nutrients';
 
 export type GoalStatus = 'met' | 'low' | 'high' | 'unknown';
@@ -100,6 +101,25 @@ export function goalSummary(progress: GoalProgress[]): GoalSummary {
         safety,
         safetyOver: safety.filter(p => p.status === 'high'),
     };
+}
+
+export interface OlderEntryUse { food: Food; nutrients: string[] }
+
+/** Foods in the plan whose value for one of these goals came from USDA's older entry, so the plan can say so. */
+export function olderEntryUse(items: { food: Food }[], goalKeys: string[]): OlderEntryUse[] {
+    return items.flatMap(({ food }) => {
+        const nutrients = filledKeys(food, goalKeys);
+        return nutrients.length > 0 ? [{ food, nutrients }] : [];
+    });
+}
+
+export interface RecipeCaveat { recipeId: string; name: string; uncounted: string[] }
+
+/** Recipes in the plan that left ingredients out of their totals. */
+export function recipeCaveats(items: { food: Food }[]): RecipeCaveat[] {
+    return items.flatMap(({ food }) => (food.recipe && food.recipe.uncounted.length > 0
+        ? [{ recipeId: food.recipe.id, name: food.description.replace(/^Recipe:\s*/, ''), uncounted: food.recipe.uncounted }]
+        : []));
 }
 
 export interface UnusedFood { food: Food; reason: string }

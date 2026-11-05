@@ -364,7 +364,9 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
     const buildWarnings = (dietIds: Set<number>): OptimizationWarning[] => {
         const out: OptimizationWarning[] = [];
         const add = (food: Food, role: 'optimized' | 'guaranteed', inDiet: boolean) => {
-            const missing = constrainedKeys.filter(k => nutrientValue(food, k) === null);
+            // A recipe has a number for a nutrient one ingredient lacks, but it is only a lower bound.
+            const lowerBound = Array.isArray(food.recipe?.incomplete) ? food.recipe.incomplete : [];
+            const missing = constrainedKeys.filter(k => nutrientValue(food, k) === null || lowerBound.includes(k));
             if (missing.length === 0) return;
             const name = describe(food);
             out.push({

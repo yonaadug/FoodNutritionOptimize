@@ -2,6 +2,8 @@
 
 import { useSyncExternalStore } from 'react';
 import type { Food } from '@/lib/food-types';
+import { LOCAL_DATA_CLEARED_EVENT } from '@/lib/local-data';
+import { addRecipeServing, removeRecipeServing, syncRecipeInPlan } from '@/lib/planner-recipes';
 import {
     DEFAULT_PORTION_CAP, DEFAULT_PRESET, matchPreset, migrateLegacyGoals, presetById,
     type CalorieRange, type GoalRange, type Goals, type PortionCap, type PresetId,
@@ -145,6 +147,14 @@ function subscribe(cb: () => void) {
     };
 }
 
+// Signing out in this tab: don't keep showing what was just cleared.
+if (typeof window !== 'undefined') {
+    window.addEventListener(LOCAL_DATA_CLEARED_EVENT, () => {
+        state = load();
+        listeners.forEach(l => l());
+    });
+}
+
 function update(fn: (s: PlannerState) => PlannerState) {
     const next = fn(getSnapshot());
     if (next === state) return;
@@ -205,6 +215,46 @@ export const plannerActions = {
     },
     restoreFoods(foods: Food[], fixedFoods: FixedFood[], foodLimits: FoodLimits) {
         update(s => ({ ...s, foods, fixedFoods, foodLimits }));
+    },
+    /** Replace everything, e.g. when reopening a saved plan. */
+    replaceAll(next: Omit<PlannerState, 'hydrated'>) {
+        update(s => ({ ...s, ...next, hydrated: true }));
+    },
+    /** One more serving of a recipe, as it stands now. */
+    addRecipeServing(food: Food) {
+        update(s => ({ ...s, fixedFoods: addRecipeServing(s.fixedFoods, food) }));
+    },
+    removeRecipeServing(id: number) {
+        update(s => ({ ...s, fixedFoods: removeRecipeServing(s.fixedFoods, id) }));
+    },
+    /** Carry an edited recipe into the plan, if it's there. */
+    syncRecipe(food: Food) {
+        update(s => {
+            const fixedFoods = syncRecipeInPlan(s.fixedFoods, food);
+            return fixedFoods === s.fixedFoods ? s : { ...s, fixedFoods: [...fixedFoods] };
+        });
+    },
+    /**
+     * Swap saved copies of foods for what the server says today. The browser may have
+     * saved a food before a data change, and a food has one set of values everywhere.
+     */
+    refreshFoods(fresh: Food[]) {
+        const byFdc = new Map(fresh.map(f => [f.fdc_id, f]));
+        const swap = (f: Food): Food => {
+            const row = byFdc.get(f.fdc_id);
+            if (!row) return f;
+            const next = { ...row, id: f.id };
+            return JSON.stringify(next) === JSON.stringify(f) ? f : next;
+        };
+        update(s => {
+            const foods = s.foods.map(swap);
+            const fixedFoods = s.fixedFoods.map(entry => {
+                const food = swap(entry.food);
+                return food === entry.food ? entry : { ...entry, food };
+            });
+            const same = foods.every((f, i) => f === s.foods[i]) && fixedFoods.every((f, i) => f === s.fixedFoods[i]);
+            return same ? s : { ...s, foods, fixedFoods };
+        });
     },
     applyPreset(id: PresetId) {
         const p = presetById(id);

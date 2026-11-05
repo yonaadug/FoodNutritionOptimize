@@ -569,6 +569,19 @@ export function getFoodByFdcIdIn(conn: Connection, fdcId: number): Food | undefi
     return withFilledNutrientsIn(conn, [food])[0];
 }
 
+/** Several foods by FoodData Central id, with serving sizes. Unknown ids are left out. */
+export function getFoodsByFdcIdsIn(conn: Connection, fdcIds: number[]): Food[] {
+    const unique = Array.from(new Set(fdcIds.filter(id => Number.isSafeInteger(id)))).slice(0, MAX_IDS);
+    if (unique.length === 0) return [];
+    const foods = conn.db.prepare(`SELECT * FROM foods WHERE fdc_id IN (${unique.map(() => '?').join(',')})`).all(...unique) as Food[];
+    attachServingSizes(foods, conn);
+    return withFilledNutrientsIn(conn, foods);
+}
+
+export async function getFoodsByFdcIds(fdcIds: number[]): Promise<Food[]> {
+    return getFoodsByFdcIdsIn(connection(), fdcIds);
+}
+
 export async function getFoodByFdcId(fdcId: number): Promise<Food | undefined> {
     return getFoodByFdcIdIn(connection(), fdcId);
 }

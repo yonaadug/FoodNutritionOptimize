@@ -1,6 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import { LOCAL_DATA_CLEARED_EVENT } from '@/lib/local-data';
 
 export type StepId = 'foods' | 'goals' | 'plan';
 
@@ -24,6 +25,14 @@ export function initialStep(hash: string, saved: string | null): StepId {
 let step: StepId = 'foods';
 let loaded = false;
 const listeners = new Set<() => void>();
+
+// Signing out in this tab: the next visit starts from the first step.
+if (typeof window !== 'undefined') {
+    window.addEventListener(LOCAL_DATA_CLEARED_EVENT, () => {
+        step = 'foods';
+        listeners.forEach(l => l());
+    });
+}
 
 function read(): StepId {
     let saved: string | null = null;
@@ -64,11 +73,20 @@ export function setStep(next: StepId) {
     getSnapshot();
     if (next === step && window.location.hash === `#${next}`) return;
     const changed = next !== step;
+    const leaving = step;
     step = next;
     try { localStorage.setItem(STEP_KEY, next); } catch { /* ignore */ }
     try {
-        const url = `${window.location.pathname}${window.location.search}#${next}`;
-        if (changed) window.history.pushState(null, '', url); else window.history.replaceState(null, '', url);
+        const base = `${window.location.pathname}${window.location.search}`;
+        const url = `${base}#${next}`;
+        if (changed) {
+            // Name the step in the entry being left, so Back to it knows where it was
+            // (regression: after arriving at a bare /plan, Back changed the address and the page stayed put).
+            if (!isStep(window.location.hash.replace(/^#/, ''))) window.history.replaceState(window.history.state, '', `${base}#${leaving}`);
+            window.history.pushState(null, '', url);
+        } else {
+            window.history.replaceState(null, '', url);
+        }
     } catch { /* sandboxed iframes */ }
     listeners.forEach(l => l());
 }

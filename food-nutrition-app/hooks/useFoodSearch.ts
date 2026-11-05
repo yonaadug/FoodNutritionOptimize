@@ -17,6 +17,18 @@ interface SearchData {
 
 const EMPTY: SearchData = { key: '', foods: [], page: 0, totalPages: 0, total: 0 };
 
+/** Foods by FoodData Central id, as the server has them today. Unknown ids are left out. */
+export async function fetchFoodsByFdcIds(fdcIds: number[]): Promise<Food[]> {
+    const ids = Array.from(new Set(fdcIds.filter(id => Number.isSafeInteger(id) && id > 0)));
+    const foods: Food[] = [];
+    for (let i = 0; i < ids.length; i += 200) {
+        const res = await fetch(`/api/food?fdcIds=${ids.slice(i, i + 200).join(',')}`);
+        if (!res.ok) throw new Error(`The food list could not be read (error ${res.status})`);
+        foods.push(...((await res.json()) as { foods: Food[] }).foods);
+    }
+    return foods;
+}
+
 export async function fetchSearch(q: string, page = 1, limit = PAGE_SIZE, signal?: AbortSignal, opts: { includeSuperseded?: boolean } = {}) {
     const extra = opts.includeSuperseded ? '&includeSuperseded=1' : '';
     const res = await fetch(`/api/search?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}${extra}`, { signal });

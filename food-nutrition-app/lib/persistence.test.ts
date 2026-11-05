@@ -1,7 +1,10 @@
-import { describe, it, beforeEach } from 'node:test';
+import { afterEach, describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { initialStep } from '@/hooks/useStep';
-import { restorePlan } from '@/hooks/usePlan';
+import { getPlanSnapshot, resetPlan, restorePlan, restorePlanSnapshot, runPlan } from '@/hooks/usePlan';
+import { payloadKey } from '@/components/planner/payload';
+import { DEFAULT_PORTION_CAP, GOAL_PRESETS } from '@/components/planner/goals';
+import type { PlannerState } from '@/hooks/usePlannerState';
 import { chicken } from './testing/fixtures';
 
 /** Minimal in-memory localStorage for the store modules. */
@@ -17,7 +20,7 @@ const storage = new MemoryStorage();
 Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true, writable: true });
 
 const savedPlan = (overrides: Record<string, unknown> = {}) => JSON.stringify({
-    v: 1,
+    v: 2,
     status: 'success',
     result: { success: true, diet: [{ food: chicken, grams: 150, calories: 248, nutrients: {} }], totalCalories: 248 },
     run: { key: '{"f":[1]}', fixed: [], foodIds: [1], presetId: 'essentials', at: 1 },
@@ -46,7 +49,7 @@ describe('reopening the site', () => {
     it('starts empty for state saved by older versions, or anything malformed', () => {
         storage.setItem('selectedFoods', JSON.stringify([chicken]));
         assert.equal(restorePlan().status, 'idle', 'no saved plan yet');
-        for (const bad of ['{', 'null', '[]', JSON.stringify({ v: 2 }), savedPlan({ run: null }), savedPlan({ result: null })]) {
+        for (const bad of ['{', 'null', '[]', JSON.stringify({ v: 2 }), savedPlan({ v: 1 }), savedPlan({ run: null }), savedPlan({ result: null })]) {
             storage.setItem('nc.plan.v1', bad);
             assert.equal(restorePlan().status, 'idle', bad);
         }
@@ -58,5 +61,71 @@ describe('reopening the site', () => {
         assert.equal(initialStep('#goals', 'plan'), 'goals');
         assert.equal(initialStep('#main', 'goals'), 'goals', 'the skip link is not a step');
         assert.equal(initialStep('', 'nonsense'), 'foods');
+    });
+});
+
+describe('a plan with no foods left (regression: Update plan did nothing, and the old plan stayed)', () => {
+    const preset = GOAL_PRESETS[0];
+    const state = (foods: PlannerState['foods']): PlannerState => ({
+        foods, fixedFoods: [], foodLimits: {}, presetId: preset.id, goals: preset.goals, calories: preset.calories,
+        portionCap: DEFAULT_PORTION_CAP, upperLimits: false, hydrated: true,
+    });
+    const realFetch = globalThis.fetch;
+    const okPlan = async () => Response.json({ success: true, diet: [], totalCalories: 100, totalNutrients: {} });
+
+    beforeEach(() => { storage.clear(); resetPlan(); });
+    afterEach(() => { globalThis.fetch = realFetch; });
+
+    it('running it forgets the old plan, on screen and in storage', async () => {
+        globalThis.fetch = okPlan as typeof fetch;
+        await runPlan(state([chicken]));
+        assert.equal(getPlanSnapshot().status, 'success');
+        assert.ok(storage.getItem('nc.plan.v1'));
+
+        let asked = 0;
+        globalThis.fetch = (async () => { asked++; return okPlan(); }) as typeof fetch;
+        await runPlan(state([]));
+        assert.equal(getPlanSnapshot().status, 'idle');
+        assert.equal(getPlanSnapshot().result, null);
+        assert.equal(storage.getItem('nc.plan.v1'), null);
+        assert.equal(asked, 0, 'there is nothing to send');
+    });
+
+    it('Undo after Clear all can bring the same plan back', async () => {
+        globalThis.fetch = okPlan as typeof fetch;
+        await runPlan(state([chicken]));
+        const before = getPlanSnapshot();
+        resetPlan();
+        assert.equal(getPlanSnapshot().status, 'idle');
+        restorePlanSnapshot(before);
+        assert.equal(getPlanSnapshot().status, 'success');
+        assert.equal(getPlanSnapshot().run?.key, payloadKey(state([chicken])));
+        assert.ok(storage.getItem('nc.plan.v1'), 'and it is saved again');
+    });
+
+    it('a fixed food the server returns replaces the browser’s copy, so totals and rows agree', async () => {
+        const stale = { ...chicken, protein_g: 1 };
+        const fresh = { ...chicken, protein_g: 31 };
+        globalThis.fetch = (async () => Response.json({
+            success: true, diet: [], totalCalories: 100, totalNutrients: {}, guaranteedFoods: [{ food: fresh, grams: 50 }],
+        })) as typeof fetch;
+        await runPlan({ ...state([]), fixedFoods: [{ food: stale, grams: 50 }] });
+        assert.equal(getPlanSnapshot().run?.fixed[0].food.protein_g, 31);
+    });
+});
+
+describe('payloadKey', () => {
+    const preset = GOAL_PRESETS[0];
+    const recipeFood = (fingerprint: string) => ({
+        ...chicken, id: -9, recipe: { id: 'r', servingGrams: 100, uncounted: [], incomplete: [], fingerprint },
+    });
+    const state = (fingerprint: string): PlannerState => ({
+        foods: [], fixedFoods: [{ food: recipeFood(fingerprint), grams: 100 }], foodLimits: {}, presetId: preset.id, goals: preset.goals,
+        calories: preset.calories, portionCap: DEFAULT_PORTION_CAP, upperLimits: false, hydrated: true,
+    });
+
+    it('changes when a recipe in the plan is edited, even at the same weight', () => {
+        assert.notEqual(payloadKey(state('a')), payloadKey(state('b')));
+        assert.equal(payloadKey(state('a')), payloadKey(state('a')));
     });
 });

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { optimizeDiet } from './optimizer';
-import { goalProgress, goalSummary } from '@/components/plan/analysis';
+import { goalProgress, goalSummary, olderEntryUse, recipeCaveats } from '@/components/plan/analysis';
 import { GOAL_PRESETS, goalsToPayload } from '@/components/planner/goals';
 import type { PlanResult } from '@/hooks/usePlan';
 import { chicken, broccoli, makeFood } from './testing/fixtures';
@@ -77,5 +77,30 @@ describe('goal progress with "Respect safe upper limits"', () => {
         const zinc = goalProgress(result).find(r => r.key === 'zinc_mg')!;
         assert.equal(zinc.kind, 'safety');
         assert.equal(zinc.status, 'high');
+    });
+});
+
+describe('what a plan discloses', () => {
+    const spinach = makeFood({ id: 50, description: 'Spinach, mature', calories: 23, vitamin_k_ug: 482.9, iron_mg: 2.7, filledFrom: { vitamin_k_ug: 168462, vitamin_e_mg: 168462, caffeine_mg: 168462 } });
+
+    it('names the foods and goal nutrients that use USDA’s older entry', () => {
+        const use = olderEntryUse([{ food: spinach }, { food: broccoli }], ['vitamin_k_ug', 'iron_mg', 'vitamin_e_mg']);
+        assert.equal(use.length, 1);
+        assert.equal(use[0].food.description, 'Spinach, mature');
+        assert.deepEqual(use[0].nutrients, ['vitamin_k_ug', 'vitamin_e_mg']);
+    });
+
+    it('stays quiet when no goal touches a filled value', () => {
+        assert.deepEqual(olderEntryUse([{ food: spinach }], ['iron_mg']), []);
+        assert.deepEqual(olderEntryUse([{ food: broccoli }], ['vitamin_k_ug']), []);
+    });
+
+    it('lists what a recipe left out, and only for recipes that left something out', () => {
+        const recipe = (id: number, uncounted: string[]) => makeFood({
+            id, description: 'Recipe: Dinner', calories: 100,
+            recipe: { id: `r${id}`, servingGrams: 100, uncounted, incomplete: [], fingerprint: 'x' },
+        });
+        const caveats = recipeCaveats([{ food: recipe(-1, ['salt', 'lettuce']) }, { food: recipe(-2, []) }, { food: broccoli }]);
+        assert.deepEqual(caveats, [{ recipeId: 'r-1', name: 'Dinner', uncounted: ['salt', 'lettuce'] }]);
     });
 });

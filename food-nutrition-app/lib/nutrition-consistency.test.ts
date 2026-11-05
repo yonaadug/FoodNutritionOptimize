@@ -67,6 +67,27 @@ describe('one food has one set of values everywhere', { skip: !hasDb && 'nutriti
         assert.equal(expected.vitamin_k_ug, 482.9, 'the gap is filled from the older USDA entry');
     });
 
+    it('/api/food by FoodData Central id returns the same food with its real row id', async () => {
+        const page = (await getFoodByFdcId(SPINACH))!;
+        const { foods } = (await (await foodRoute(get(`/api/food?fdcIds=${SPINACH},999999999`))).json()) as { foods: Food[] };
+        assert.equal(foods.length, 1);
+        assert.equal(foods[0].id, page.id);
+        assert.deepEqual(values(foods[0]), values(page));
+    });
+
+    it('a fixed food comes back from /api/optimize with the server’s values, not the browser’s copy', async () => {
+        const page = (await getFoodByFdcId(SPINACH))!;
+        const res = await optimizeRoute(post('/api/optimize', {
+            foods: [{ id: page.id, fdc_id: SPINACH }],
+            guaranteedFoods: [{ food: { ...page, id: 99, fdc_id: OLDER_SPINACH + 1, vitamin_k_ug: null, description: 'unknown' }, grams: 10 }, { food: { id: page.id + 1, fdc_id: SPINACH, vitamin_k_ug: null }, grams: 50 }],
+            customConstraints: { ...NO_GOALS, protein_g: { min: 1, max: '' } },
+            portionCap: {},
+        }));
+        const { guaranteedFoods } = (await res.json()) as { guaranteedFoods: { food: Food; grams: number }[] };
+        assert.equal(guaranteedFoods[1].food.vitamin_k_ug, 482.9);
+        assert.equal(guaranteedFoods[1].grams, 50);
+    });
+
     it('a recipe of 100 g, one serving, totals to exactly the food page values', async () => {
         const page = (await getFoodByFdcId(SPINACH))!;
         const res = await recipeNutritionRoute(post('/api/recipes/nutrition', { ingredients: [{ fdcId: SPINACH, grams: 100 }], servings: 1 }));

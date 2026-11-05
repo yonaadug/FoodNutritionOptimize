@@ -72,8 +72,8 @@ order and stops at the first failure. Expected:
 > eslint .                       (no output = no problems)
 > next typegen && tsc --noEmit
 ✓ Types generated successfully
-ℹ tests 70
-ℹ pass 70
+ℹ tests 139
+ℹ pass 139
 ℹ fail 0
 ▲ Next.js 16.4.5 (Turbopack)
 ✓ Compiled successfully

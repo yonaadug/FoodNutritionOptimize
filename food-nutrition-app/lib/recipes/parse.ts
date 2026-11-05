@@ -302,7 +302,7 @@ export function parseRecipeText(text: string): ParsedRecipe {
         if (STOP_HEADER.test(line)) { inIngredients = false; seenContent = true; continue; }
         if (!seenContent && !title && !parseQuantity(normalizeFractions(line)) && line.length <= 80 && !/[.!?]$/.test(line)) {
             // First short line without an amount: the title (unless it's a bare ingredient in a header-less list).
-            const next = lines.find(l => l && l !== line);
+            const next = lines.find(l => l && l !== line && parseServings(l) === null);
             if (hasHeader || (next && parseQuantity(normalizeFractions(next)))) {
                 title = line.replace(/^#+\s*/, '');
                 seenContent = true;

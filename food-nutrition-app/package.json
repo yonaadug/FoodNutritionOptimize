@@ -29,8 +29,11 @@
         "typecheck": "next typegen && tsc --noEmit"
     },
     "dependencies": {
+        "@anthropic-ai/bedrock-sdk": "1.1.1",
+        "@anthropic-ai/sdk": "1.4.0",
         "better-sqlite3": "^13.0.3",
         "javascript-lp-solver": "^1.0.3",
+        "jpeg-js": "0.4.4",
         "next": "^16.4.5",
         "react": "^19.3.1",
         "react-dom": "^19.3.1"

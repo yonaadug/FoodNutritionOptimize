@@ -4,6 +4,7 @@ import path from 'node:path';
 import type { Food, ServingSize } from './food-types';
 import { ALL_NUTRIENT_CONFIG } from './nutrient-defaults';
 import { pickSources, scoreSources, type RankedSource, type RankOptions } from './best-sources';
+import { basePrefixes, categorySlug, rankRelated, type RelatedResult } from './food-page';
 
 export type { Food, ServingSize } from './food-types';
 
@@ -305,6 +306,8 @@ const SPECIALTY_WORDS = new Set([
     'sticks', 'mix', 'concentrate', 'restaurant', 'pickled',
     // less typical forms and cuts ("banana" should not open with "overripe", "chicken" with "wing")
     'overripe', 'underripe', 'puffed', 'wing', 'wings', 'neck', 'skin', 'additives', 'fermented', 'giblets', 'liver', 'gizzards',
+    // "sweet potato" should not open with the leaves
+    'leaf', 'leaves',
 ]);
 
 /**
@@ -344,7 +347,9 @@ export function rankCandidates<T extends SearchCandidate>(candidates: T[], token
         const head = named ? 0 : queryForms.has(firstWord) ? 1 : 2;
         const leading = segments.slice(0, 2);
         const namedWords = tokenForms.filter(forms => leading.some(seg => forms.has(seg))).length;
-        const specialty = words.filter(w => SPECIALTY_WORDS.has(w) && !queryForms.has(w)).length;
+        // "without skin" is the plain form, not a specialty one.
+        const specialty = tokenizeQuery(desc.replace(/\bwithout \w+/g, ' '))
+            .filter(w => SPECIALTY_WORDS.has(w) && !queryForms.has(w)).length;
         const plain = words.some(w => PLAIN_WORDS.has(w)) ? 0 : 1;
         // Tiers 1 and 2 differ only by "starts with the first query word", which `head` refines.
         const tierGroup = c.tier === 0 ? 0 : c.tier <= 2 ? 1 : c.tier - 1;
@@ -508,4 +513,137 @@ export function getDbInfo(): { searchMode: 'fts' | 'like'; foodCount: number } {
     const conn = connection();
     const { count } = conn.db.prepare('SELECT COUNT(*) AS count FROM foods').get() as { count: number };
     return { searchMode: conn.schema.hasFts ? 'fts' : 'like', foodCount: count };
+}
+
+// ---------------------------------------------------------------------------
+// Food lookup pages (/food/[id], category and sitemap listings)
+// ---------------------------------------------------------------------------
+
+/** One food by its FoodData Central id, with serving sizes. */
+export function getFoodByFdcIdIn(conn: Connection, fdcId: number): Food | undefined {
+    if (!Number.isSafeInteger(fdcId)) return undefined;
+    const food = conn.db.prepare('SELECT * FROM foods WHERE fdc_id = ?').get(fdcId) as Food | undefined;
+    if (food) attachServingSizes([food], conn);
+    return food;
+}
+
+export async function getFoodByFdcId(fdcId: number): Promise<Food | undefined> {
+    return getFoodByFdcIdIn(connection(), fdcId);
+}
+
+/**
+ * Foods related to `food` (see rankRelated in lib/food-page.ts): the same
+ * food in another USDA dataset, other forms of it (raw/cooked, sizes, parts,
+ * varieties) and nutritionally similar foods in its category. Candidates are
+ * the base name matches, the NDB neighbourhood and the category; at most 1,500
+ * rows are scored (the largest category has fewer than 1,000).
+ */
+export function getRelatedFoodsIn(conn: Connection, food: Food, limits: { forms?: number; similar?: number } = {}): RelatedResult<Food> {
+    const params: Record<string, string | number> = { id: food.id };
+    const ors: string[] = [];
+    basePrefixes(food.description).forEach((p, i) => {
+        if (p.endsWith(',')) {
+            params[`p${i}`] = escapeLike(p) + '%';
+            ors.push(`lower(description) LIKE @p${i} ESCAPE '\\'`);
+        } else {
+            params[`p${i}`] = p;
+            ors.push(`lower(description) = @p${i}`);
+        }
+    });
+    const ndb = conn.schema.foodColumns.has('ndb_number') ? food.ndb_number : null;
+    if (ndb) {
+        params.ndb = ndb;
+        params.lo = ndb - 25;
+        params.hi = ndb + 25;
+        ors.push('ndb_number = @ndb', '(ndb_number BETWEEN @lo AND @hi)');
+    }
+    if (food.food_category) {
+        params.category = food.food_category;
+        ors.push('food_category = @category');
+    }
+    if (ors.length === 0) return { equivalents: [], forms: [], similar: [] };
+    const candidates = conn.db
+        .prepare(`SELECT * FROM foods WHERE id != @id AND (${ors.join(' OR ')}) LIMIT 1500`)
+        .all(params) as Food[];
+    const result = rankRelated(food, candidates, limits);
+    attachServingSizes([...result.equivalents, ...result.forms, ...result.similar], conn);
+    return result;
+}
+
+export async function getRelatedFoods(food: Food, limits: { forms?: number; similar?: number } = {}): Promise<RelatedResult<Food>> {
+    return getRelatedFoodsIn(connection(), food, limits);
+}
+
+export interface CategoryInfo { category: string; slug: string; count: number }
+
+const categoriesCache = new WeakMap<Connection, CategoryInfo[]>();
+
+function notSupersededSql(conn: Connection, alias = ''): string {
+    return conn.schema.foodColumns.has('superseded_by_fdc_id') ? `${alias}superseded_by_fdc_id IS NULL` : '1';
+}
+
+/** Food categories with their (non-superseded) food counts, largest first. */
+export function getCategoriesIn(conn: Connection): CategoryInfo[] {
+    let cats = categoriesCache.get(conn);
+    if (!cats) {
+        const rows = conn.db.prepare(`SELECT food_category AS category, COUNT(*) AS count FROM foods
+            WHERE food_category IS NOT NULL AND food_category != '' AND ${notSupersededSql(conn)}
+            GROUP BY food_category ORDER BY count DESC, food_category`).all() as { category: string; count: number }[];
+        cats = rows.map(r => ({ ...r, slug: categorySlug(r.category) }));
+        categoriesCache.set(conn, cats);
+    }
+    return cats;
+}
+
+export async function getCategories(): Promise<CategoryInfo[]> {
+    return getCategoriesIn(connection());
+}
+
+/** One page of a category: Foundation first, then shorter (plainer) names. */
+export function getFoodsInCategoryIn(conn: Connection, category: string, page = 1, limit = 48): SearchResult {
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit) || 48), SEARCH_MAX_LIMIT);
+    const safePage = Math.min(Math.max(1, Math.floor(page) || 1), SEARCH_MAX_PAGE);
+    const where = `f.food_category = ? AND ${notSupersededSql(conn, 'f.')}`;
+    const { total } = conn.db.prepare(`SELECT COUNT(*) AS total FROM foods f WHERE ${where}`).get(category) as { total: number };
+    const foods = conn.db.prepare(`SELECT f.* FROM foods f WHERE ${where}
+        ORDER BY ${dataTypeRank(conn.schema)}, length(f.description), f.description, f.id LIMIT ? OFFSET ?`)
+        .all(category, safeLimit, (safePage - 1) * safeLimit) as Food[];
+    attachServingSizes(foods, conn);
+    return { foods, total, page: safePage, totalPages: Math.ceil(total / safeLimit), limit: safeLimit };
+}
+
+export async function getFoodsInCategory(category: string, page = 1, limit = 48): Promise<SearchResult> {
+    return getFoodsInCategoryIn(connection(), category, page, limit);
+}
+
+const topHitsCache = new WeakMap<Connection, Map<string, Food | null>>();
+
+/** The best search match for each query, in order (cached: the DB is read-only). Queries with no match are skipped. */
+export function getTopHitsIn(conn: Connection, queries: readonly string[]): Food[] {
+    let cache = topHitsCache.get(conn);
+    if (!cache) topHitsCache.set(conn, cache = new Map());
+    const out: Food[] = [];
+    for (const q of queries) {
+        let hit = cache.get(q);
+        if (hit === undefined) {
+            hit = searchFoodsIn(conn, q, 1, 1).foods[0] ?? null;
+            cache.set(q, hit);
+        }
+        if (hit) out.push(hit);
+    }
+    return out;
+}
+
+export async function getTopHits(queries: readonly string[]): Promise<Food[]> {
+    return getTopHitsIn(connection(), queries);
+}
+
+/** Every food page worth indexing (superseded SR rows point to their Foundation page instead). */
+export function getFoodRefsIn(conn: Connection): { fdc_id: number; description: string }[] {
+    return conn.db.prepare(`SELECT fdc_id, description FROM foods WHERE ${notSupersededSql(conn)} ORDER BY fdc_id`)
+        .all() as { fdc_id: number; description: string }[];
+}
+
+export async function getFoodRefs(): Promise<{ fdc_id: number; description: string }[]> {
+    return getFoodRefsIn(connection());
 }

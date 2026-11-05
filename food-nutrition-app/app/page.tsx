@@ -1,124 +1,103 @@
-'use client';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { getCategories, getDbInfo, getTopHits, searchFoods, SEARCH_MAX_QUERY_LENGTH } from '@/lib/db';
+import { categorySlug, nutrientName, nutrientSlug } from '@/lib/food-page';
+import { SITE_TAGLINE } from '@/lib/nav';
+import FoodCard from '@/components/explore/FoodCard';
+import FoodSearch, { type InitialSearch } from '@/components/explore/FoodSearch';
+import PlanNudge, { LegacyPlannerRedirect } from '@/components/explore/PlanNudge';
+import { HOME_CATEGORIES, NUTRIENT_SHORTCUTS, POPULAR_QUERIES } from '@/components/explore/home-data';
+import Icon from '@/components/ui/Icon';
 
-import { useCallback, useRef, useState } from 'react';
-import type { Food } from '@/lib/food-types';
-import { ActionBar, SiteHeader, Stepper, Welcome } from '@/components/shell/Shell';
-import SiteFooter from '@/components/shell/SiteFooter';
-import Toaster from '@/components/ui/Toaster';
-import FoodFinder from '@/components/foods/FoodFinder';
-import YourFoods from '@/components/foods/YourFoods';
-import ComparisonView from '@/components/ComparisonView';
-import GoalsStep from '@/components/goals/GoalsStep';
-import PlanStep from '@/components/plan/PlanStep';
-import { getPlannerSnapshot, plannerActions, usePlannerState } from '@/hooks/usePlannerState';
-import { usePlan } from '@/hooks/usePlan';
-import { setStep, useStep, type StepId } from '@/hooks/useStep';
-import { notify } from '@/hooks/useToasts';
-import { countGoals, presetTitle } from '@/components/planner/goals';
-import { shortFoodName } from '@/components/planner/nutrients';
-import { loadSampleDay } from '@/components/planner/sampleDay';
+function queryParam(v: string | string[] | undefined): string {
+    const q = Array.isArray(v) ? v[0] : v;
+    return (q ?? '').trim().slice(0, SEARCH_MAX_QUERY_LENGTH);
+}
 
-export default function Home() {
-    const state = usePlannerState();
-    const plan = usePlan(state);
-    const step = useStep();
-    const [comparing, setComparing] = useState(false);
-    const [sampleLoading, setSampleLoading] = useState(false);
-    const [sampleError, setSampleError] = useState<string | null>(null);
-    // After "Clear all" the welcome panel stays away, so the page doesn't jump.
-    const [welcomeDismissed, setWelcomeDismissed] = useState(false);
-    const searchRef = useRef<HTMLInputElement>(null);
+export async function generateMetadata({ searchParams }: PageProps<'/'>): Promise<Metadata> {
+    const q = queryParam((await searchParams).q);
+    if (q) {
+        // Search result pages are for people, not for the index.
+        return { title: `“${q}” nutrition search`, robots: { index: false, follow: true }, alternates: { canonical: '/' } };
+    }
+    return { alternates: { canonical: '/' } };
+}
 
-    const foodsCount = state.foods.length + state.fixedFoods.length;
-    const goalsCount = countGoals(state.goals);
-    const goalsLabel = presetTitle(state.presetId);
-    const showWelcome = state.hydrated && foodsCount === 0 && step === 'foods' && !welcomeDismissed;
-
-    const go = useCallback((s: StepId) => {
-        setStep(s);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, []);
-
-    const isAdded = (id: number) => state.foods.some(f => f.id === id) || state.fixedFoods.some(f => f.food.id === id);
-    const toggleFood = (food: Food) => {
-        if (isAdded(food.id)) {
-            plannerActions.removeFood(food.id);
-            notify(`Removed ${shortFoodName(food.description)}.`, { tone: 'info', ms: 3000 });
-        } else {
-            plannerActions.addFood(food);
-        }
-    };
-
-    const makePlan = () => {
-        go('plan');
-        plan.run();
-    };
-
-    const trySample = async () => {
-        setSampleLoading(true);
-        setSampleError(null);
-        try {
-            const foods = await loadSampleDay();
-            if (foods.length < 3) throw new Error('not enough foods');
-            plannerActions.addFoods(foods);
-            if (state.presetId === 'custom' || state.presetId === 'fda') plannerActions.applyPreset('essentials');
-            go('plan');
-            plan.run(getPlannerSnapshot());
-        } catch {
-            setSampleError("Couldn't load the sample day. Check that the app's server is running, then try again.");
-        } finally {
-            setSampleLoading(false);
-        }
-    };
-
-    const planLabel = plan.status === 'success' ? (plan.stale ? 'Out of date' : 'Ready')
-        : plan.status === 'infeasible' ? (plan.stale ? 'Out of date' : 'Needs changes')
-            : plan.status === 'loading' ? 'Working…'
-                : plan.status === 'error' ? 'Try again' : 'Not made yet';
+export default async function Home({ searchParams }: PageProps<'/'>) {
+    const q = queryParam((await searchParams).q);
+    let initial: InitialSearch | null = null;
+    if (q.length >= 2) {
+        const r = await searchFoods(q, 1, 20);
+        initial = { query: q, foods: r.foods, total: r.total, totalPages: r.totalPages };
+    }
+    const { foodCount } = getDbInfo();
 
     return (
-        <>
-            <a href="#main" className="skip-link" onClick={e => { e.preventDefault(); const m = document.getElementById('main'); m?.focus(); m?.scrollIntoView(); }}>Skip to content</a>
-            <SiteHeader onHome={() => go('foods')} />
-            <main id="main" tabIndex={-1} className="container main" data-step={step}>
-                {showWelcome && (
-                    <Welcome onSample={trySample} loading={sampleLoading} error={sampleError}
-                        onScratch={() => searchRef.current?.focus()} />
-                )}
+        <main className="container explore">
+            <LegacyPlannerRedirect />
+            <section className="explore-hero" aria-labelledby="home-title">
+                <h1 id="home-title">What&apos;s in your food?</h1>
+                <p className="explore-tagline">{SITE_TAGLINE}</p>
+            </section>
 
-                <Stepper step={step} onStep={go} foodsCount={foodsCount} goalsLabel={`${goalsLabel} · ${goalsCount} ${goalsCount === 1 ? 'goal' : 'goals'}`}
-                    planLabel={planLabel} planDone={plan.status === 'success' && !plan.stale} />
+            <FoodSearch initial={initial} foodCount={foodCount}>
+                <BrowseSections />
+            </FoodSearch>
+        </main>
+    );
+}
 
-                {step === 'foods' && (
-                    <div className="stack-lg">
-                        <div className="layout-2col">
-                            <FoodFinder isAdded={isAdded} onToggle={toggleFood} searchInputRef={searchRef} />
-                            <div className="sticky-col">
-                                <YourFoods foods={state.foods} fixedFoods={state.fixedFoods} foodLimits={state.foodLimits}
-                                    onCompare={() => { setComparing(true); requestAnimationFrame(() => document.getElementById('compare')?.scrollIntoView({ behavior: 'smooth' })); }}
-                                    onCleared={() => setWelcomeDismissed(true)}
-                                    onTrySample={trySample} sampleLoading={sampleLoading} sampleError={showWelcome ? null : sampleError} />
-                            </div>
-                        </div>
-                        {comparing && (
-                            <ComparisonView foods={[...state.foods, ...state.fixedFoods.map(f => f.food)]} onClose={() => setComparing(false)} />
-                        )}
-                    </div>
-                )}
+/** What the home page offers before anyone types. */
+async function BrowseSections() {
+    const [popular, categories] = await Promise.all([getTopHits(POPULAR_QUERIES), getCategories()]);
+    const counts = new Map(categories.map(c => [c.category, c.count]));
 
-                {step === 'goals' && <GoalsStep state={state} />}
+    return (
+        <div className="explore-browse">
+            <section aria-labelledby="popular-title">
+                <h2 className="browse-title" id="popular-title">Popular foods</h2>
+                <ul className="food-grid">
+                    {popular.map(food => <li key={food.id}><FoodCard food={food} /></li>)}
+                </ul>
+            </section>
 
-                {step === 'plan' && (
-                    <PlanStep state={state} status={plan.status} result={plan.result} error={plan.error} stale={plan.stale}
-                        runInfo={plan.runInfo} finished={plan.finished}
-                        onRun={() => plan.run()} onEditFoods={() => go('foods')} onEditGoals={() => go('goals')} />
-                )}
-            </main>
-            <SiteFooter />
-            <Toaster />
+            <section aria-labelledby="categories-title">
+                <div className="browse-head">
+                    <h2 className="browse-title" id="categories-title">Browse by category</h2>
+                    <Link href="/food/category" className="small browse-more">All categories <Icon name="arrowRight" size={14} /></Link>
+                </div>
+                <ul className="chip-list">
+                    {HOME_CATEGORIES.filter(c => counts.has(c.category)).map(c => (
+                        <li key={c.category}>
+                            <Link href={`/food/category/${categorySlug(c.category)}`} className="chip chip-btn">
+                                {c.label} <span className="muted tabular">{counts.get(c.category)}</span>
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
+            </section>
 
-            <ActionBar step={step} foodsCount={foodsCount} goalsLabel={goalsLabel} goalsCount={goalsCount}
-                planning={plan.status === 'loading'} onMakePlan={makePlan} onNext={() => go('goals')} onBack={() => go('foods')} />
-        </>
+            <section aria-labelledby="nutrients-title">
+                <div className="browse-head">
+                    <h2 className="browse-title" id="nutrients-title">Best sources of</h2>
+                    <Link href="/nutrients" className="small browse-more">All nutrients <Icon name="arrowRight" size={14} /></Link>
+                </div>
+                <ul className="chip-list">
+                    {NUTRIENT_SHORTCUTS.map(key => (
+                        <li key={key}>
+                            <Link href={`/nutrients/${nutrientSlug(key)}`} className="chip chip-btn">{nutrientName(key).replace(/ \(.*\)$/, '')}</Link>
+                        </li>
+                    ))}
+                </ul>
+            </section>
+
+            <section className="plan-cta" aria-labelledby="plan-title">
+                <div>
+                    <h2 className="browse-title" id="plan-title">Planning a whole day?</h2>
+                    <p className="small secondary">Pick foods you like, set your goals, and get amounts in grams and household servings that meet them.</p>
+                </div>
+                <PlanNudge />
+            </section>
+        </div>
     );
 }

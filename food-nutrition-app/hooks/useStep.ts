@@ -73,6 +73,20 @@ export function setStep(next: StepId) {
     listeners.forEach(l => l());
 }
 
+/**
+ * Adopt the step named in the address, without adding a history entry. The
+ * store only reads the address once, so a client-side navigation to /plan#goals
+ * needs this when the planner has already been open in this tab.
+ */
+export function syncStepFromLocation() {
+    getSnapshot();
+    const fromHash = window.location.hash.replace(/^#/, '');
+    if (!isStep(fromHash) || fromHash === step) return;
+    step = fromHash;
+    try { localStorage.setItem(STEP_KEY, step); } catch { /* ignore */ }
+    listeners.forEach(l => l());
+}
+
 export function useStep(): StepId {
     return useSyncExternalStore(subscribe, getSnapshot, () => 'foods' as StepId);
 }

@@ -1,22 +1,26 @@
 import './globals.css';
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import SiteHeader, { SkipLink } from '@/components/shell/SiteHeader';
+import SiteFooter from '@/components/shell/SiteFooter';
+import Toaster from '@/components/ui/Toaster';
+import { SITE_NAME, SITE_TAGLINE, SITE_URL } from '@/lib/nav';
 
 const inter = Inter({ subsets: ['latin'], display: 'swap' });
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://micronutrientdiary.com';
-const DESCRIPTION = 'Pick foods you like, choose your nutrition goals, and get a day of eating, in grams and household servings, that meets them.';
-
 export const metadata: Metadata = {
     metadataBase: new URL(SITE_URL),
-    title: 'Micronutrient Diary: plan a day that meets your nutrition goals',
-    applicationName: 'Micronutrient Diary',
-    description: DESCRIPTION,
+    title: {
+        default: `${SITE_NAME}: look up the nutrients in any food`,
+        template: `%s | ${SITE_NAME}`,
+    },
+    applicationName: SITE_NAME,
+    description: SITE_TAGLINE,
     openGraph: {
         type: 'website',
-        siteName: 'Micronutrient Diary',
-        title: 'Micronutrient Diary',
-        description: DESCRIPTION,
+        siteName: SITE_NAME,
+        title: SITE_NAME,
+        description: SITE_TAGLINE,
         url: '/',
     },
 };
@@ -39,7 +43,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <head>
                 <script dangerouslySetInnerHTML={{ __html: themeScript }} />
             </head>
-            <body className={inter.className}>{children}</body>
+            <body className={inter.className}>
+                <SkipLink />
+                <SiteHeader />
+                {/* Pages render their own <main>; this is the skip link's target. */}
+                <div id="main" tabIndex={-1} className="site-main">{children}</div>
+                <SiteFooter />
+                <Toaster />
+            </body>
         </html>
     );
 }

@@ -91,9 +91,19 @@ for (const backend of backends) {
 
         it('a forged or tampered cookie is not a session', async () => {
             const cookie = await signIn(h, email());
-            const [name, value] = cookie.split('=');
-            const tampered = `${name}=x${value.slice(1)}`;
-            assert.equal((await (await getMe(siteRequest('/api/me', { cookie: tampered }), h)).json()).user, null);
+            const separator = cookie.indexOf('=');
+            const name = cookie.slice(0, separator);
+            const value = cookie.slice(separator + 1);
+            // Change a character in the token and one in the signature, always to a different one.
+            const flip = (c: string) => (c === 'x' ? 'y' : 'x');
+            const dot = value.indexOf('.');
+            assert.ok(dot > 0, 'the cookie is token.signature');
+            for (const at of [0, dot + 1]) {
+                const tampered = `${name}=${value.slice(0, at)}${flip(value[at])}${value.slice(at + 1)}`;
+                assert.notEqual(tampered, cookie);
+                assert.equal((await (await getMe(siteRequest('/api/me', { cookie: tampered }), h)).json()).user, null, `changed position ${at}`);
+            }
+            assert.ok((await (await getMe(siteRequest('/api/me', { cookie }), h)).json()).user, 'the untouched cookie still works');
             assert.equal((await (await getMe(siteRequest('/api/me', { cookie: 'md.session_token=abc.def' }), h)).json()).user, null);
         });
 

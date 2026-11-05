@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    __resetClientState, clearCurrentUser, primeCurrentUser, recordHistory, refreshCurrentUser, requestSignInLink, signOut,
+    __resetClientState, clearCurrentUser, flushQueue, primeCurrentUser, recordHistory, refreshCurrentUser, requestSignInLink, signOut,
 } from './client';
 
 class MemoryStorage {
@@ -23,7 +23,6 @@ const item = (itemId: string | number = 1) => ({ kind: 'food', itemId, title: 'S
 let calls: { path: string; method: string; body?: unknown; headers: Record<string, string> }[] = [];
 let respond: (path: string, method: string) => Response | Promise<Response>;
 const realFetch = globalThis.fetch;
-const settle = () => new Promise(r => setTimeout(r, 5));
 
 beforeEach(() => {
     storage.clear();
@@ -127,7 +126,7 @@ describe('after sign-in', () => {
         await recordHistory(item(2));
         respond = () => Response.json({ item: {} });
         primeCurrentUser(USER);
-        await settle();
+        await flushQueue();
         assert.deepEqual(calls.map(c => (c.body as { itemId: number }).itemId), [1, 2]);
         assert.ok(calls.every(c => !('queuedAt' in (c.body as object))), 'internal fields stay local');
         assert.equal(storage.getItem(QUEUE), null);
@@ -138,7 +137,7 @@ describe('after sign-in', () => {
         await recordHistory(item(2));
         respond = () => new Response('{}', { status: 503 });
         primeCurrentUser(USER);
-        await settle();
+        await flushQueue();
         assert.equal(calls.length, 1);
         assert.equal(JSON.parse(storage.getItem(QUEUE)!).length, 2);
     });
@@ -151,7 +150,7 @@ describe('after sign-in', () => {
             return () => (n++ === 0 ? new Response('{}', { status: 400 }) : Response.json({ item: {} }));
         })();
         primeCurrentUser(USER);
-        await settle();
+        await flushQueue();
         assert.equal(calls.length, 2);
         assert.equal(storage.getItem(QUEUE), null);
     });

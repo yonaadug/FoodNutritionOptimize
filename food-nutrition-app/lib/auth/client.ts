@@ -226,7 +226,7 @@ async function send(item: HistoryRecord): Promise<Response> {
 let flushing: Promise<void> | null = null;
 
 /** Upload what was viewed while signed out. A rejected item is dropped; a transient failure keeps the rest for later. */
-function flushQueue(): Promise<void> {
+export function flushQueue(): Promise<void> {
     if (flushing) return flushing;
     flushing = (async () => {
         try {

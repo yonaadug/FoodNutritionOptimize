@@ -14,6 +14,8 @@ food-nutrition-app/next-env.d.ts
 food-nutrition-app/AGENTS.md
 food-nutrition-app/.env*
 !food-nutrition-app/.env.example
+# Local account data (APP_DB_PATH default) must never reach an image
+food-nutrition-app/.data
 # Only nutrition.db ships; stale copies/backups don't
 food-nutrition-app/*.db
 !food-nutrition-app/nutrition.db

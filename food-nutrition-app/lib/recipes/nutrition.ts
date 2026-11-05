@@ -11,6 +11,21 @@ import type { Food } from '../food-types';
 import { nutrientValue } from '../food-types';
 import type { AnalyzedRecipe, NutrientTotal, RecipeNutrition } from './types';
 
+/** Small, stable, non-cryptographic hash, for telling versions of something apart. */
+export function shortHash(text: string): string {
+    let a = 0x811c9dc5;
+    let b = 0x1000193;
+    for (let i = 0; i < text.length; i++) {
+        const c = text.charCodeAt(i);
+        a = Math.imul(a ^ c, 16777619);
+        b = Math.imul(b + c, 31) ^ (b >>> 7);
+    }
+    return (a >>> 0).toString(36) + (b >>> 0).toString(36);
+}
+
+/** The title of a recipe nobody has named. */
+export const UNTITLED_RECIPE = 'Untitled recipe';
+
 /** Every nutrient column a recipe reports. */
 export const RECIPE_NUTRIENTS = [
     'calories', 'protein_g', 'total_fat_g', 'saturated_g', 'monounsaturated_g', 'polyunsaturated_g', 'trans_g',
@@ -42,6 +57,7 @@ export function computeRecipeNutrition(items: NutritionItem[], servings: number)
 
     const totals: Record<string, NutrientTotal> = {};
     const perServing: Record<string, NutrientTotal> = {};
+    const filledFrom: Record<string, number> = {};
     for (const key of RECIPE_NUTRIENTS) {
         let sum = 0;
         let known = 0;
@@ -57,6 +73,8 @@ export function computeRecipeNutrition(items: NutritionItem[], servings: number)
             }
             sum += (v * grams) / 100;
             known++;
+            const source = food.filledFrom?.[key];
+            if (source !== undefined && grams > 0) filledFrom[key] = source;
         }
         const value = known > 0 ? sum : null;
         const incomplete = missing > 0;
@@ -71,6 +89,7 @@ export function computeRecipeNutrition(items: NutritionItem[], servings: number)
         totals,
         perServing,
         uncounted,
+        ...(Object.keys(filledFrom).length > 0 ? { filledFrom } : {}),
     };
 }
 
@@ -98,18 +117,20 @@ export function roundedNutrition(n: RecipeNutrition): RecipeNutrition {
  * The negative id cannot collide with a USDA row, and /api/optimize passes
  * unknown foods through unchanged.
  */
-export function recipeAsFood(nutrition: RecipeNutrition, title: string, id: number): Food {
+export function recipeAsFood(nutrition: RecipeNutrition, title: string, id: number, recordId?: string): Food {
     const per100: Record<string, number | null> = {};
     const scale = nutrition.totalGrams > 0 ? 100 / nutrition.totalGrams : 0;
     for (const key of RECIPE_NUTRIENTS) {
         const t = nutrition.totals[key];
         per100[key] = t?.value === null || t?.value === undefined ? null : t.value * scale;
     }
+    const servingGrams = round(nutrition.servingGrams, 1);
+    const name = title.trim() || UNTITLED_RECIPE;
     return {
         ...(per100 as unknown as Food),
         id,
         fdc_id: id,
-        description: `Recipe: ${title || 'Untitled'}`,
+        description: `Recipe: ${name}`,
         data_type: 'recipe',
         food_category: 'Recipes',
         brand_owner: null,
@@ -117,8 +138,20 @@ export function recipeAsFood(nutrition: RecipeNutrition, title: string, id: numb
         serving_size_unit: null,
         calories: per100.calories ?? 0,
         serving_sizes: nutrition.servingGrams > 0
-            ? [{ id, food_id: id, label: '1 serving', weight_g: round(nutrition.servingGrams, 1) }]
+            ? [{ id, food_id: id, label: '1 serving', weight_g: servingGrams }]
             : [],
+        ...(nutrition.filledFrom ? { filledFrom: nutrition.filledFrom } : {}),
+        ...(recordId === undefined ? {} : {
+            recipe: {
+                id: recordId,
+                servingGrams,
+                uncounted: nutrition.uncounted,
+                incomplete: RECIPE_NUTRIENTS.filter(k => nutrition.totals[k]?.incomplete),
+                fingerprint: shortHash(JSON.stringify([
+                    name, servingGrams, nutrition.uncounted, RECIPE_NUTRIENTS.map(k => (per100[k] === null ? null : round(per100[k]))),
+                ])),
+            },
+        }),
     };
 }
 

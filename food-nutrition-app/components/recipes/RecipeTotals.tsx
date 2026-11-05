@@ -1,16 +1,19 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { OlderEntryMark } from '@/components/food/FoodLink';
 import Icon from '@/components/ui/Icon';
 import NutritionLabel from '@/components/NutritionLabel';
 import { dailyValue, nutrientLabel, nutrientUnit } from '@/components/planner/nutrients';
-import { plannerActions } from '@/hooks/usePlannerState';
+import { plannerActions, usePlannerState } from '@/hooks/usePlannerState';
 import { notify } from '@/hooks/useToasts';
-import { fmt } from '@/lib/food-page';
-import { filledKeys } from '@/lib/nutrient-fill';
+import { fmt, nutrientName } from '@/lib/food-page';
+import { filledKeys, isFilled } from '@/lib/nutrient-fill';
+import { recipeServingsInPlan } from '@/lib/planner-recipes';
 import { platedRange, type EditorState } from '@/lib/recipes/editor';
-import { recipeAsFood, recipeFoodId } from '@/lib/recipes/nutrition';
+import { RECIPE_NUTRIENTS, recipeAsFood, recipeFoodId, UNTITLED_RECIPE } from '@/lib/recipes/nutrition';
 import type { NutrientTotal, RecipeNutrition } from '@/lib/recipes/types';
 import styles from './recipes.module.css';
 
@@ -26,13 +29,13 @@ function amountText(t: NutrientTotal | undefined, unit: string): string {
     return `${t.incomplete ? '≥ ' : ''}${fmt(t.value)} ${unit}`;
 }
 
-function NutrientLine({ nutrientKey, total }: { nutrientKey: string; total: NutrientTotal | undefined }) {
+function NutrientLine({ nutrientKey, total, older }: { nutrientKey: string; total: NutrientTotal | undefined; older: boolean }) {
     const dv = dailyValue(nutrientKey);
     const pct = dv && total?.value !== null && total?.value !== undefined ? Math.round((total.value / dv) * 100) : null;
     return (
         <li className={styles.nutrientLine} data-nutrient={nutrientKey}>
             <span className={styles.nutrientName}>{nutrientLabel(nutrientKey)}</span>
-            <span className={styles.nutrientAmount}>{amountText(total, nutrientUnit(nutrientKey))}</span>
+            <span className={styles.nutrientAmount}>{amountText(total, nutrientUnit(nutrientKey))}{older && <OlderEntryMark />}</span>
             <span className={styles.nutrientPct}>{pct === null ? '' : `${total?.incomplete ? '≥ ' : ''}${pct}%`}</span>
         </li>
     );
@@ -44,9 +47,13 @@ export default function RecipeTotals({ state, nutrition }: { state: EditorState;
     const hasData = nutrition.totalGrams > 0;
     const calories = nutrition.perServing.calories;
     const food = useMemo(
-        () => recipeAsFood(nutrition, state.title, recipeFoodId(state.id)),
+        () => recipeAsFood(nutrition, state.title, recipeFoodId(state.id), state.id),
         [nutrition, state.title, state.id],
     );
+    const planner = usePlannerState();
+    const servingsInPlan = recipeServingsInPlan(planner.fixedFoods, food.id);
+    // Edits reach the plan, which then reads as out of date until it's made again.
+    useEffect(() => { plannerActions.syncRecipe(food); }, [food]);
     const lowerBounds = useMemo(
         () => [...KEY_NUTRIENTS, ...MORE_NUTRIENTS].filter(k => nutrition.perServing[k]?.incomplete).map(nutrientLabel),
         [nutrition],
@@ -55,11 +62,15 @@ export default function RecipeTotals({ state, nutrition }: { state: EditorState;
     const servingText = state.servings === 1
         ? `1 serving (${fmt(nutrition.servingGrams, 0)} g)`
         : `1 of ${fmt(state.servings)} servings (${fmt(nutrition.servingGrams, 0)} g)`;
-    const usesOlderData = state.rows.some(r => filledKeys(r.food).length > 0);
+    const olderEntries = state.rows.flatMap(r => {
+        const nutrients = filledKeys(r.food, RECIPE_NUTRIENTS);
+        return r.conversion.grams && nutrients.length > 0 ? [{ food: r.food!.description, nutrients }] : [];
+    });
 
     const addToPlan = () => {
-        plannerActions.setFixed(food, Math.round(nutrition.servingGrams * 10) / 10);
-        notify(`Added one serving of ${state.title.trim() || 'your recipe'} to your plan.`, {
+        plannerActions.addRecipeServing(food);
+        const total = servingsInPlan + 1;
+        notify(`Added one serving of ${state.title.trim() || UNTITLED_RECIPE} to your plan${total > 1 ? `, ${fmt(total)} servings in all` : ''}.`, {
             action: { label: 'Open plan', onClick: () => router.push('/plan#foods') },
         });
     };
@@ -86,12 +97,12 @@ export default function RecipeTotals({ state, nutrition }: { state: EditorState;
                         )}
                         <p className="tiny muted">{servingText}</p>
                         <ul className={styles.nutrientList}>
-                            {KEY_NUTRIENTS.map(k => <NutrientLine key={k} nutrientKey={k} total={nutrition.perServing[k]} />)}
+                            {KEY_NUTRIENTS.map(k => <NutrientLine key={k} nutrientKey={k} total={nutrition.perServing[k]} older={isFilled(food, k)} />)}
                         </ul>
                         <details className={styles.more}>
                             <summary>All vitamins and minerals</summary>
                             <ul className={styles.nutrientList}>
-                                {MORE_NUTRIENTS.map(k => <NutrientLine key={k} nutrientKey={k} total={nutrition.perServing[k]} />)}
+                                {MORE_NUTRIENTS.map(k => <NutrientLine key={k} nutrientKey={k} total={nutrition.perServing[k]} older={isFilled(food, k)} />)}
                             </ul>
                         </details>
 
@@ -105,18 +116,38 @@ export default function RecipeTotals({ state, nutrition }: { state: EditorState;
                                 ≥ means at least this much: USDA has no value for {lowerBounds.length > 4 ? 'some nutrients' : lowerBounds.join(', ')} in one or more ingredients.
                             </p>
                         )}
-                        {usesOlderData && (
-                            <p className="tiny muted">
-                                Where USDA&apos;s newest entry for a food lacks a nutrient, we use its older entry for the same food.
+                        {olderEntries.length > 0 && (
+                            <p className="tiny muted" data-testid="recipe-older-entries">
+                                † From USDA&apos;s older entry for {olderEntries.length === 1 ? olderEntries[0].food : 'some ingredients'}, where the newest entry has no value:{' '}
+                                {olderEntries.length === 1
+                                    ? olderEntries[0].nutrients.map(nutrientName).join(', ')
+                                    : olderEntries.map(e => `${e.food} (${e.nutrients.slice(0, 3).map(nutrientName).join(', ')}${e.nutrients.length > 3 ? ` and ${e.nutrients.length - 3} more` : ''})`).join('; ')}.{' '}
+                                <Link href="/methodology#older-entries">Why we do this</Link>
                             </p>
                         )}
                         <p className="tiny muted">
                             Totals add up the ingredients as listed. Cooking changes water weight and can reduce some vitamins, so treat these as a close guide.
                         </p>
 
-                        <button type="button" className="btn btn-primary btn-block" onClick={addToPlan}>
-                            <Icon name="plus" size={16} /> Add a serving to my plan
-                        </button>
+                        {servingsInPlan > 0 ? (
+                            <div className={styles.inPlan} data-testid="recipe-in-plan">
+                                <Link href="/plan#foods" className="btn btn-primary-soft btn-block">
+                                    <Icon name="check" size={16} /> In your plan: {fmt(servingsInPlan)} {servingsInPlan === 1 ? 'serving' : 'servings'} · Open plan
+                                </Link>
+                                <div className="row-wrap">
+                                    <button type="button" className="btn btn-secondary btn-sm" onClick={addToPlan}>
+                                        <Icon name="plus" size={14} /> Add another serving
+                                    </button>
+                                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => plannerActions.removeRecipeServing(food.id)}>
+                                        Remove one
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <button type="button" className="btn btn-primary btn-block" onClick={addToPlan}>
+                                <Icon name="plus" size={16} /> Add a serving to my plan
+                            </button>
+                        )}
                     </>
                 )}
             </section>

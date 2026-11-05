@@ -150,3 +150,5 @@
     .metaRow { gap: var(--space-2); }
     .servingsField { width: 88px; }
 }
+
+.inPlan { display: flex; flex-direction: column; gap: 8px; }

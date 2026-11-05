@@ -8,7 +8,7 @@ import type { openDatabase } from '../db';
 import type { AnalyzedIngredient, MatchCandidate, ParsedIngredient, ParsedRecipe, ParseResponse, RecipeSource } from './types';
 import { convertToGrams } from './grams';
 import { foodWithPortionsIn, matchIngredientIn, type MatchResult } from './match';
-import { MAX_SERVINGS } from './nutrition';
+import { MAX_SERVINGS, UNTITLED_RECIPE } from './nutrition';
 
 type Connection = ReturnType<typeof openDatabase>;
 
@@ -85,7 +85,7 @@ export async function analyzeRecipeIn(
     const ingredients = recipe.ingredients.map((ing, i) => analyzeIngredient(conn, ing, `ing-${i + 1}`, matches[i]));
     const { servings, stated } = safeServings(recipe.servings);
     return {
-        title: recipe.title || (source === 'image' ? 'Recipe from photo' : 'Untitled recipe'),
+        title: recipe.title || (source === 'image' ? 'Recipe from photo' : UNTITLED_RECIPE),
         servings,
         servingsStated: stated,
         source,

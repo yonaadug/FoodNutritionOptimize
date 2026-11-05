@@ -1,26 +1,9 @@
 'use client';
 
 import Icon from '@/components/ui/Icon';
-import ThemeToggle from '@/components/ThemeToggle';
 import type { StepId } from '@/hooks/useStep';
 
 export type { StepId };
-
-export function SiteHeader({ onHome }: { onHome: () => void }) {
-    return (
-        <header className="site-header">
-            <div className="container site-header-inner">
-                <a href="#" className="brand" onClick={e => { e.preventDefault(); onHome(); }} aria-label="Micronutrient Diary home">
-                    <span className="brand-mark"><Icon name="leaf" size={17} strokeWidth={2.4} /></span>
-                    Micronutrient Diary
-                </a>
-                <span className="brand-tagline">Plan a day of food that meets your nutrition goals</span>
-                <span className="spacer" />
-                <ThemeToggle />
-            </div>
-        </header>
-    );
-}
 
 export function Welcome({ onSample, onScratch, loading, error }: { onSample: () => void; onScratch: () => void; loading: boolean; error: string | null }) {
     return (

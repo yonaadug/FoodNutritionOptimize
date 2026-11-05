@@ -103,7 +103,8 @@ interface ActionBarProps {
 }
 
 export function ActionBar({ step, foodsCount, goalsLabel, goalsCount, planning, onMakePlan, onNext, onBack }: ActionBarProps) {
-    if (step === 'plan') return null;
+    // Nothing to act on yet on step 1: keep the welcome and starting points uncovered.
+    if (step === 'plan' || (step === 'foods' && foodsCount === 0)) return null;
     const canPlan = foodsCount > 0;
     return (
         <div className="action-bar" role="region" aria-label="Next step">

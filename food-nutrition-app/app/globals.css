@@ -325,7 +325,7 @@ html { scroll-padding-top: 76px; scroll-padding-bottom: 96px; }
 /* ---------------- welcome ---------------- */
 .hero {
   position: relative; overflow: hidden;
-  padding: var(--space-6) var(--space-5);
+  padding: var(--space-6) var(--space-6) var(--space-5);
   border-radius: var(--radius-lg);
   background:
     radial-gradient(1200px 300px at 0% 0%, color-mix(in srgb, #6366f1 14%, transparent), transparent 60%),

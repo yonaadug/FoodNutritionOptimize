@@ -84,6 +84,20 @@ export interface OptimizationWarning {
     inDiet: boolean;
 }
 
+/** One reason a plan is infeasible (every issue, unlike the 5-line `message`). */
+export interface OptimizationIssue {
+    /** 'short' / 'excess': a nutrient (or 'calories') goal. 'food_min' / 'food_max': a per-food bound. */
+    kind: 'short' | 'excess' | 'food_min' | 'food_max';
+    /** Nutrient key or 'calories' (nutrient issues). */
+    nutrient?: string;
+    /** Food id (per-food issues). */
+    foodId?: number;
+    /** How far off, in the nutrient's unit (grams for per-food issues). */
+    amount: number;
+    /** 'fixed_foods': the user's fixed-amount foods alone already break this limit. */
+    cause?: 'fixed_foods';
+}
+
 export interface OptimizationResult {
     success: boolean;
     message?: string;
@@ -103,6 +117,8 @@ export interface OptimizationResult {
     /** Set (with success=false) for malformed input; the API maps it to HTTP 400. */
     error?: string;
     warnings?: OptimizationWarning[];
+    /** Infeasible results only: every blocking issue, most severe first. */
+    issues?: OptimizationIssue[];
     /**
      * Infeasible results only: true when the plan would work if the general
      * portion cap were lifted (the user's own per-food limits still applied).
@@ -441,9 +457,10 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
     const results = solveLp(scaled);
 
     if (!results.feasible || results.bounded === false) {
-        const message = results.feasible
-            ? 'The problem is unbounded; check the nutrient data for the selected foods.'
+        const diagnosis = results.feasible
+            ? { message: 'The problem is unbounded; check the nutrient data for the selected foods.', issues: [] }
             : diagnoseInfeasibility(scaled, scale, constraintLimits, guaranteedCalories, guaranteedNutrients, foodByVar);
+        const { message, issues } = diagnosis;
         let portionCapBinding = false;
         if (!results.feasible && generalCapped.size > 0) {
             const constraints = { ...scaled.constraints };
@@ -457,6 +474,7 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
         return {
             success: false,
             message,
+            issues,
             portionCapBinding,
             lpModel: model,
             debugEquations: failureEquations(model),
@@ -538,8 +556,8 @@ function diagnoseInfeasibility(
     guaranteedCalories: number,
     guaranteedNutrients: Record<string, number>,
     foodByVar: Map<string, Food>,
-): string {
-    const issues: { text: string; weight: number }[] = [];
+): { message: string; issues: OptimizationIssue[] } {
+    const issues: { text: string; weight: number; issue: OptimizationIssue }[] = [];
 
     // Guaranteed foods alone already break a maximum.
     for (const [key, lim] of Object.entries(limits)) {
@@ -549,6 +567,7 @@ function diagnoseInfeasibility(
             issues.push({
                 text: `Guaranteed foods already exceed ${label(key)} limit (${fmt(g)}${unit(key)} > ${fmt(lim.max)}${unit(key)}).`,
                 weight: Number.POSITIVE_INFINITY,
+                issue: { kind: 'excess', nutrient: key === CALORIE_ROW ? 'calories' : key, amount: g - lim.max, cause: 'fixed_foods' },
             });
         }
     }
@@ -586,6 +605,7 @@ function diagnoseInfeasibility(
                         ? `Cannot meet minimum requirement for ${describe(food)} (short by ${grams}g).`
                         : `Cannot stay under limit for ${describe(food)} (exceeds by ${grams}g).`,
                     weight: val,
+                    issue: { kind: isShort ? 'food_min' : 'food_max', foodId: food.id, amount: amount * 100 },
                 });
             } else {
                 const u = unit(row);
@@ -594,17 +614,24 @@ function diagnoseInfeasibility(
                         ? `Cannot meet ${label(row)} target (short by ${fmt(amount)}${u}).`
                         : `Cannot stay under ${label(row)} limit (exceeds by ${fmt(amount)}${u}).`,
                     weight: val,
+                    issue: { kind: isShort ? 'short' : 'excess', nutrient: row === CALORIE_ROW ? 'calories' : row, amount },
                 });
             }
         }
     }
 
-    if (issues.length === 0) return 'No combination of these foods can meet all daily requirements.';
+    if (issues.length === 0) return { message: 'No combination of these foods can meet all daily requirements.', issues: [] };
     issues.sort((a, b) => b.weight - a.weight);
     const unique = Array.from(new Set(issues.map(i => i.text)));
     let message = `Optimization Failed:\n• ${unique.slice(0, 5).join('\n• ')}`;
     if (unique.length > 5) message += `\n...and ${unique.length - 5} more issues.`;
-    return message;
+    // One structured issue per nutrient/food and direction (a fixed-food cause wins).
+    const structured = new Map<string, OptimizationIssue>();
+    for (const { issue } of issues) {
+        const k = `${issue.kind}:${issue.nutrient ?? issue.foodId}`;
+        if (!structured.has(k)) structured.set(k, issue);
+    }
+    return { message, issues: Array.from(structured.values()) };
 }
 
 function failureEquations(model: LpModel): string[] {

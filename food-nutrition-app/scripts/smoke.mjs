@@ -5,8 +5,10 @@
 //   node scripts/smoke.mjs [baseUrl] [--wait <seconds>]
 //   npm run smoke -- http://127.0.0.1:9000 --wait 60
 //
-// Checks: GET / (HTML), GET /api/meta (DB loaded), GET /api/search?q=salmon,
-// POST /api/optimize with a few searched foods. Exits non-zero on failure.
+// Checks: GET / (search home), /plan (planner), /food/<id> (redirect, SEO tags,
+// 404), nutrient and category lists, sitemap and robots, GET /api/meta (DB
+// loaded), GET /api/search?q=salmon, POST /api/optimize with a few searched
+// foods. Exits non-zero on failure.
 // Zero dependencies (Node >= 22: global fetch).
 
 const args = process.argv.slice(2);
@@ -55,7 +57,61 @@ await waitForServer();
 {
     const { res, text } = await request('/');
     if (res.status !== 200 || !/<html/i.test(text)) fail('GET /', `status ${res.status}`);
-    pass('GET /', `${res.status}, ${text.length} bytes of HTML`);
+    if (!/role="search"/.test(text)) fail('GET /', 'no search form in the HTML');
+    pass('GET /', `${res.status}, ${text.length} bytes of HTML, search form present`);
+}
+
+{
+    const { res, text } = await request('/?q=salmon');
+    if (res.status !== 200 || !/href="\/food\/\d+-[a-z0-9-]*salmon/.test(text)) fail('GET /?q=salmon', `status ${res.status}, no server-rendered result`);
+    pass('GET /?q=salmon', 'results rendered on the server');
+}
+
+{
+    const { res, text } = await request('/plan');
+    if (res.status !== 200 || !/<html/i.test(text)) fail('GET /plan', `status ${res.status}`);
+    pass('GET /plan', `${res.status}, ${text.length} bytes of HTML`);
+}
+
+{
+    // A bare id redirects to the readable address, which is server-rendered with SEO tags.
+    const { json: found } = await request('/api/search?q=salmon&limit=1');
+    const fdcId = found?.foods?.[0]?.fdc_id;
+    if (!fdcId) fail('find a food', 'no salmon in search');
+    const bare = await fetch(`${base}/food/${fdcId}`, { redirect: 'manual', signal: AbortSignal.timeout(30_000) });
+    const location = bare.headers.get('location') ?? '';
+    if (bare.status !== 308 || !new RegExp(`/food/${fdcId}-[a-z0-9-]+$`).test(location)) {
+        fail(`GET /food/${fdcId}`, `expected a 308 to the slug, got ${bare.status} ${location}`);
+    }
+    pass(`GET /food/${fdcId}`, `308 to ${location}`);
+    const path = new URL(location, base).pathname;
+    const { res, text } = await request(path);
+    if (res.status !== 200) fail(`GET ${path}`, `status ${res.status}`);
+    for (const [what, re] of [['title', /<title>[^<]*nutrition facts/i], ['Open Graph', /property="og:title"/], ['canonical', /rel="canonical"/], ['label', /Nutrition Facts/], ['nutrient table', /All nutrients/], ['USDA link', /fdc\.nal\.usda\.gov\/food-details/]]) {
+        if (!re.test(text)) fail(`GET ${path}`, `missing ${what} in the HTML`);
+    }
+    pass(`GET ${path}`, 'server-rendered with title, Open Graph, label and nutrient table');
+}
+
+{
+    const { res } = await request('/food/999999999');
+    if (res.status !== 404) fail('GET /food/999999999', `expected 404, got ${res.status}`);
+    pass('GET /food/999999999', '404');
+}
+
+{
+    const nutrient = await request('/nutrients/vitamin-d');
+    if (nutrient.res.status !== 200 || !/Foods high in Vitamin D/.test(nutrient.text)) fail('GET /nutrients/vitamin-d', `status ${nutrient.res.status}`);
+    pass('GET /nutrients/vitamin-d', 'best sources listed');
+    const category = await request('/food/category/vegetables-and-vegetable-products');
+    if (category.res.status !== 200 || !/href="\/food\/\d+-/.test(category.text)) fail('GET /food/category/...', `status ${category.res.status}`);
+    pass('GET /food/category/vegetables-and-vegetable-products', 'foods listed');
+    const sitemap = await request('/sitemap.xml');
+    if (sitemap.res.status !== 200 || !/<loc>[^<]*\/food\/\d+-/.test(sitemap.text)) fail('GET /sitemap.xml', `status ${sitemap.res.status}`);
+    pass('GET /sitemap.xml', `${(sitemap.text.match(/<loc>/g) ?? []).length} URLs`);
+    const robots = await request('/robots.txt');
+    if (robots.res.status !== 200 || !/Sitemap:/i.test(robots.text)) fail('GET /robots.txt', `status ${robots.res.status}`);
+    pass('GET /robots.txt');
 }
 
 {

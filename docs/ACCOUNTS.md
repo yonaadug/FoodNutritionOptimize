@@ -44,7 +44,7 @@ PORT=3604 npm run dev     # no other settings needed
    [auth] Sign-in link (printed instead of emailed; AUTH_EMAIL_TRANSPORT=console):
    [auth] http://localhost:3604/account/sign-in/confirm?token=...
    ```
-3. Open it and press **Sign in**. Open any food page, and it appears under **Foods** on `/account`.
+3. Open it and press **Sign in**. Open any food page, or analyze a recipe at `/recipes` (the offline demo provider needs no AI key), and it appears on `/account`.
 
 Data goes in `food-nutrition-app/.data/app.db` (gitignored, excluded from Docker images). Delete that folder to start over.
 
@@ -80,8 +80,15 @@ recordHistory({
 - `calories`/`kcal`, `protein`, `carbs`, `fat`, `fiber`
 - the same with `PerServing`, such as `proteinPerServing`, or a `perServing: true` flag
 - `summary: [{ label, value }]` for anything else
+- `incomplete: ['calories']` marks a value as a lower bound (shown with ≥), and `estimated: true` adds a "from a photo" note
 
-Food views are recorded in `components/food/onFoodViewed.ts`. The account control is `components/account/AccountMenu.tsx`, mounted in `components/shell/SiteHeader.tsx`.
+What's recorded today:
+
+- **Foods:** `components/food/onFoodViewed.ts`, once each time a food page opens. These rows have a title and link, but no nutrition yet, because `onFoodViewed` isn't given any.
+- **Recipes:** `components/recipes/RecipesPage.tsx`, through `lib/recipes/history.ts`. The analyzer calls this after the first read and again after edits with the same id, so one recipe stays one row. Only a summary is stored (per-serving calories, protein, carbs and fat, plus servings), not the ingredients. Rows link to `/recipes`, which opens the analyzer rather than that recipe, because saved analyses are only kept in that browser's `localStorage`.
+- **Plans:** nothing yet. The tab, API and display are ready, but the planner doesn't call `recordHistory`.
+
+The account control is `components/account/AccountMenu.tsx`, mounted in `components/shell/SiteHeader.tsx`.
 
 ### API
 

@@ -5,6 +5,9 @@
  *   { calories: 320, protein: 18, perServing: true }           known numeric keys
  *   { caloriesPerServing: 320, proteinPerServing: 18 }         the same, per serving
  *   { summary: [{ label: 'Iron', value: '2.1 mg' }] }          anything else, ready to show
+ *
+ * With the numeric forms, `incomplete: ['calories']` marks a value as a lower bound
+ * and `estimated: true` adds a note that the numbers are a rough photo estimate.
  */
 
 export interface SummaryFact {
@@ -36,6 +39,7 @@ export function historySummary(data: unknown): SummaryFact[] {
             .slice(0, MAX_FACTS);
     }
 
+    const lowerBounds = Array.isArray(d.incomplete) ? d.incomplete : [];
     const facts: SummaryFact[] = [];
     for (const { label, keys, unit } of NUTRIENTS) {
         for (const key of keys) {
@@ -43,11 +47,13 @@ export function historySummary(data: unknown): SummaryFact[] {
             const plain = d[key];
             const value = typeof perServing === 'number' ? perServing : plain;
             if (typeof value !== 'number' || !Number.isFinite(value)) continue;
+            const prefix = lowerBounds.includes(key) ? '≥ ' : '';
             const suffix = typeof perServing === 'number' || d.perServing === true ? ' per serving' : '';
-            facts.push({ label, value: `${formatNumber(value)} ${unit}${suffix}` });
+            facts.push({ label, value: `${prefix}${formatNumber(value)} ${unit}${suffix}` });
             break;
         }
     }
+    if (d.estimated === true) return [...facts.slice(0, MAX_FACTS - 1), { label: 'Estimate', value: 'from a photo' }];
     return facts.slice(0, MAX_FACTS);
 }
 

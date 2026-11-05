@@ -1,0 +1,408 @@
+pesticide	chronic_pad_mg_kg_day	acute_pad_mg_kg_day	chronic_hhbp_ppb
+1,2,4-Triazole	0.005	0.03	30
+2,4-DP-p + salt & ester	0.06	1.25	400
+2,6-Dichlorobenzamide (BAM)	0.045	0.1	270
+3,5 -Dibromo -4 - hydroxybenzonitrile butyrate	0.015	0.08	89
+4-Chlorophenoxyacetic acid	1.32		7810
+Acephate	0.0003	0.0003	2
+Acequinocyl	0.027	0.073	160
+Acetamiprid	0.071	0.1	420
+Acetochlor	0.02		100
+Afidopyropen	0.08	0.16	500
+Alpha-Cypermethrin		0.005	
+Aluminum Phosphide	0.0113	0.018	66.9
+Amicarbazone	0.023	0.1	140
+Aminocyclopyrachlor + ester & salt	2.79		16500
+Aminopyralid + salts	0.5		3000
+Amisulbrom	0.54	2	3200
+Amitraz	0.0005	0.0125	3
+Anthraquinone			
+Asulam + sodium salt	0.36		2100
+Azoxystrobin	0.18	0.67	1070
+Benalaxyl-M	0.02		100
+Benfluralin	0.005		30
+Benomyl	0.013	0.025	77
+Bensulfuron methyl	0.2		1000
+Bensulide	0.005	0.15	30
+Benthiavalicarb-isopropyl	0.099		590
+Benzene Sulfonic Acid	0.5		3000
+Benzobicyclon	0.636		3760
+Benzobicyclon (Metabolite B)	0.00004	0.00027	0.2
+Benzovindiflupyr	0.082	0.1	490
+Beta Cyfluthrin		0.0117	
+Bicyclopyrone	0.00028	0.01	1.7
+Bifenazate	0.01	0.1	60
+Bifenthrin		0.031	
+Bispyribac-sodium	0.1		600
+Bitertanol	0.0021	0.05	12
+Bixafen	0.03	2.5	200
+Boscalid	0.22		1300
+Bromoxynil, phenol + esters	0.015	0.08	89
+Buprofezin	0.033	2	200
+Butafenacil	0.012		71
+Butoxypolypropylene Glycol i	1.2		7100
+Butralin	0.1	0.082	600
+Cacodylic acid + sodium salt	0.014	0.12	83
+Cadusafos	0.000001	0.00002	0.006
+Captan	0.13	0.1	770
+Carbendazim (MBC)	0.14	0.14	830
+Carfentrazone-ethyl	0.03		200
+Chlorantraniliprole	1.58		9350
+Chlorethoxyfos	0.00005	0.00014	0.3
+Chlorfenapyr	0.05	0.05	300
+Chlorflurenol Methyl Ester	0.1		600
+Chlorimuron-ethyl	0.09	1	500
+Chlormequat chloride	0.05	1	300
+Chlorpropham	0.005		30
+Chlorpyrifos methyl	0.00033	0.00033	1.9
+Chlorsulfuron	0.05		300
+Clethodim	0.3	1	2000
+Clodinafop-propargyl	0.0032	0.05	19
+Clofentezine	0.013		77
+Clomazone	0.84	1	5000
+Clopyralid + salts	0.15		890
+Cloquintocet-mexyl	0.04	1	200
+Cloransulam - Methyl	0.1		600
+Clothianidin	0.098	0.25	580
+Coumaphos	0.0003	0.0025	2
+Cyantraniliprole	0.01		60
+Cyazofamid	0.948		5610
+Cyclanilide	0.002	0.5	10
+Cycloate	0.005	0.066	30
+Cyflufenamid	0.044		260
+Cyflumetofen	0.17		1000
+Cyfluthrin		0.0117	
+Cyhalofop-butyl	0.01		60
+Cyhalothrin		0.00093	
+Cyhexatin	0.0025	0.0067	15
+Cymoxanil	0.03	0.08	200
+Cypermethrin		0.0716	
+Cyproconazole	0.01	0.02	60
+Cyprodinil	0.027	2	160
+Cyprosulfamide	0.39		2300
+Cyromazine	0.5	0.83	3000
+d-Phenothrin (Sumithrin)	0.07	0.3	400
+Daminozide			
+Dantochlor (BCDMH)	1	1	6000
+DDAC	0.1	0.1	600
+DDBSA	0.5		3000
+Deltamethrin		0.015	
+Desmedipham	0.04	0.1	200
+Diaminochlorotriazine (DACT	0.0018	0.01	11
+Dichlobenil	0.01	0.45	60
+Dichloran	0.0025	0.05	15
+Dichlormid	0.0022	0.01	13
+Dichlorvos	0.00006	0.00083	0.3
+Diclofop-methyl	0.0023	0.1	14
+Diclosulam	0.05		300
+Dicrotophos	0.00003	0.00007	0.2
+Diethanolamine Mefluidide	0.015	0.58	89
+Diethofencarb	0.5		3000
+Difenoconazole	0.01	0.25	60
+Difenzoquat methyl sulfate	0.083		490
+Diflubenzuron	0.02		100
+Diflufenzopyr + sodium salt	0.26	1	1500
+Dimethenamid	0.05	2	300
+Dimethenamid-P	0.05	2	300
+Dimethipin	0.0218		129
+Dimethoate	0.0022	0.013	13
+Dimethomorph	0.11	0.25	650
+Dinocap	0.00038	0.004	2.2
+Dinotefuran	1	1.25	6000
+Diphacinoneg		0.002	
+Diphenylamine	0.1		600
+Diquat dibromide	0.005	0.75	30
+Disodium methanearsonate	0.03	0.1	200
+Dithianon	0.006	0.02	40
+Dithiopyr	0.0036		21
+Dodine	0.02		100
+Ecolyst	0.14	0.5	830
+Emamectin Benzoate	0.0025	0.0025	15
+Endosulfan	0.006	0.015	40
+Epoxiconazole	0.02	0.05	100
+Esfenvalerate		0.011	
+Ethaboxam	0.055		330
+Ethalfluralin	0.04	0.75	200
+Ethephon	0.06	0.06	400
+Ethiprole	0.03	0.35	200
+Ethofumesate	0.3	0.3	2000
+Ethoprop	0.000065	0.00042	0.37
+Etofenprox	0.0255		151
+Etoxazole	0.046		270
+Etridiazole (Terrazole)	0.06		400
+Famoxadone	0.0014		8.3
+Fenamidone	0.0283	1.25	167
+Fenarimol	0.006		40
+Fenazaquin	0.05	0.15	300
+Fenbuconazole	0.03	0.3	200
+Fenbutatin-oxide	0.05	0.2	300
+Fenhexamid	0.17		1000
+Fenitrothion	0.00013	0.00025	0.77
+Fenoxaprop-ethyl	0.0025	0.32	15
+Fenpicoxamid (XDE - 777)	0.4		2000
+Fenpropathrin		0.05	
+Fenpropidin	0.023	0.07	140
+Fenpropimorph	0.032	0.15	190
+Fenpyrazamine	0.3	0.8	2000
+Fenpyroximate	0.01	0.375	60
+Ferbam	0.015	0.014	89
+Fipronil	0.0002	0.025	1
+Flazasulfuron	0.013	0.5	77
+Flonicamid	0.04		200
+Florasulam	0.05		300
+Fluazifop	0.0074	0.5	44
+Fluazifop-P-Butyl	0.0051	0.5	30
+Fluazinam	0.011	0.07	65
+Flubendiamide	0.024	0.995	140
+Flucarbazone-sodium	0.074		440
+Fludioxonil	0.33		2000
+Fluensulfone	0.1	0.16	600
+Flufenacet (Thiaflumide)	0.0017	0.0017	10
+Flufenoxuron	0.0375		222
+Flufenpyr-ethyl	0.4		2000
+Flumetralin		0.5	
+Flumetsulam (XRD-498)	1		6000
+Flumiclorac pentyl	1		6000
+Flumioxazin	0.02	0.03	100
+Fluopicolide	0.2		1000
+Fluopyram	0.012	0.5	71
+Fluoxastrobin	0.015		89
+Flupyradifurone	0.078	0.35	460
+Fluridone	0.15	1.25	890
+Fluroxypyr + acid	1		6000
+Flurprimidol	0.04	0.1	200
+Flusilazole	0.002	0.02	10
+Fluthiacet methyl	0.001		6
+Flutolanil	0.5		3000
+Flutriafol	0.05	0.075	300
+Fluxapyroxad	0.021	1.25	120
+Folpet	0.09	0.1	500
+Fomesafen + sodium	0.01	1	60
+Forchlorfenuron	0.07		400
+Formetanate hydrochloride		0.00032	
+Fosetyl-Al	2.5		15000
+Fosthiazate	0.00096	0.0065	5.7
+Furfural	0.1	0.8	600
+Furfuryl Alcohol			
+Furilazole	0.0009	0.1	5
+Gamma Cyhalothrin		0.00093	
+Gardona	0.0028	0.0028	16
+Glufosinate-ammonium	0.006	0.063	40
+Halauxifen - methyl	0.03		200
+Halosulfuron methyl (MON 1200)	0.1	0.5	600
+Hexaconazoleg0.0025 71 Females 13-49 yrs	0.016	0.02	1.8
+Hexythiazox	0.025		150
+Hydramethylnon	0.017		100
+Hydrogen cyanamide (Cyanamide)	0.002	0.005	10
+Hydrogen cyanide		0.004	
+Hydroxyatrazine	0.0676		400
+Hymexazol	0.3	1.5	2000
+Imazalil + sulfate	0.108	0.1	639
+Imazamethabenz-methyl	0.25	5	1500
+Imazapyr	2.5		15000
+Imazaquin + salts	0.25		1500
+Imazosulfuron	0.75	4	4400
+Imidacloprid	0.08	0.08	500
+Indaziflam	0.02	0.075	100
+Indoxacarb	0.02	0.12	100
+Inpyrfluxam	0.26	0.3	1500
+Iodosulfuran Methyl- Sodium	0.073	1	430
+Ipoconazole	0.015	0.1	89
+Iprodione	0.061		360
+Iprovalicarb	0.0262		155
+Isofetamid	0.77		4600
+Isopyrazam	0.055	0.3	330
+Isotianil	0.27		1600
+Isoxaben	0.05		300
+Isoxadifen-ethyl	0.033	0.15	200
+Isoxaflutole	0.02	0.02	100
+j0.492-49.2 Mandestrobin	0.92		5400
+Kasugamycin	0.11		650
+Kathon 930	0.002	0.03	10
+Kresoxim-methyl	0.36		2100
+Lactofen	0.008	0.017	50
+Lambda cyhalothrin		0.00093	
+lfosate (Glyphosate-trimesium	0.083	0.33	490
+Linuron	0.0077	0.2	46
+Mancozeb	0.016	0.5	90
+Mandipropamid	0.05		300
+Manebg0.02 600 Females 13-49 yrs	0.0601	0.05	0.492
+MCPB Acid	0.044	0.142	260
+MCPB Sodium Salt	0.044	0.142	260
+MCPP-p acid + salts	0.04	1.75	200
+Mefenoxam		0.5	
+Mefenpyr-diethyl (HOE 107892)	0.51		3000
+Mefentrifluconazole	0.035	0.73	210
+Mefluidide	0.015	0.58	89
+Mepiquat Chloride	0.3	0.3	2000
+Meptyldinocap (DE- 126/Dinocap II)	0.005		30
+Mesosulfuron methyl	1.55		9170
+Mesotrione	0.71		4200
+Metaflumizone	0.04	0.33	200
+Metalaxyl		0.5	
+Metaldehyde	0.1	0.3	600
+Metconazole	0.04	0.3	200
+Methiozolin	0.43		2500
+Methoxyfenozide	0.1		600
+Methyl bromide	0.022	0.14	130
+Metiram	0.0004	0.01	2
+Metrafenone	0.249		1470
+Metsulfuron methyl	0.25		1500
+MGK 264	0.061	1	360
+Monosodium acid methanearsonate (MMA)	0.03	0.1	200
+MSMA - calcium salt	0.03	0.1	200
+Myclobutanil	0.025	0.6	150
+Naled	0.0006	0.0032	3
+Napropamide	0.12		710
+Napthalene Acetates	0.25		1500
+Nicosulfuron	1.25		7400
+Nitrapyrin	0.03	0.16	200
+Norflurazon	0.0015		8.9
+Novaluron	0.011		65
+Orthosulfamuron	0.05		300
+Oryzalin	0.19	0.25	1100
+Oxadiazon	0.005	0.12	30
+Oxyfluorfen	0.04		200
+Oxytetracycline	0.1		600
+Oxytetracycline calcium	0.1		600
+Oxytetracycline hydrochloride	0.1		600
+Paclobutrazol	0.11	0.3	650
+Paraquat dichloride	0.005	0.05	30
+PCNB, Pentachloronitrobenzene (Quintozene)	0.001		6
+Pebulate	0.0007	0.05	4
+Pendimethalin	0.3	1	2000
+Penflufen	0.38	0.5	2200
+Penoxsulam	0.147		870
+Penthiopyrad	0.27	1.25	1600
+Permethrin		0.44	
+Pethoxamid	0.17		1000
+Phenmedipham	0.24		1400
+PHMB	0.2	0.2	1000
+Phorate	0.00017	0.00083	1
+Phosmet	0.00016	0.0014	0.9
+Phostebupirim (Tebupirimphos)	0.000041	0.000158	0.23
+Picoxystrobin	0.046	0.2	270
+Pinoxaden	0.3	0.3	2000
+Piperonyl butoxide	0.16	5	950
+Pirimiphos-methyl	0.00073	0.006	4.1
+Potassium Mefluidide	0.015	0.58	89
+Prallethrin		0.025	
+Primisulfuron-methyl	0.25		1500
+Procymidone		0.035	
+Prodiamine	0.14		830
+Profenofos	0.00012	0.00199	0.68
+Prohexadione calcium	0.2		1000
+Prometryn	0.04		200
+Pronamide (Propyzamide)	0.013	0.04	77
+Propamocarb hydrochloride	0.12	2	710
+Propanil	0.03		200
+Propargite	0.04		200
+Propetamphos	0.0005	0.0005	3
+Propiconazole	0.1	0.3	600
+Propoxur		0.00038	
+Propoxycarbazone sodium	0.748		4430
+Propylene oxide	0.001	0.21	6
+Proquinazid	0.004	0.05	20
+Prosulfuron	0.053	0.1	310
+Prothioconazole	0.01	0.02	60
+PTC (Ethyl dipropylthiocarbamate)	0.05	0.2	300
+Pydiflumetofen	0.092	1	540
+Pymetrozine	0.008	0.008	50
+Pyraclostrobin	0.034	0.05	200
+Pyraflufen ethyl	0.2		1000
+Pyrasulfotole	0.01	0.038	60
+Pyrazon	0.18		1100
+Pyrethrins	0.004	0.07	20
+Pyridaben	0.022	0.44	130
+Pyridalyl	0.034		200
+Pyridate	0.11	0.2	650
+Pyrifluquinazon	0.06	0.05	400
+Pyrimethanil	0.17	1	1000
+Pyriofenone	0.091		540
+Pyriproxyfen	0.35		2100
+Pyrithiobac - sodium	0.587		3470
+Pyroxasulfone	0.02	1	100
+Pyroxsulam	1		6000
+Quinchlorac	0.38	2	2200
+Quinoxyfen	0.2		1000
+Quizalofop-ethyl	0.009		50
+Resmethring	0.05621	0.035	0.5263
+Rimsulfuron	0.118		698
+RoteNone	0.0004	0.015	2
+Saflufenacil (BAS 800 H)	0.046	5	270
+Sedaxane	0.11	0.3	650
+Sethoxydim	0.14	1.8	830
+Siduron	0.15		890
+Sodium bentazon	0.15	0.5	890
+Sodium Chlorate	0.03		200
+Sodium cyanide		0.004	
+Sodium Dodecylbenzene Sulfonate	0.5		3000
+Spinetoram	0.0249		147
+Spinosad	0.0249		147
+Spirodiclofen	0.014		83
+Spiromesifen	0.0038		22
+Spirotetramat	0.05	1	300
+Spiroxamine	0.025	0.1	150
+Streptomycin	0.05		300
+Streptomycin Sesquisulfate	0.05		300
+Sulfentrazone	0.14	0.14	830
+Sulfometuron Methyl	0.275		1630
+Sulfosulfuron	0.24		1400
+Sulfoxaflor	0.05	0.25	300
+Sulfuryl fluoride	0.08		500
+Tau-fluvalinate		0.01	
+TCMTB (Busan 72)	0.01	0.25	60
+Tebuconazole	0.029	0.029	170
+Tebufenozide	0.02		100
+Teflubenzuron	0.021		120
+Tefluthrin		0.005	
+Tembotrione	0.0004	0.0008	2
+Tepraloxydim	0.05	0.5	300
+Tetrachlorvinphos	0.0028	0.0028	16
+Tetraconazole	0.0073	0.5	43
+thametsulfuron	4.5		27000
+Thiabendazole + salt	0.1	0.5	600
+Thiacloprid	0.004	0.01	20
+Thiamethoxam	0.012	0.35	71
+Thidiazuron	0.0393		233
+Thiencarbazone-methyl	1.17		6920
+Thifensulfuron methyl	0.043	1.59	250
+Thiobencarb	0.01	1	60
+Thiodicarb		0.0015	
+Thiophanate-methyl	0.16	0.4	950
+Thiram	0.015	0.014	89
+thoxyquin	0.04	1	200
+Tiafenacil	0.01		60
+Tioxazafen	0.05	0.25	300
+Tolfenpyrad	0.006	0.1	40
+Tolpyralate	0.0093	0.05	55
+Tolyfluanid	0.026	0.17	150
+Topramezone	0.004	0.008	20
+Tralkoxydim	0.005	0.3	30
+Triadimefon	0.034	0.034	200
+Triadimenol	0.0034	0.0034	20
+Triallate	0.025	0.6	150
+Triasulfuron	0.01		60
+Triazole Acetic Acid	0.09	0.1	500
+Triazole alanine	0.09	0.1	500
+Tribenuron methyl	0.008	3	50
+Tribufos	0.0002	0.001	1
+Trichlorfon	0.00007	0.00007	0.4
+Triclopyr	0.05	0.05	300
+Triclosan	0.3	0.3	2000
+Tricyclazole	0.067	0.07	400
+Tridemorph	0.01	0.02	60
+Trifloxystrobin	0.038	2.5	220
+Trifloxysulfuron Sodium	0.237	0.5	1400
+Triflumezopyrim	0.17	1	1000
+Triflumizole	0.0117	0.25	69.2
+Triflusulfuron-methyl	0.0244		144
+Triforine	0.22		1300
+Trinexapac-Ethyl	0.32	0.6	1900
+Triphenyltin hydroxide (TPTH)	0.001	0.005	6
+Triticonazole	0.17	0.5	1000
+Uniconazole-P	0.02	0.05	100
+Valifenalate	0.22		1300
+Vinclozolin	0.0012	0.006	7.1
+Zeta-Cypermethrin		0.0716	
+Ziram	0.016	0.05	95

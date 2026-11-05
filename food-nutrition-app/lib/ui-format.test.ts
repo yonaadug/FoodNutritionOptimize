@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { countGoals, goalsToPayload, isGoalOn } from '@/components/planner/goals';
 import { hasCoreData, householdAmount, splitFoodName } from '@/components/planner/nutrients';
 import { goalProgress, goalSummary, parseIssues, unusedFoods } from '@/components/plan/analysis';
 import type { PlanResult } from '@/hooks/usePlan';
@@ -109,5 +110,14 @@ describe('infeasible issues', () => {
         assert.equal(issues[0].fixedFoodsCause, true);
         assert.equal(issues[0].amount, 700);
         assert.equal(issues[1].kind, 'short');
+    });
+});
+
+describe('goals with no official target', () => {
+    it('"at least 0" is not a goal (regression: switching on EPA/DHA counted toward "goals met")', () => {
+        assert.equal(isGoalOn({ min: 0 }), false);
+        assert.equal(isGoalOn({ min: 0.25 }), true);
+        assert.equal(countGoals({ epa_g: { min: 0 }, dha_g: { min: 0 }, protein_g: { min: 50 } }), 1);
+        assert.deepEqual(goalsToPayload({ epa_g: { min: 0 } }).epa_g, { min: '', max: '' });
     });
 });

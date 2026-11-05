@@ -1,6 +1,6 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import Icon from '@/components/ui/Icon';
 import NumberInput from '@/components/ui/NumberInput';
 import { plannerActions, type PlannerState } from '@/hooks/usePlannerState';
@@ -136,12 +136,22 @@ function GoalRow({ nutrient, goal }: { nutrient: string; goal: GoalRange | undef
     const ref = fdaGoal(nutrient);
     const ul = upperLimit(nutrient);
     const set = (r: GoalRange) => plannerActions.setGoal(nutrient, r);
+    const minInputId = useId();
+    // Nutrients with no official target (EPA, DHA) have nothing sensible to switch on to:
+    // ask for an amount instead of silently setting "at least 0".
+    const [askAmount, setAskAmount] = useState(false);
+    const hasTarget = dv !== null;
 
     return (
-        <div className="goal-row" data-on={on}>
+        <div className="goal-row" data-on={on || askAmount}>
             <label className="switch">
-                <input type="checkbox" checked={on} aria-label={`${label} goal`}
-                    onChange={e => set(e.target.checked ? ref : {})} />
+                <input type="checkbox" checked={on || askAmount} aria-label={`${label} goal`}
+                    onChange={e => {
+                        if (!e.target.checked) { setAskAmount(false); set({}); return; }
+                        if (hasTarget) { set(ref); return; }
+                        setAskAmount(true);
+                        requestAnimationFrame(() => document.getElementById(minInputId)?.focus());
+                    }} />
                 <span className="switch-track" />
             </label>
             <div>
@@ -150,9 +160,10 @@ function GoalRow({ nutrient, goal }: { nutrient: string; goal: GoalRange | undef
                     {dv !== null ? `${referenceKind(nutrient)}: ${fmtNumber(dv)} ${unit}${ref.max !== undefined ? ' (limit)' : ''}` : referenceKind(nutrient)}
                     {ul?.total ? ` · Upper limit ${fmtNumber(ul.value)} ${unit}` : ''}
                 </div>
+                {askAmount && !on && <div className="tiny" style={{ color: 'var(--primary)', fontWeight: 600 }}>Type the amount you want to aim for.</div>}
             </div>
             <div className="goal-inputs" style={{ gridColumn: 'span 2' }}>
-                <NumberInput label="At least" unit={unit} value={goal?.min} placeholder="—"
+                <NumberInput id={minInputId} label="At least" unit={unit} value={goal?.min} placeholder="—"
                     onChange={v => set({ ...goal, min: v })} />
                 <NumberInput label="At most" unit={unit} value={goal?.max} placeholder="—"
                     onChange={v => set({ ...goal, max: v })} />

@@ -303,6 +303,8 @@ const SPECIALTY_WORDS = new Set([
     'dried', 'dehydrated', 'powder', 'powdered', 'freeze', 'babyfood', 'infant', 'formula', 'imitation',
     'substitute', 'nuggets', 'breaded', 'canned', 'frozen', 'smoked', 'patty', 'patties',
     'sticks', 'mix', 'concentrate', 'restaurant', 'pickled',
+    // less typical forms and cuts ("banana" should not open with "overripe", "chicken" with "wing")
+    'overripe', 'underripe', 'puffed', 'wing', 'wings', 'neck', 'skin', 'additives', 'fermented', 'giblets', 'liver', 'gizzards',
 ]);
 
 /**

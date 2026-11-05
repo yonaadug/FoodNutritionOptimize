@@ -202,7 +202,9 @@ button:disabled { cursor: not-allowed; }
 }
 
 /* ---------------- layout ---------------- */
-.main { padding-bottom: 0; }
+.main { padding-bottom: 0; outline: none; }
+/* Keyboard focus and in-page jumps stay clear of the sticky header and the fixed action bar. */
+html { scroll-padding-top: 76px; scroll-padding-bottom: 96px; }
 .layout-2col { display: grid; gap: var(--space-5); align-items: start; }
 @media (min-width: 960px) {
   .layout-2col { grid-template-columns: minmax(0, 1fr) 380px; }
@@ -281,6 +283,9 @@ button:disabled { cursor: not-allowed; }
 .search-box { position: relative; }
 .search-box .input { min-height: 52px; padding-left: 46px; padding-right: 44px; font-size: 16px; border-radius: var(--radius-md); }
 .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; display: flex; }
+/* One clear button only: hide the browser's own (iOS/Chrome/Safari). */
+.search-box input[type='search']::-webkit-search-cancel-button,
+.search-box input[type='search']::-webkit-search-decoration { -webkit-appearance: none; appearance: none; display: none; }
 .search-clear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
 
 .segmented { display: inline-flex; padding: 3px; gap: 2px; background: var(--bg-secondary); border-radius: var(--radius-pill); border: 1px solid var(--border); }
@@ -390,6 +395,8 @@ button:disabled { cursor: not-allowed; }
 
 /* ---------------- goals ---------------- */
 .preset-grid { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+/* Five cards: 3 + 2 on desktop rather than 4 + a lonely "Custom". */
+@media (min-width: 900px) { .preset-grid { grid-template-columns: repeat(6, 1fr); } .preset-card { grid-column: span 2; } .preset-card:nth-child(n+4) { grid-column: span 3; } }
 .preset-card {
   position: relative; display: flex; flex-direction: column; gap: 6px;
   padding: var(--space-4); border-radius: var(--radius-md); border: 1.5px solid var(--border);

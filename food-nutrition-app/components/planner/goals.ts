@@ -35,8 +35,9 @@ export interface GoalPreset {
     goals: Goals;
 }
 
+/** A goal is on when it constrains something ("at least 0" does not). */
 export function isGoalOn(g: GoalRange | undefined): boolean {
-    return !!g && (g.min !== undefined || g.max !== undefined);
+    return !!g && ((g.min !== undefined && g.min > 0) || g.max !== undefined);
 }
 
 /** The FDA Daily Value for a nutrient, as a floor ("at least") or ceiling ("at most"). */
@@ -128,7 +129,8 @@ export function goalsToPayload(goals: Goals): Record<string, { min: number | '';
     const out: Record<string, { min: number | ''; max: number | '' }> = {};
     for (const k of GOAL_KEYS) {
         const g = goals[k] ?? {};
-        out[k] = { min: g.min ?? '', max: g.max ?? '' };
+        // "At least 0" constrains nothing; send it as no bound so it is not reported as a goal.
+        out[k] = { min: g.min !== undefined && g.min > 0 ? g.min : '', max: g.max ?? '' };
     }
     return out;
 }

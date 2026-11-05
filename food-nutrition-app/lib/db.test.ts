@@ -194,6 +194,10 @@ describe('searchFoods ranking (everyday foods first)', () => {
         [12, 2012, 'Bananas, raw', 'sr_legacy_food', 'Fruits and Fruit Juices', 1.1],
         [13, 2013, 'Oil, corn, peanut, and olive', 'sr_legacy_food', 'Fats and Oils', 0],
         [14, 2014, 'Oil, olive, salad or cooking', 'sr_legacy_food', 'Fats and Oils', 0],
+        [15, 2015, 'Bananas, overripe, raw', 'foundation_food', 'Fruits and Fruit Juices', 0.7],
+        [16, 2016, 'Bananas, ripe and slightly ripe, raw', 'foundation_food', 'Fruits and Fruit Juices', 0.7],
+        [17, 2017, 'Chicken, wing, meat and skin, raw', 'foundation_food', 'Poultry Products', 18],
+        [18, 2018, 'Chicken, breast, boneless, skinless, raw', 'foundation_food', 'Poultry Products', 22],
     ];
     let conn: ReturnType<typeof openDatabase>;
     before(() => {
@@ -212,7 +216,13 @@ describe('searchFoods ranking (everyday foods first)', () => {
     });
 
     it('only treats generic group prefixes that way ("Pepper, banana" is a pepper)', () => {
-        assert.deepEqual(ids('banana'), [12, 11]);
+        assert.deepEqual(ids('banana').filter(id => id === 12 || id === 11), [12, 11]);
+    });
+
+    it('opens with the everyday form ("banana" is not "overripe", "chicken" is not "wing")', () => {
+        const banana = ids('banana');
+        assert.ok(banana.indexOf(16) < banana.indexOf(15), `banana order ${banana}`);
+        assert.equal(ids('chicken')[0], 18);
     });
 
     it('prefers foods whose leading segments name more of the query words', () => {

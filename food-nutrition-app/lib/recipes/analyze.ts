@@ -4,10 +4,10 @@
  * `rerank` callback (provided by AI providers that support it) may choose
  * among the deterministic candidates, and cannot invent a food.
  */
-import { getFoodsByIdsIn, openDatabase } from '../db';
+import type { openDatabase } from '../db';
 import type { AnalyzedIngredient, MatchCandidate, ParsedIngredient, ParsedRecipe, ParseResponse, RecipeSource } from './types';
 import { convertToGrams } from './grams';
-import { matchIngredientIn, withPortionsIn, type MatchResult } from './match';
+import { foodWithPortionsIn, matchIngredientIn, withPortionsIn, type MatchResult } from './match';
 import { MAX_SERVINGS } from './nutrition';
 
 type Connection = ReturnType<typeof openDatabase>;
@@ -63,8 +63,7 @@ async function applyRerank(conn: Connection, parsed: ParsedIngredient[], matches
             const m = matches[item.index];
             if (fdcId === undefined || fdcId === m.food?.fdc_id) continue;
             if (!item.candidates.some(c => c.fdcId === fdcId)) continue;
-            const row = conn.db.prepare('SELECT id FROM foods WHERE fdc_id = ?').get(fdcId) as { id: number } | undefined;
-            const food = row ? getFoodsByIdsIn(conn, [row.id])[0] : undefined;
+            const food = foodWithPortionsIn(conn, fdcId);
             if (food) matches[item.index] = { ...m, food, confidence: Math.max(m.confidence, RERANK_BELOW) };
         }
         return [];

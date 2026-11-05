@@ -60,6 +60,17 @@ export function parseTextBody(body: unknown): string {
     return trimmed;
 }
 
+export const MAX_MATCH_BODY_BYTES = 4 * 1024;
+const MAX_MATCH_LINE = 300;
+
+/** Validate { line } for POST /api/recipes/match. */
+export function parseMatchBody(body: unknown): string {
+    const line = typeof body === 'object' && body !== null ? (body as { line?: unknown }).line : undefined;
+    if (typeof line !== 'string' || !line.trim()) throw new RequestError(400, 'invalid_request', 'Type an ingredient, like "2 cups milk"');
+    if (line.length > MAX_MATCH_LINE) throw new RequestError(413, 'payload_too_large', `An ingredient can be at most ${MAX_MATCH_LINE} characters`);
+    return line.trim();
+}
+
 export interface NutritionRequest { ingredients: { fdcId: number; grams: number }[]; servings: number }
 
 /** Validate the body of POST /api/recipes/nutrition. */

@@ -7,7 +7,7 @@
  * The scorer is deterministic. An optional LLM re-rank (lib/recipes/analyze.ts)
  * can only choose among these candidates, so it cannot invent a food.
  */
-import { searchFoodsIn } from '../db';
+import { getFoodsByIdsIn, searchFoodsIn } from '../db';
 import type { openDatabase, Food } from '../db';
 import type { MatchCandidate, ParsedIngredient, RecipeFood } from './types';
 import { mergePortions } from './grams';
@@ -369,4 +369,11 @@ export function withPortionsIn(conn: Connection, foods: Food[]): RecipeFood[] {
         }
     }
     return foods.map(f => ({ ...f, portions: mergePortions(f.serving_sizes, related.get(f.fdc_id)) }));
+}
+
+/** One food by FDC id, with its conversion portions. */
+export function foodWithPortionsIn(conn: Connection, fdcId: number): RecipeFood | null {
+    const row = conn.db.prepare('SELECT id FROM foods WHERE fdc_id = ?').get(fdcId) as { id: number } | undefined;
+    const food = row ? getFoodsByIdsIn(conn, [row.id])[0] : undefined;
+    return food ? withPortionsIn(conn, [food])[0] : null;
 }

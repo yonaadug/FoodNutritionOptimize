@@ -84,9 +84,16 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
   - Dark chocolate reads High from one cocoa powder sample.
   - Many TDS foods have only 3 samples; fresh strawberry and spinach pesticide data is from 2016.
   - FDA FY2021-22 results are dashboard-only, and TDS pesticide data isn't published yet. Re-check periodically.
-- [ ] **Contaminants, methodology** links to GitHub; make it a page on the site.
-- [ ] **History gaps:** food rows have no nutrition values, plans aren't recorded, and recipe rows link to `/recipes`
-      rather than that specific recipe.
+- [ ] **Plan balance:** the sample day is about 49% fat (nuts and seeds), and the FDA preset leans on greens
+      (255 g spinach, 2,270 mcg vitamin K), because the planner picks the fewest calories that meet every goal. Consider
+      a macro-range goal for total fat in the presets, or a realistic-mix objective.
+- [ ] **Plans don't warn about contaminants:** they link to each food's page, but don't flag a High contaminant food.
+- [ ] **8 KB history cap:** a recipe or plan over it (roughly 10+ recipes in a plan) keeps only its summary and can't
+      reopen on another device.
+- [ ] **Sign-in timing glitch:** if `/api/me` takes over 0.8 s, a new recipe saves to history but can still show the
+      "made before you signed in" banner.
+- [ ] **Remaining rough edges:** see the checklist in [docs/WEBSITE_WALKTHROUGH.md](docs/WEBSITE_WALKTHROUGH.md).
+      M10 (privacy and terms pages) needs legal review, and L5, L10, L11–14 and L16 are still open.
 - [ ] **Recipes, not built:** import by URL, cooking-loss adjustment, the Claude Platform on AWS provider, refusal
       fallback on Bedrock. HEIC photos are rejected outside Safari.
 - [ ] **Desktop app** shows "Sign in", which leads to "isn't available" in a packaged build. Needs a build flag.

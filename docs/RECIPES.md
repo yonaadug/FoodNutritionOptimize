@@ -54,7 +54,7 @@ The picker searches with the existing `/api/search`.
 
 ## Saving analyses
 
-`onRecipeAnalyzed` in `components/recipes/RecipesPage.tsx` is the single place to hook history into. It receives an `AnalyzedRecipe`: plain JSON with a title and a stable `id`. It runs after the first read and again after edits settle, so treat it as an upsert. Anonymous visitors' recent analyses are kept in `localStorage` (`recipes.recent.v1`).
+`onRecipeAnalyzed` in `components/recipes/RecipesPage.tsx` saves each analysis to a signed-in person's history ([ACCOUNTS.md](ACCOUNTS.md)). It receives an `AnalyzedRecipe`: plain JSON with a title and a stable `id`. It runs after the first read and again after edits settle, so treat it as an upsert. Anonymous visitors' recent analyses are kept in `localStorage` (`recipes.recent.v1`).
 
 "Add a serving to my plan" adds the recipe to the planner as a fixed-amount food with a negative id. `/api/optimize` passes unknown foods through unchanged.
 

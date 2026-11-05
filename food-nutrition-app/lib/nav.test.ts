@@ -6,7 +6,12 @@ const item = (label: string) => NAV_ITEMS.find(i => i.label === label)!;
 
 describe('NAV_ITEMS', () => {
     it('lists the sections in order, foods first', () => {
-        assert.deepEqual(NAV_ITEMS.map(i => [i.label, i.href]), [['Foods', '/'], ['Plan', '/plan'], ['Recipes', '/recipes'], ['Account', '/account']]);
+        assert.deepEqual(NAV_ITEMS.map(i => [i.label, i.href]), [['Foods', '/'], ['Plan', '/plan'], ['Recipes', '/recipes']]);
+    });
+    it('leaves account pages to the account menu, so none of the sections light up there', () => {
+        for (const p of ['/account', '/account/history', '/account/sign-in']) {
+            assert.deepEqual(NAV_ITEMS.filter(i => isNavActive(i, p)), [], p);
+        }
     });
 });
 
@@ -26,7 +31,7 @@ describe('isNavActive', () => {
         assert.equal(isNavActive(item('Plan'), '/plan/'), true);
         assert.equal(isNavActive(item('Plan'), '/plan#goals'), true);
         assert.equal(isNavActive(item('Plan'), '/planner'), false);
-        assert.equal(isNavActive(item('Account'), '/account/settings'), true);
+        assert.equal(isNavActive(item('Recipes'), '/recipes/saved'), true);
     });
     it('copes with a missing path', () => {
         assert.equal(isNavActive(item('Foods'), null), true);

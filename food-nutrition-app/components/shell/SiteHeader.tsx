@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import AccountMenu from '@/components/account/AccountMenu';
 import Icon from '@/components/ui/Icon';
 import ThemeToggle from '@/components/ThemeToggle';
 import { isNavActive, NAV_ITEMS, SITE_NAME } from '@/lib/nav';
+import styles from './SiteHeader.module.css';
 
 /** Skips the header without changing the address (the planner keeps its step in the #hash). */
 export function SkipLink() {
@@ -20,15 +22,16 @@ export function SkipLink() {
 
 /**
  * Site header: brand, main navigation (lib/nav.ts) and global controls.
- * On phones the navigation becomes a second, full-width row of four tabs, so
- * no section is hidden behind a menu.
+ * On phones the navigation becomes a second, full-width row of tabs, so no
+ * section is hidden behind a menu. Account pages are reached from the account
+ * menu ("Sign in", or the signed-in person's initial).
  */
 export default function SiteHeader() {
     const pathname = usePathname();
     return (
         <header className="site-header">
             <div className="container site-header-inner">
-                <Link href="/" className="brand" aria-label={`${SITE_NAME} home`}>
+                <Link href="/" className={`brand ${styles.brand}`} aria-label={`${SITE_NAME} home`}>
                     <span className="brand-mark"><Icon name="leaf" size={17} strokeWidth={2.4} /></span>
                     {SITE_NAME}
                 </Link>
@@ -43,12 +46,8 @@ export default function SiteHeader() {
                         );
                     })}
                 </nav>
-                <span className="spacer" />
-                {/*
-                  * EXTENSION POINT: account menu.
-                  * Mount <AccountMenu /> (components/account) here, immediately before the theme toggle.
-                  * Once it is mounted, the "Account" entry in lib/nav.ts can go if the menu links there.
-                  */}
+                <span className={`spacer ${styles.spacer}`} />
+                <AccountMenu />
                 <ThemeToggle />
             </div>
         </header>

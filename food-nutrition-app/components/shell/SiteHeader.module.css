@@ -1,0 +1,18 @@
+/*
+ * Phones: the top row has to fit the brand, the account control and the theme switch.
+ * The header wraps (the nav is its second row), and wrapping happens before anything
+ * shrinks. A zero flex-basis keeps the brand on the row with the controls: it takes
+ * whatever space is left, and the name goes onto two lines only on the narrowest screens.
+ */
+@media (max-width: 719px) {
+  .brand.brand {
+    flex: 1 1 0;
+    min-width: 0;
+    line-height: 1.15;
+  }
+  .spacer.spacer { display: none; }
+}
+
+@media (max-width: 380px) {
+  .brand.brand { font-size: 16px; gap: 8px; }
+}

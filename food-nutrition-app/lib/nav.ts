@@ -18,7 +18,6 @@ export const NAV_ITEMS: readonly NavItem[] = [
     { href: '/', label: 'Foods', hint: 'Look up any food and its nutrients', alsoActiveOn: ['/food', '/nutrients'] },
     { href: '/plan', label: 'Plan', hint: 'Plan a day of eating that meets your goals' },
     { href: '/recipes', label: 'Recipes', hint: 'Work out the nutrition of a recipe' },
-    { href: '/account', label: 'Account', hint: 'Your account and saved history' },
 ];
 
 function under(pathname: string, prefix: string): boolean {

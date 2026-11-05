@@ -8,7 +8,7 @@ import styles from '@/components/account/account.module.css';
 import { getPageUser } from '@/lib/auth/pages';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'History · Micronutrient Diary' };
+export const metadata: Metadata = { title: 'History' };
 
 export default async function HistoryPage() {
     const user = await getPageUser();

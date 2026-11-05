@@ -48,7 +48,7 @@ export default function AccountView({ user: initialUser }: { user: CurrentUser }
         setSigningOut(true);
         try {
             await signOut();
-            window.location.assign('/');
+            window.location.replace('/');
         } catch {
             setSigningOut(false);
             setStatus('Couldn\'t sign you out. Check your connection and try again.');
@@ -128,7 +128,7 @@ function DeleteDialog({ dialogRef, email }: { dialogRef: React.RefObject<HTMLDia
             const res = await apiFetch('/api/account', { method: 'DELETE', json: { confirmEmail: typed.trim() } });
             if (!res.ok) throw new Error(String(res.status));
             clearCurrentUser();
-            window.location.assign('/account/sign-in?deleted=1');
+            window.location.replace('/account/sign-in?deleted=1');
         } catch {
             setError('Your account wasn\'t deleted. Please try again.');
             setDeleting(false);

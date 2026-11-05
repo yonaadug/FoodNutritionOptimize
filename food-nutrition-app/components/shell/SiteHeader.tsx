@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import AccountMenu from '@/components/account/AccountMenu';
 import Icon from '@/components/ui/Icon';
 import ThemeToggle from '@/components/ThemeToggle';
 import { isNavActive, NAV_ITEMS, SITE_NAME } from '@/lib/nav';
@@ -20,8 +21,9 @@ export function SkipLink() {
 
 /**
  * Site header: brand, main navigation (lib/nav.ts) and global controls.
- * On phones the navigation becomes a second, full-width row of four tabs, so
- * no section is hidden behind a menu.
+ * On phones the navigation becomes a second, full-width row of tabs, so no
+ * section is hidden behind a menu. Account pages are reached from the account
+ * menu ("Sign in", or the signed-in person's initial).
  */
 export default function SiteHeader() {
     const pathname = usePathname();
@@ -44,11 +46,7 @@ export default function SiteHeader() {
                     })}
                 </nav>
                 <span className="spacer" />
-                {/*
-                  * EXTENSION POINT: account menu.
-                  * Mount <AccountMenu /> (components/account) here, immediately before the theme toggle.
-                  * Once it is mounted, the "Account" entry in lib/nav.ts can go if the menu links there.
-                  */}
+                <AccountMenu />
                 <ThemeToggle />
             </div>
         </header>

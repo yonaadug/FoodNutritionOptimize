@@ -6,7 +6,7 @@ import styles from '@/components/account/account.module.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-    title: 'Finish signing in · Micronutrient Diary',
+    title: 'Finish signing in',
     // The URL holds a sign-in token: don't let it travel in a Referer header.
     referrer: 'no-referrer',
 };

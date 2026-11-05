@@ -58,7 +58,7 @@ function SignedInMenu({ user }: { user: CurrentUser }) {
         try {
             await signOut();
         } finally {
-            window.location.assign('/');
+            window.location.replace('/');
         }
     };
 

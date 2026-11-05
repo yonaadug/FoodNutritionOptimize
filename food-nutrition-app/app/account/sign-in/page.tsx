@@ -9,7 +9,7 @@ import { isSafeHref } from '@/lib/auth/history-summary';
 import { getPageUser, getSignInOptions } from '@/lib/auth/pages';
 
 export const dynamic = 'force-dynamic';
-export const metadata: Metadata = { title: 'Sign in · Micronutrient Diary' };
+export const metadata: Metadata = { title: 'Sign in' };
 
 const single = (v: string | string[] | undefined) => (typeof v === 'string' ? v : undefined);
 

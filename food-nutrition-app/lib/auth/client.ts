@@ -5,7 +5,7 @@ import { useSyncExternalStore } from 'react';
 /**
  * Browser side of accounts. Everything here is optional sugar on an anonymous site:
  * nothing throws, nothing blocks rendering, and a signed-out visitor makes no account
- * requests at all (see SIGNED_IN_HINT).
+ * requests and has nothing stored (see SIGNED_IN_HINT).
  *
  *   const { user, loading } = useCurrentUser();
  *   recordHistory({ kind: 'recipe', itemId, title, href, data: { caloriesPerServing, proteinPerServing } });
@@ -25,11 +25,11 @@ export interface HistoryRecord {
     title: string;
     /** A path on this site, e.g. /food/123. */
     href: string;
-    /** Small JSON summary shown in the history list (at most 8 KB). */
+    /** Small JSON summary shown in the history list (at most 8 KB). See lib/auth/history-summary.ts. */
     data?: Record<string, unknown> | unknown[] | null;
 }
 
-export type RecordResult = 'sent' | 'queued' | 'dropped';
+export type RecordResult = 'sent' | 'skipped' | 'failed';
 
 export interface UserState {
     user: CurrentUser | null;
@@ -44,9 +44,6 @@ export interface UserState {
  * server decides who is signed in. If it is lost, /account sets it again.
  */
 const SIGNED_IN_HINT = 'md.signedIn';
-const QUEUE_KEY = 'md.historyQueue.v1';
-const QUEUE_MAX_ITEMS = 50;
-const QUEUE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const STALE_AFTER_MS = 60_000;
 
 const SERVER_STATE: UserState = { user: null, loading: true };
@@ -56,28 +53,26 @@ let lastChecked = 0;
 let started = false;
 const listeners = new Set<() => void>();
 
-function storageGet(key: string): string | null {
+function readHint(): boolean {
     try {
-        return localStorage.getItem(key);
+        return localStorage.getItem(SIGNED_IN_HINT) !== null;
     } catch {
-        return null;
+        return false;
     }
 }
 
-function storageSet(key: string, value: string | null) {
+function writeHint(signedIn: boolean) {
     try {
-        if (value === null) localStorage.removeItem(key);
-        else localStorage.setItem(key, value);
+        if (signedIn) localStorage.setItem(SIGNED_IN_HINT, '1');
+        else localStorage.removeItem(SIGNED_IN_HINT);
     } catch {
-        /* private mode or storage full: the hint and queue are only conveniences */
+        /* private mode or storage full: the hint is only a convenience */
     }
 }
 
 function setState(next: UserState) {
-    const wasSignedIn = Boolean(state.user);
     state = next;
     listeners.forEach(l => l());
-    if (next.user && !wasSignedIn) void flushQueue();
 }
 
 /**
@@ -100,14 +95,14 @@ export async function apiFetch(path: string, init: { method?: string; json?: unk
     return fetch(path, { method, headers, body, credentials: 'same-origin', keepalive: init.keepalive });
 }
 
-async function load(): Promise<void> {
+function load(): Promise<void> {
     if (inflight) return inflight;
     inflight = (async () => {
         try {
             const res = await apiFetch('/api/me');
             if (!res.ok) throw new Error(`status ${res.status}`);
             const { user } = (await res.json()) as { user: CurrentUser | null };
-            storageSet(SIGNED_IN_HINT, user ? '1' : null);
+            writeHint(Boolean(user));
             setState({ user, loading: false });
         } catch {
             // Offline or a server problem. Keep what we had rather than signing anyone out.
@@ -121,7 +116,7 @@ async function load(): Promise<void> {
 }
 
 function check(): Promise<void> {
-    if (storageGet(SIGNED_IN_HINT)) return load();
+    if (readHint()) return load();
     if (state.loading || state.user) setState({ user: null, loading: false });
     return Promise.resolve();
 }
@@ -153,7 +148,7 @@ export function useCurrentUser(): UserState {
     return useSyncExternalStore(subscribe, () => state, () => SERVER_STATE);
 }
 
-/** Re-read the session from the server, for example after sign-in. */
+/** Re-read the session from the server, for example after changing the profile. */
 export function refreshCurrentUser(): Promise<void> {
     start();
     return load();
@@ -162,15 +157,14 @@ export function refreshCurrentUser(): Promise<void> {
 /** Tell the client who the server rendered this page for. */
 export function primeCurrentUser(user: CurrentUser) {
     start();
-    storageSet(SIGNED_IN_HINT, '1');
+    writeHint(true);
     lastChecked = Date.now();
     if (state.user?.id !== user.id || state.loading) setState({ user, loading: false });
 }
 
 /** Clear the local view of the session after sign-out or account deletion. */
 export function clearCurrentUser() {
-    storageSet(SIGNED_IN_HINT, null);
-    storageSet(QUEUE_KEY, null);
+    writeHint(false);
     setState({ user: null, loading: false });
 }
 
@@ -188,99 +182,28 @@ export async function signOut(): Promise<void> {
     clearCurrentUser();
 }
 
-// ---- history ----
-
-interface QueuedRecord extends HistoryRecord {
-    queuedAt: number;
-}
-
-function readQueue(): QueuedRecord[] {
-    const raw = storageGet(QUEUE_KEY);
-    if (!raw) return [];
-    try {
-        const parsed = JSON.parse(raw);
-        if (!Array.isArray(parsed)) return [];
-        const oldest = Date.now() - QUEUE_MAX_AGE_MS;
-        return parsed.filter(i => i && typeof i === 'object' && typeof i.queuedAt === 'number' && i.queuedAt >= oldest);
-    } catch {
-        return [];
-    }
-}
-
-function writeQueue(queue: QueuedRecord[]) {
-    storageSet(QUEUE_KEY, queue.length ? JSON.stringify(queue) : null);
-}
-
-function enqueue(item: HistoryRecord) {
-    const sameItem = (q: QueuedRecord) => q.kind === item.kind && String(q.itemId) === String(item.itemId);
-    const queue = readQueue().filter(q => !sameItem(q));
-    queue.push({ ...item, queuedAt: Date.now() });
-    writeQueue(queue.slice(-QUEUE_MAX_ITEMS));
-}
-
-async function send(item: HistoryRecord): Promise<Response> {
-    const { kind, itemId, title, href, data } = item;
-    return apiFetch('/api/history', { method: 'POST', json: { kind, itemId, title, href, data }, keepalive: true });
-}
-
-let flushing: Promise<void> | null = null;
-
-/** Upload what was viewed while signed out. A rejected item is dropped; a transient failure keeps the rest for later. */
-export function flushQueue(): Promise<void> {
-    if (flushing) return flushing;
-    flushing = (async () => {
-        try {
-            const queue = readQueue();
-            while (queue.length) {
-                const res = await send(queue[0]);
-                if (res.status === 429 || res.status >= 500 || res.status === 401) return;
-                queue.shift();
-                writeQueue(queue);
-            }
-        } catch {
-            /* offline: keep the queue */
-        } finally {
-            flushing = null;
-        }
-    })();
-    return flushing;
-}
-
 /**
- * Remember that the visitor looked at something. Safe to call from anywhere, any
- * number of times, signed in or not: it never throws and never affects the page.
+ * Remember that a signed-in person looked at something. Safe to call from anywhere,
+ * any number of times: it never throws and never affects the page.
  *
- * Signed out, the item waits in this browser's localStorage (nothing leaves the
- * device) and is uploaded after sign-in. A repeat of the same item just moves it to
- * the top of the history.
+ * Signed out, it does nothing at all: no request, nothing stored. What someone looks
+ * at before signing in is not added to their account later. A repeat of the same item
+ * just moves it to the top of the history. History is best-effort, so a failed write
+ * isn't retried.
  */
 export async function recordHistory(item: HistoryRecord): Promise<RecordResult> {
     try {
         start();
         if (inflight) await inflight;
-        if (!state.user) {
-            enqueue(item);
-            return 'queued';
-        }
-        const res = await send(item);
+        if (!state.user) return 'skipped';
+        const { kind, itemId, title, href, data } = item;
+        const res = await apiFetch('/api/history', { method: 'POST', json: { kind, itemId, title, href, data }, keepalive: true });
         if (res.ok) return 'sent';
-        if (res.status === 401) {
-            // The session ended (expired, or signed out elsewhere). Don't lose the item.
-            storageSet(SIGNED_IN_HINT, null);
-            setState({ user: null, loading: false });
-        }
-        if (res.status === 401 || res.status === 429 || res.status >= 500) {
-            enqueue(item);
-            return 'queued';
-        }
-        return 'dropped';
+        // The session ended (expired, or signed out elsewhere): stop treating them as signed in.
+        if (res.status === 401) clearCurrentUser();
+        return 'failed';
     } catch {
-        try {
-            enqueue(item);
-            return 'queued';
-        } catch {
-            return 'dropped';
-        }
+        return 'failed';
     }
 }
 
@@ -288,7 +211,6 @@ export async function recordHistory(item: HistoryRecord): Promise<RecordResult> 
 export function __resetClientState() {
     state = SERVER_STATE;
     inflight = null;
-    flushing = null;
     lastChecked = 0;
     started = false;
     listeners.clear();

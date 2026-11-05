@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    __resetClientState, clearCurrentUser, flushQueue, primeCurrentUser, recordHistory, refreshCurrentUser, requestSignInLink, signOut,
+    __resetClientState, clearCurrentUser, primeCurrentUser, recordHistory, refreshCurrentUser, requestSignInLink, signOut,
 } from './client';
 
 class MemoryStorage {
     private m = new Map<string, string>();
+    get size() { return this.m.size; }
     getItem(k: string) { return this.m.has(k) ? this.m.get(k)! : null; }
     setItem(k: string, v: string) { this.m.set(k, String(v)); }
     removeItem(k: string) { this.m.delete(k); }
@@ -15,7 +16,6 @@ class MemoryStorage {
 const storage = new MemoryStorage();
 Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true, writable: true });
 
-const QUEUE = 'md.historyQueue.v1';
 const HINT = 'md.signedIn';
 const USER = { id: 'u1', email: 'a@example.com', displayName: '', preferences: {}, createdAt: '2026-01-01T00:00:00.000Z' };
 const item = (itemId: string | number = 1) => ({ kind: 'food', itemId, title: 'Salmon', href: `/food/${itemId}`, data: { kcal: 208 } });
@@ -45,10 +45,10 @@ afterEach(() => {
 });
 
 describe('recordHistory', () => {
-    it('signed out: stays on this device, with no network request at all', async () => {
-        assert.equal(await recordHistory(item()), 'queued');
+    it('signed out: does nothing at all, with no request and nothing stored', async () => {
+        assert.equal(await recordHistory(item()), 'skipped');
         assert.equal(calls.length, 0);
-        assert.equal(JSON.parse(storage.getItem(QUEUE)!).length, 1);
+        assert.equal(storage.size, 0);
     });
 
     it('signed in: posts the item', async () => {
@@ -59,100 +59,47 @@ describe('recordHistory', () => {
         assert.equal(calls[0].path, '/api/history');
         assert.equal(calls[0].method, 'POST');
         assert.deepEqual(calls[0].body, item(7));
-        assert.equal(storage.getItem(QUEUE), null);
+    });
+
+    it('views from before sign-in are not uploaded afterwards', async () => {
+        await recordHistory(item(1));
+        primeCurrentUser(USER);
+        await refreshCurrentUser();
+        assert.ok(calls.every(c => c.path !== '/api/history'));
     });
 
     it('never throws, even if fetch and storage both fail', async () => {
         primeCurrentUser(USER);
         globalThis.fetch = (async () => { throw new Error('offline'); }) as typeof fetch;
-        assert.equal(await recordHistory(item()), 'queued');
+        assert.equal(await recordHistory(item()), 'failed');
 
         const broken = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); }, removeItem() { throw new Error('denied'); } };
         Object.defineProperty(globalThis, 'localStorage', { value: broken, configurable: true, writable: true });
         try {
-            assert.ok(['queued', 'dropped'].includes(await recordHistory(item())));
+            assert.equal(await recordHistory(item()), 'failed');
+            clearCurrentUser();
+            assert.equal(await recordHistory(item()), 'skipped');
         } finally {
             Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true, writable: true });
         }
     });
 
-    it('a transient failure queues the item, and a rejected item is dropped', async () => {
+    it('a rejected or failed write is reported, not retried', async () => {
         primeCurrentUser(USER);
-        respond = () => new Response('{}', { status: 503 });
-        assert.equal(await recordHistory(item(1)), 'queued');
-        respond = () => new Response('{}', { status: 429 });
-        assert.equal(await recordHistory(item(2)), 'queued');
-        respond = () => new Response('{}', { status: 400 });
-        assert.equal(await recordHistory(item(3)), 'dropped');
-        assert.equal(JSON.parse(storage.getItem(QUEUE)!).length, 2);
+        for (const status of [400, 429, 503]) {
+            respond = () => new Response('{}', { status });
+            assert.equal(await recordHistory(item(status)), 'failed', String(status));
+        }
+        assert.equal(calls.length, 3);
     });
 
-    it('an expired session queues the item and stops treating the visitor as signed in', async () => {
+    it('an expired session stops further requests until the next sign-in', async () => {
         primeCurrentUser(USER);
         respond = () => new Response('{}', { status: 401 });
-        assert.equal(await recordHistory(item(1)), 'queued');
+        assert.equal(await recordHistory(item(1)), 'failed');
         assert.equal(storage.getItem(HINT), null);
-        const before = calls.length;
-        assert.equal(await recordHistory(item(2)), 'queued');
-        assert.equal(calls.length, before, 'no more requests until the next sign-in');
-    });
-
-    it('the queue keeps one entry per item, is capped, and drops old entries', async () => {
-        await recordHistory(item(1));
-        await recordHistory(item(1));
-        assert.equal(JSON.parse(storage.getItem(QUEUE)!).length, 1);
-
-        for (let i = 0; i < 60; i++) await recordHistory(item(i));
-        const queue = JSON.parse(storage.getItem(QUEUE)!);
-        assert.equal(queue.length, 50);
-        assert.equal(queue.at(-1).itemId, 59);
-
-        storage.setItem(QUEUE, JSON.stringify([{ ...item(1), queuedAt: Date.now() - 40 * 24 * 3600 * 1000 }]));
-        await recordHistory(item(2));
-        assert.deepEqual(JSON.parse(storage.getItem(QUEUE)!).map((q: { itemId: number }) => q.itemId), [2]);
-    });
-
-    it('survives a corrupt queue', async () => {
-        storage.setItem(QUEUE, '{not json');
-        assert.equal(await recordHistory(item()), 'queued');
-        storage.setItem(QUEUE, '"a string"');
-        assert.equal(await recordHistory(item()), 'queued');
-    });
-});
-
-describe('after sign-in', () => {
-    it('uploads the queue once, then clears it', async () => {
-        await recordHistory(item(1));
-        await recordHistory(item(2));
-        respond = () => Response.json({ item: {} });
-        primeCurrentUser(USER);
-        await flushQueue();
-        assert.deepEqual(calls.map(c => (c.body as { itemId: number }).itemId), [1, 2]);
-        assert.ok(calls.every(c => !('queuedAt' in (c.body as object))), 'internal fields stay local');
-        assert.equal(storage.getItem(QUEUE), null);
-    });
-
-    it('stops on a transient failure and keeps what is left', async () => {
-        await recordHistory(item(1));
-        await recordHistory(item(2));
-        respond = () => new Response('{}', { status: 503 });
-        primeCurrentUser(USER);
-        await flushQueue();
+        assert.equal(await recordHistory(item(2)), 'skipped');
         assert.equal(calls.length, 1);
-        assert.equal(JSON.parse(storage.getItem(QUEUE)!).length, 2);
-    });
-
-    it('skips an item the server rejects and carries on', async () => {
-        await recordHistory(item(1));
-        await recordHistory(item(2));
-        respond = (() => {
-            let n = 0;
-            return () => (n++ === 0 ? new Response('{}', { status: 400 }) : Response.json({ item: {} }));
-        })();
-        primeCurrentUser(USER);
-        await flushQueue();
-        assert.equal(calls.length, 2);
-        assert.equal(storage.getItem(QUEUE), null);
     });
 });
 
@@ -178,20 +125,13 @@ describe('session state', () => {
         assert.equal(await recordHistory(item()), 'sent');
     });
 
-    it('sign-out clears the hint and any queue, so the next person on this browser starts clean', async () => {
+    it('sign-out clears the hint and makes recordHistory stop posting', async () => {
         primeCurrentUser(USER);
-        storage.setItem(QUEUE, JSON.stringify([{ ...item(), queuedAt: Date.now() }]));
         await signOut();
         assert.equal(calls[0].path, '/api/auth/sign-out');
         assert.equal(storage.getItem(HINT), null);
-        assert.equal(storage.getItem(QUEUE), null);
-    });
-
-    it('clearCurrentUser makes recordHistory stop posting', async () => {
-        primeCurrentUser(USER);
-        clearCurrentUser();
-        assert.equal(await recordHistory(item()), 'queued');
-        assert.equal(calls.length, 0);
+        assert.equal(await recordHistory(item()), 'skipped');
+        assert.equal(calls.length, 1);
     });
 });
 

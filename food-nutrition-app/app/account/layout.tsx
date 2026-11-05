@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 /** Personal pages: nothing here should appear in search results. */
 export const metadata: Metadata = {
-    title: 'Account · Micronutrient Diary',
+    title: 'Account',
     robots: { index: false, follow: false },
 };
 

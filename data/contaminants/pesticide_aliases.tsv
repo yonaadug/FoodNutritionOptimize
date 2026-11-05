@@ -1,0 +1,53 @@
+pdp_name	reference_name	role
+Permethrin Total	Permethrin	total
+Permethrin cis	Permethrin	part
+Permethrin trans	Permethrin	part
+Cyhalothrin, Total (Cyhalothrin-L + R157836 epimer)	Lambda cyhalothrin	total
+Cyhalothrin, Lambda	Lambda cyhalothrin	part
+Metalaxyl/Mefenoxam	Metalaxyl	parent
+Tetrahydrophthalimide (THPI)	Captan	metabolite
+Imidacloprid desnitro	Imidacloprid	metabolite
+Imidacloprid urea	Imidacloprid	metabolite
+Imidacloprid olefin	Imidacloprid	metabolite
+Oxamyl oxime	Oxamyl	metabolite
+Aminomethylphosphonic acid (AMPA)	Glyphosate	metabolite
+Spinosad A	Spinosad	part
+Spinosad D	Spinosad	part
+5-Hydroxythiabendazole	Thiabendazole + salt	metabolite
+Thiabendazole	Thiabendazole + salt	parent
+2,4-dimethylphenyl formamide (2,4-DMPF)	Amitraz	metabolite
+Malathion oxygen analog	Malathion	metabolite
+DDE p,p'	DDT	metabolite
+DDE o,p'	DDT	metabolite
+DDD p,p'	DDT	metabolite
+DDD o,p'	DDT	metabolite
+DDT p,p'	DDT	part
+DDT o,p'	DDT	part
+Chlordane cis	Chlordane	part
+Chlordane trans	Chlordane	part
+Oxychlordane	Chlordane	metabolite
+Heptachlor epoxide	Heptachlor	metabolite
+Endosulfan I	Endosulfan	part
+Endosulfan II	Endosulfan	part
+Endosulfan sulfate	Endosulfan	metabolite
+Desethyl atrazine	Atrazine	metabolite
+Bensulide oxygen analog	Bensulide	metabolite
+Phosmet oxygen analog	Phosmet	metabolite
+Prothioconazole desthio	Prothioconazole	metabolite
+Omethoate	Dimethoate	metabolite
+Spiromesifen alcohol	Spiromesifen	metabolite
+Spiromesifen Total (parent + enol metabolite)	Spiromesifen	total
+Propamocarb	Propamocarb hydrochloride	parent
+Quintozene (PCNB)	PCNB, Pentachloronitrobenzene (Quintozene)	parent
+Pentachloroaniline (PCA)	PCNB, Pentachloronitrobenzene (Quintozene)	metabolite
+Pentachlorophenyl methyl sulfide (PCPMS)	PCNB, Pentachloronitrobenzene (Quintozene)	metabolite
+Norflurazon desmethyl	Norflurazon	metabolite
+Clethodim sulfoxide	Clethodim	metabolite
+Sethoxydim sulfone	Sethoxydim	metabolite
+Sethoxydim sulfoxide	Sethoxydim	metabolite
+Fipronil sulfone (MB46136)	Fipronil	metabolite
+Phorate sulfoxide	Phorate	metabolite
+Phorate oxygen analog sulfoxide	Phorate	metabolite
+3-Hydroxycarbofuran	Carbofuran	metabolite
+Chlorpyrifos oxygen analog	Chlorpyrifos	metabolite
+Hydroxy Acequinocyl	Acequinocyl	metabolite

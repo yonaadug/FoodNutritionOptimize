@@ -1,0 +1,152 @@
+/* Recipe analyzer. Colours come from the design tokens in app/globals.css, which
+   switch for dark mode, so nothing here needs its own dark rules. */
+
+.page { padding-top: var(--space-5); padding-bottom: var(--space-6); }
+
+.hero { max-width: 720px; margin-bottom: var(--space-5); }
+.heroText { color: var(--text-secondary); margin-top: 6px; }
+
+.startGrid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: var(--space-4); align-items: start; }
+.startSide { display: flex; flex-direction: column; gap: var(--space-4); }
+.pasteCard { display: flex; flex-direction: column; gap: var(--space-3); }
+.labelRow { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.textarea { width: 100%; min-height: 240px; resize: vertical; font-size: 16px; line-height: 1.45; padding: 12px; }
+.photoCard { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
+.photoButtons { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: 4px; }
+.fileButton { cursor: pointer; }
+.fileButton:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.errorBox, .noticeWarn, .noticeInfo {
+    display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px;
+    border-radius: var(--radius-md); font-size: 14px; line-height: 1.45;
+}
+.errorBox { background: var(--danger-bg); color: var(--danger); margin-bottom: var(--space-4); }
+.noticeWarn { background: var(--warning-bg); color: var(--text-primary); border: 1px solid var(--warning); }
+.noticeWarn > svg { color: var(--warning); flex: none; margin-top: 1px; }
+.noticeInfo { background: var(--bg-secondary); color: var(--text-secondary); }
+.noticeInfo > svg { flex: none; margin-top: 1px; }
+.notices { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); }
+.notices:empty { display: none; }
+
+.recents { margin-top: var(--space-5); max-width: 720px; }
+.recentList { list-style: none; margin: var(--space-2) 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.recentItem {
+    display: flex; align-items: center; gap: var(--space-2);
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 4px 6px 4px 4px;
+}
+.recentOpen {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left;
+    padding: 8px 10px; background: none; border: 0; border-radius: var(--radius-sm); cursor: pointer; color: inherit; font: inherit;
+}
+.recentOpen:hover { background: var(--bg-secondary); }
+.recentTitle { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.reading { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-6) var(--space-4); text-align: center; }
+.readingPhoto { max-width: 220px; max-height: 220px; border-radius: var(--radius-md); object-fit: cover; }
+.readingText { font-size: 18px; font-weight: 600; }
+
+.editorHead { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-4); }
+.titleBlock { min-width: 0; }
+.titleBlock h1:focus { outline: none; }
+.editorGrid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: var(--space-4); align-items: start; }
+.editorMain { min-width: 0; }
+.metaRow { display: flex; gap: var(--space-3); margin-bottom: var(--space-4); }
+.titleField { flex: 1; min-width: 0; }
+.servingsField { width: 110px; flex: none; }
+.fieldError { color: var(--danger); font-size: 13px; }
+
+.photoDetails summary { cursor: pointer; font-size: 14px; color: var(--text-secondary); }
+.photo { display: block; max-width: min(100%, 420px); max-height: 420px; margin-top: var(--space-2); border-radius: var(--radius-md); }
+
+.tableBlock { display: flex; flex-direction: column; gap: var(--space-4); }
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table th { text-align: left; font-size: 12px; font-weight: 650; color: var(--text-muted); padding: 0 8px 8px 0; border-bottom: 1px solid var(--border); }
+.table td { padding: 12px 8px 12px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+.cellName, .cellFood, .cellGrams { display: table-cell; }
+.cellName > * + *, .cellFood > * + *, .cellGrams > * + * { margin-top: 4px; }
+.name { display: block; font-weight: 600; overflow-wrap: anywhere; }
+.details { display: block; overflow-wrap: anywhere; }
+.amount { display: flex; gap: 6px; align-items: center; }
+.qty { width: 72px; font-size: 16px; }
+.unit { width: 92px; font-size: 16px; }
+.foodLink { display: block; color: inherit; text-decoration: none; min-width: 0; }
+.foodLink:hover .foodShort { text-decoration: underline; }
+.foodShort { display: block; font-weight: 550; color: var(--primary); }
+.foodFull { display: block; overflow-wrap: anywhere; }
+.changeFood { display: block; padding-left: 0; margin-left: 0; }
+.grams { display: block; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.basis { display: block; overflow-wrap: anywhere; }
+.cellRemove { width: 40px; padding-right: 0 !important; }
+.emptyRows { padding: var(--space-3) 0; }
+
+.chooserRow td { padding-top: 0; }
+.chooser { display: flex; flex-direction: column; gap: 8px; padding: var(--space-3); background: var(--bg-secondary); border-radius: var(--radius-md); }
+.chooser input { font-size: 16px; }
+.chooserHead { display: flex; align-items: center; justify-content: space-between; }
+.chooserList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-height: 280px; overflow-y: auto; }
+.chooserOption {
+    width: 100%; display: flex; gap: 8px; align-items: center; text-align: left; font: inherit; font-size: 14px;
+    padding: 8px 10px; min-height: 40px; background: var(--bg-card); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;
+}
+.chooserOption:hover:not(:disabled) { border-color: var(--primary); }
+
+.addForm { display: flex; flex-direction: column; gap: 6px; }
+.addRow { display: flex; gap: var(--space-2); }
+.addRow input { flex: 1; min-width: 0; font-size: 16px; }
+
+.totals { display: flex; flex-direction: column; gap: var(--space-4); min-width: 0; }
+.summary { display: flex; flex-direction: column; gap: var(--space-2); }
+.calories { color: var(--text-secondary); font-weight: 600; }
+.caloriesValue { font-size: 40px; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.range { font-size: 14px; font-weight: 600; color: var(--warning); }
+.nutrientList { list-style: none; margin: 4px 0; padding: 0; }
+.nutrientLine { display: grid; grid-template-columns: minmax(0, 1fr) auto 52px; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+.nutrientLine:last-child { border-bottom: 0; }
+.nutrientName { color: var(--text-secondary); }
+.nutrientAmount { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nutrientPct { text-align: right; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.more summary { cursor: pointer; font-size: 14px; font-weight: 600; color: var(--primary); padding: 4px 0; }
+.noteWarn { font-size: 13px; color: var(--text-primary); background: var(--warning-bg); padding: 8px 10px; border-radius: var(--radius-sm); overflow-wrap: anywhere; }
+
+.stickyTotal { display: none; }
+
+@media (max-width: 960px) {
+    .editorGrid { grid-template-columns: minmax(0, 1fr); }
+    .startGrid { grid-template-columns: minmax(0, 1fr); }
+    .totals { scroll-margin-top: 120px; }
+    /* The totals sit below the list here: keep the headline number in view while editing. */
+    .stickyTotal {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+        display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+        padding: 12px var(--space-4) calc(12px + env(safe-area-inset-bottom));
+        background: var(--bg-card); color: var(--text-primary); border-top: 1px solid var(--border-strong);
+        box-shadow: var(--shadow-lg); text-decoration: none; font-size: 15px;
+    }
+    .stickyHint { color: var(--primary); font-weight: 600; font-size: 14px; }
+    .page:has(.stickyTotal) { padding-bottom: 88px; }
+}
+
+/* Phone: each table row becomes a card with labelled cells. */
+@media (max-width: 680px) {
+    .page { padding-top: var(--space-4); }
+    .table, .table tbody { display: block; }
+    .table thead { display: none; }
+    .row {
+        display: grid; grid-template-columns: minmax(0, 1fr) 40px; gap: 6px 8px;
+        padding: var(--space-3) 0; border-bottom: 1px solid var(--border);
+    }
+    .table td { display: block; padding: 0; border: 0; }
+    .cellName { grid-column: 1; grid-row: 1; }
+    .cellRemove { grid-column: 2; grid-row: 1; width: auto; }
+    .cellAmount, .cellFood, .cellGrams { grid-column: 1 / -1; }
+    .cellAmount::before, .cellFood::before, .cellGrams::before {
+        content: attr(data-label); display: block; font-size: 12px; font-weight: 650; color: var(--text-muted); margin-bottom: 2px;
+    }
+    .chooserRow { display: block; }
+    .chooserRow td { display: block; padding: var(--space-2) 0; }
+    .qty { width: 88px; }
+    .unit { width: 110px; }
+    .metaRow { gap: var(--space-2); }
+    .servingsField { width: 88px; }
+}

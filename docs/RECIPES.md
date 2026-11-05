@@ -1,0 +1,165 @@
+# Recipe analyzer
+
+`/recipes` works out the nutrition per serving of a pasted recipe or a photo, and lets the user correct it. The research behind these choices is in [research/RECIPE_ANALYSIS.md](research/RECIPE_ANALYSIS.md).
+
+> **Status.** It works end to end on the offline `mock` provider. **The Bedrock and Claude API providers have never run against a live model**: the project's AWS account can't invoke Claude yet, and no API key was available. Follow [the check below](#3-check-it-works) the first time you enable one.
+
+## How it works
+
+```
+text or photo
+   │  lib/ai: Claude (Bedrock or API), or the rule-based mock
+   ▼
+ingredients: name, quantity, unit, preparation, notes, confidence
+   │  lib/recipes/match.ts: USDA full-text search, re-scored for recipes
+   │  lib/recipes/grams.ts: quantity + unit to grams
+   ▼
+editable rows in the browser ──► live totals (lib/recipes/nutrition.ts)
+```
+
+**The model only reads.** It never supplies nutrient values or food ids. All nutrition comes from the USDA database, and the optional re-rank can only choose among candidates we offer.
+
+**Grams** are marked on each row:
+
+| Mark | Meaning | Example |
+|---|---|---|
+| `exact` | Mass units, or a USDA portion for this food | `1 cup = 125 g` |
+| `estimated` | A table of typical densities and item weights. Badged in the UI | `typical density of rolled oats` |
+| `unknown` | No amount, or no way to convert. Not counted, and listed in the totals | "2 heads" of lettuce, "salt to taste" |
+
+**Missing data.** A nutrient total built from any ingredient with no value shows `≥`, because it's a lower bound. If nothing has a value it shows `—`, never 0.
+
+**Foundation gaps.** Foundation foods are well measured but sparse, so nulls are filled from the SR Legacy food they supersede. Household measures come from there too. Existing values are never overwritten, the food lists what was filled in `filledNutrients`, and the page discloses it. The same logic runs in `POST /api/recipes/nutrition`.
+
+**Limits to tell users about**, which the page already does:
+
+- Plated-meal photos are rough. Confidence is capped at 0.6 and the page shows ±35% on calories.
+- Totals add up ingredients as listed, with no adjustment for cooking losses or water.
+- Text and photos go to the AI provider. Photos aren't stored, and logs hold token counts and cost only.
+
+## API
+
+All errors have the shape `{ error, code, details? }`.
+
+| Route | Body | Returns | AI? |
+|---|---|---|---|
+| `POST /api/recipes/parse` | JSON `{ text }`, or multipart with an `image` file | Ingredients with matches and conversions (`ParseResponse`) | Yes |
+| `POST /api/recipes/nutrition` | `{ ingredients: [{ fdcId, grams }], servings }` | `totals` and `perServing`, each nutrient `{ value, incomplete }` | No: pure and deterministic |
+| `POST /api/recipes/match` | `{ line }`, e.g. `"2 cups milk"` | One analyzed ingredient | No |
+| `GET /api/recipes/food?fdcId=` | | One food with its portions and filled nutrients | No |
+
+The picker searches with the existing `/api/search`.
+
+`/api/recipes/parse` can return 400, 413, 415, 422 (`ai_not_food`, `ai_refused`), 429 (`rate_limited`, with `Retry-After`), 502, 503 (`ai_unavailable`, `ai_busy`, `ai_rate_limited`) and 504 (`ai_timeout`).
+
+## Saving analyses
+
+`onRecipeAnalyzed` in `components/recipes/RecipesPage.tsx` is the single place to hook history into. It receives an `AnalyzedRecipe`: plain JSON with a title and a stable `id`. It runs after the first read and again after edits settle, so treat it as an upsert. Anonymous visitors' recent analyses are kept in `localStorage` (`recipes.recent.v1`).
+
+"Add a serving to my plan" adds the recipe to the planner as a fixed-amount food with a negative id. `/api/optimize` passes unknown foods through unchanged.
+
+## Test locally
+
+No credentials, no cost:
+
+```bash
+cd food-nutrition-app
+npm ci --ignore-scripts
+AI_PROVIDER=mock npm run dev      # or leave AI_PROVIDER unset; open /recipes
+npm run check                     # lint, typecheck, unit tests, build
+```
+
+On `mock`, pasted text really is read by the rule-based parser (`lib/recipes/parse.ts`), and the page says it's in demo mode. **Photos return a built-in sample, chosen by a hash of the image**, so the same image always gives the same result.
+
+Matching accuracy prints during `npm test`. First-run held-out scores: names 100%, food top-1 96.6%, grams in range 91.5%, calories in range 8/8 recipes. See [the research doc](research/RECIPE_ANALYSIS.md#what-we-tested-ourselves) for what those do and don't show.
+
+## Enable Bedrock
+
+### 1. Get model access
+
+The AWS account currently returns `403 not available for this account` for Claude models (`404 does not exist` for Haiku 5.5). In the AWS console:
+
+1. Open **Amazon Bedrock → [Model access](https://console.aws.amazon.com/bedrock/home#/modelaccess)** in the region you'll use, such as `us-east-1`.
+2. Request access to the model you want. Access criteria vary per model, and some may ask for a use-case form.
+3. If it still fails, the 403 message suggests contacting AWS Sales or Support: `https://aws.amazon.com/contact-us/sales-support/`. Sonnet 5 is documented as open to all Bedrock customers and was also refused, so the block may be on the account rather than the model.
+
+### 2. Permissions and settings
+
+The app needs one IAM action. Attach it to the Lambda or server role, not to a long-lived user:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{ "Effect": "Allow", "Action": "bedrock-mantle:CreateInference", "Resource": "*" }]
+}
+```
+
+Scope `Resource` to the model ARNs you enable; see [AWS's Bedrock docs](https://docs.aws.amazon.com/bedrock/latest/userguide/bedrock-mantle.html) for the format.
+
+| Variable | Value |
+|---|---|
+| `AI_PROVIDER` | `bedrock` |
+| `AI_BEDROCK_REGION` | Your region, e.g. `us-east-1`. Falls back to `AWS_REGION`, then `AWS_DEFAULT_REGION`. `~/.aws/config` isn't read for the region |
+| `AI_MODEL` | Optional. Defaults to `claude-opus-5-5`; see the cost table. The `anthropic.` prefix is added for you |
+
+Credentials come from the standard AWS chain: role, environment or `~/.aws/credentials`. Check [AWS's price list](https://aws.amazon.com/bedrock/pricing/) before budgeting; we couldn't verify it.
+
+### 3. Check it works
+
+Restart the server, then make one small request:
+
+```bash
+curl -s http://127.0.0.1:3000/api/recipes/parse \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"Garlic rice\nServes 2\n1 1/2 cups cooked white rice\n2 cloves garlic, minced\n1 tbsp olive oil\nSalt to taste"}'
+```
+
+You want `"provider":"bedrock"` and four ingredients. The server log has one line per call, like this made-up example:
+
+```
+[ai] provider=bedrock model=anthropic.claude-haiku-5-5 kind=text ms=1840 ok=true in=950 out=210 cost_usd=0.00020
+```
+
+| You see | It means |
+|---|---|
+| `"provider":"mock"` | `AI_PROVIDER` or the region isn't set. The log says which |
+| `503 ai_unavailable`, log says `PermissionDeniedError 403` or `NotFoundError 404` | No access to that model in that region. Go back to step 1 |
+| `502 ai_bad_output` | The model replied but the request or reply was rejected. As this path is untested on a live model, a schema problem would show up here first. Look at `lib/ai/schema.ts` |
+
+Then try a photo of a recipe card and of a plate, and compare the log's token counts with the cost table.
+
+### Using the Claude API instead
+
+Set `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`. `AI_MODEL` works the same, without a prefix. On this path, models that support it also get the server-side refusal fallback (`fallbacks: "default"`). Bedrock doesn't offer that, so a refusal there shows a friendly error and the user can add ingredients by hand.
+
+## Cost per analysis
+
+Estimates at Anthropic list prices, **not measured** (no live call has succeeded). Bedrock's prices are unverified, and regional endpoints add 10%.
+
+| `AI_MODEL` | Text recipe | Photo |
+|---|---|---|
+| `claude-haiku-5-5` | about $0.001 | about $0.001 |
+| `claude-sonnet-5-5` | about $0.02 | about $0.02 |
+| `claude-opus-5-5` (default) | about $0.04 | about $0.04 |
+
+The default follows Anthropic's guidance for new code, but **it costs about 40x Haiku**, and `AWS_HOSTING_DESIGN.md` §3.7 budgets around Haiku. On Opus, thinking can't be disabled and bills as output, so real cost may run higher. Choose with an evaluation; the owner's call is listed in the [research doc](research/RECIPE_ANALYSIS.md#decisions-for-the-owner).
+
+## Limits and settings
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `AI_RATE_LIMIT_PER_MINUTE` | 10 | Per client IP; 0 turns it off |
+| `AI_RATE_LIMIT_PER_DAY` | 50 | Per client IP; 0 turns it off |
+| `AI_DAILY_BUDGET_USD` | 1 | Stops calling the model at this estimated daily spend; 0 turns it off |
+| `AI_MAX_IMAGE_BYTES` | 8 MB | Largest upload |
+| `AI_TIMEOUT_MS`, `AI_MAX_RETRIES` | 45000, 2 | Per attempt and SDK retries. The whole request stops at 55 s |
+| `AI_RERANK` | off | `1` lets the model re-rank low-confidence matches, adding one cached call |
+
+Images are shrunk to 1568 px in the browser, and again on the server for JPEGs (with `jpeg-js`; `sharp` stays out of the Lambda bundle). The server reads the type from the bytes, checks dimensions before decoding, and strips EXIF, including GPS.
+
+## Before going public on a paid provider
+
+- **These limits are per server instance, in memory.** On Lambda each instance counts separately and resets on a cold start. They're a speed bump. Add the DynamoDB quotas in `AWS_HOSTING_DESIGN.md` §3.7 and an AWS Budget.
+- **`/recipes` has no sign-in.** The roadmap puts photo imports behind accounts.
+- **Requests are synchronous**, not the queued flow §3.7 sketches. That's fine for a single short model call, but check it against your CloudFront and Lambda timeouts.
+- **Run an evaluation** on real recipes and weighed meals before choosing a default model or promising accuracy.

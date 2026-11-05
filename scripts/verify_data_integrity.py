@@ -384,12 +384,77 @@ def run(db_path: Path, sample_n: int, seed: int, skip_raw: bool) -> Checker:
     like = con.execute("SELECT COUNT(*) FROM foods WHERE description LIKE '%chicken%' OR food_category LIKE '%chicken%'").fetchone()[0]
     ck.check(hits > 0 and abs(hits - like) <= like * 0.1, "FTS query 'chicken' consistent with LIKE", f"{hits} vs {like}")
 
+    check_contaminants(con, ck)
+
     if skip_raw:
         print("SKIP  raw re-check (--skip-raw)")
     else:
         recheck_sample(con, ck, sample_n, seed)
     con.close()
     return ck
+
+
+def check_contaminants(con, ck: Checker) -> None:
+    """Contaminant tables (scripts/contaminants/build_contaminants.py). See docs/CONTAMINANT_DATA.md."""
+    tables = ["contaminant_sources", "contaminants", "contaminant_reference_values", "contaminant_profiles",
+              "contaminant_measurements", "food_contaminant_profiles"]
+    have = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+    if not ck.check(set(tables) <= have, "contaminants: tables present", str(sorted(set(tables) - have))):
+        return
+    one = lambda sql, *a: con.execute(sql, a).fetchone()[0]  # noqa: E731
+    meta = dict(con.execute("SELECT key, value FROM meta WHERE key LIKE 'contaminants_%'").fetchall())
+    counts = json.loads(meta.get("contaminants_counts", "{}"))
+    ck.check(counts.get("mapped_foods") == one("SELECT COUNT(DISTINCT fdc_id) FROM food_contaminant_profiles"),
+             "contaminants: meta mapped_foods matches", str(counts.get("mapped_foods")))
+    ck.check(one("SELECT COUNT(*) FROM contaminant_measurements") == sum(counts.get("measurements", {}).values()),
+             "contaminants: meta measurement count matches")
+    ck.check(one("SELECT COUNT(*) FROM contaminant_sources WHERE trim(url) = '' OR trim(citation) = '' OR trim(license) = '' OR url NOT LIKE 'https://%'") == 0,
+             "contaminants: every source has an https URL, a citation and a license")
+    for child, col, parent in [("contaminant_measurements", "profile_id", "contaminant_profiles"),
+                               ("contaminant_measurements", "contaminant_id", "contaminants"),
+                               ("contaminant_measurements", "source_id", "contaminant_sources"),
+                               ("contaminant_profiles", "source_id", "contaminant_sources"),
+                               ("contaminant_reference_values", "source_id", "contaminant_sources"),
+                               ("food_contaminant_profiles", "profile_id", "contaminant_profiles")]:
+        ck.check(one(f"SELECT COUNT(*) FROM {child} c LEFT JOIN {parent} p ON p.id = c.{col} WHERE p.id IS NULL") == 0,
+                 f"contaminants: {child}.{col} resolves")
+    ck.check(one("SELECT COUNT(*) FROM food_contaminant_profiles l LEFT JOIN foods f ON f.fdc_id = l.fdc_id WHERE f.fdc_id IS NULL") == 0,
+             "contaminants: mapped foods exist")
+    ck.check(one("SELECT COUNT(*) FROM contaminants c LEFT JOIN contaminant_reference_values r ON r.id = c.reference_id WHERE c.reference_id IS NOT NULL AND r.id IS NULL") == 0,
+             "contaminants: contaminant references resolve")
+    # At most one profile per family, so a food can't get two conflicting answers from one source.
+    ck.check(one("SELECT COUNT(*) FROM (SELECT 1 FROM food_contaminant_profiles GROUP BY fdc_id, family HAVING COUNT(*) > 1)") == 0,
+             "contaminants: one profile per food per family")
+    ck.check(one("SELECT COUNT(*) FROM contaminant_measurements WHERE value < 0 OR (upper_bound IS NOT NULL AND upper_bound < value)") == 0,
+             "contaminants: values non-negative and upper bound at least the mean")
+    ck.check(one("SELECT COUNT(*) FROM contaminant_measurements WHERE detection_frequency < 0 OR detection_frequency > 1 OR n_detected > n_samples") == 0,
+             "contaminants: detection rates within range")
+    # Unit sanity. 1 ppm of lead in a food average, or 2 ppm of mercury, would suggest a ppb/ppm mix-up.
+    ck.check(one("SELECT COUNT(*) FROM contaminant_measurements WHERE contaminant_id = 'lead' AND value > 1000") == 0,
+             "contaminants: lead means plausible (under 1000 ppb)")
+    ck.check(one("SELECT COUNT(*) FROM contaminant_measurements WHERE contaminant_id = 'mercury' AND value > 2000") == 0,
+             "contaminants: mercury means plausible (under 2000 ppb)")
+    ck.check(one("SELECT COUNT(*) FROM contaminant_measurements WHERE contaminant_id = 'microplastics' AND value > 10") == 0,
+             "contaminants: microplastic estimates plausible (under 10 per gram)")
+    ck.check(one("SELECT COUNT(*) FROM food_contaminant_profiles WHERE moisture_factor IS NOT NULL AND (moisture_factor < 0.1 OR moisture_factor > 12)") == 0,
+             "contaminants: moisture factors within the clamp")
+    # Known published values must survive the pipeline.
+    expect = [("fish:SWORDFISH", "mercury", 995), ("fish:SALMON (FRESH/FROZEN)", "mercury", 22), ("rice:white_long", "arsenic_inorganic", 103.3)]
+    for pid, cid, value in expect:
+        row = con.execute("SELECT value FROM contaminant_measurements WHERE profile_id = ? AND contaminant_id = ?", (pid, cid)).fetchone()
+        ck.check(row is not None and abs(row[0] - value) < 1e-6, f"contaminants: {pid} {cid} = {value} ug/kg", str(row))
+    # Spot checks: variants share a profile, and foods that must not match stay unmatched.
+    fam = lambda d, f: con.execute(  # noqa: E731
+        "SELECT l.profile_id FROM food_contaminant_profiles l JOIN foods x ON x.fdc_id = l.fdc_id WHERE x.description = ? AND l.family = ?", (d, f)).fetchone()
+    for d in ["Eggs, Grade A, Large, egg whole", "Egg, whole, raw, fresh", "Egg, whole, cooked, hard-boiled", "Egg, whole, cooked, scrambled"]:
+        ck.check((fam(d, "tds") or [None])[0] == "tds:37", f"contaminants: {d!r} shares egg profile tds:37")
+    organ = one("""SELECT COUNT(*) FROM food_contaminant_profiles l JOIN foods f ON f.fdc_id = l.fdc_id
+                   WHERE l.family = 'tds' AND f.food_category IN ('Beef Products', 'Pork Products', 'Lamb, Veal, and Game Products')
+                   AND (lower(f.description) LIKE '%liver%' OR lower(f.description) LIKE '%kidney%')""")
+    ck.check(organ == 0, "contaminants: organ meats are not mapped to muscle-meat data", str(organ))
+    mixed = one("""SELECT COUNT(*) FROM food_contaminant_profiles l JOIN foods f ON f.fdc_id = l.fdc_id
+                   WHERE f.data_type = 'survey_fndds_food' AND l.family IN ('rice', 'fish', 'pdp')""")
+    ck.check(mixed == 0, "contaminants: mixed dishes are not mapped to single-ingredient data", str(mixed))
 
 
 def api_compare(db_path: Path, fdc_id: int) -> int:

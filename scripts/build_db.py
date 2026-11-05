@@ -575,6 +575,11 @@ def build(args) -> Path:
     con.close()
     tmp.replace(out)
 
+    # Contaminant tables hang off `foods`, so a rebuild has to restore them (data/contaminants/*.tsv).
+    sys.path.insert(0, str(Path(__file__).resolve().parent / "contaminants"))
+    import build_contaminants  # noqa: E402
+    build_contaminants.apply(out)
+
     log(f"[done] {out.relative_to(PROJECT_ROOT) if PROJECT_ROOT in out.parents else out}: {total} foods "
         f"{by_type}, {n_serv} serving sizes, {out.stat().st_size / 1e6:.1f} MB")
     log(f"  calories_source: {dict(cal_src)}")

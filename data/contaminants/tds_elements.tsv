@@ -1,0 +1,981 @@
+tds_food_number	tds_food	analyte	n	n_detected	mean_ppb_nd0	mean_ppb_ub	max_ppb	rl_min_ppb	rl_max_ppb	year_start	year_end
+1	Milk, whole, fluid	arsenic_total	27	0	0	1	0	1	1	2017	2020
+1	Milk, whole, fluid	cadmium	27	0	0	1	0	1	1	2017	2020
+1	Milk, whole, fluid	lead	27	0	0	1	0	1	1	2017	2020
+1	Milk, whole, fluid	mercury	27	0	0	1	0	1	1	2017	2020
+2	Milk, reduced fat, fluid	arsenic_total	27	0	0	1	0	1	1	2017	2020
+2	Milk, reduced fat, fluid	cadmium	27	0	0	1	0	1	1	2017	2020
+2	Milk, reduced fat, fluid	lead	27	1	0.062963	1.02593	1.7	1	1	2017	2020
+2	Milk, reduced fat, fluid	mercury	27	0	0	1	0	1	1	2017	2020
+3	Milk, chocolate, reduced fat, fluid	arsenic_total	27	7	0.307407	1.04815	1.4	1	1	2017	2020
+3	Milk, chocolate, reduced fat, fluid	cadmium	27	27	2.64815	2.64815	7	1	1	2017	2020
+3	Milk, chocolate, reduced fat, fluid	lead	27	21	1.02593	1.24815	1.9	1	1	2017	2020
+3	Milk, chocolate, reduced fat, fluid	mercury	27	0	0	1	0	1	1	2017	2020
+4	Milk, skim, fluid	arsenic_total	27	0	0	1	0	1	1	2017	2020
+4	Milk, skim, fluid	cadmium	27	0	0	1	0	1	1	2017	2020
+4	Milk, skim, fluid	lead	27	0	0	1	0	1	1	2017	2020
+4	Milk, skim, fluid	mercury	27	0	0	1	0	1	1	2017	2020
+10	Cheese, American, processed	arsenic_total	3	3	8.2	8.2	11	3	3	2018	2020
+10	Cheese, American, processed	cadmium	3	3	2.8	2.8	3.5	1	1	2018	2020
+10	Cheese, American, processed	lead	3	1	2.1	4.76667	6.3	4	4	2018	2020
+10	Cheese, American, processed	mercury	3	0	0	1	0	1	1	2018	2020
+12	Cheese, cheddar (sharp/mild)	arsenic_total	27	0	0	3	0	3	3	2017	2020
+12	Cheese, cheddar (sharp/mild)	cadmium	27	0	0	1	0	1	1	2017	2020
+12	Cheese, cheddar (sharp/mild)	lead	27	0	0	4	0	4	4	2017	2020
+12	Cheese, cheddar (sharp/mild)	mercury	27	0	0	1	0	1	1	2017	2020
+13	Beef, ground, pan-cooked	arsenic_total	27	24	4.06296	4.3963	8.5	3	3	2017	2020
+13	Beef, ground, pan-cooked	cadmium	27	0	0	1	0	1	1	2017	2020
+13	Beef, ground, pan-cooked	lead	27	0	0	4	0	4	4	2017	2020
+13	Beef, ground, pan-cooked	mercury	27	0	0	1	0	1	1	2017	2020
+17	Ham, cured (not canned), baked	arsenic_total	27	7	0.974074	3.1963	4.6	3	3	2017	2020
+17	Ham, cured (not canned), baked	cadmium	27	12	0.981481	1.53704	4.7	1	1	2017	2020
+17	Ham, cured (not canned), baked	lead	27	10	2.28148	4.8	9.3	4	4	2017	2020
+17	Ham, cured (not canned), baked	mercury	27	0	0	1	0	1	1	2017	2020
+18	Pork chop, pan-cooked with oil	arsenic_total	27	0	0	3	0	3	3	2017	2020
+18	Pork chop, pan-cooked with oil	cadmium	27	0	0	1	0	1	1	2017	2020
+18	Pork chop, pan-cooked with oil	lead	27	0	0	4	0	4	4	2017	2020
+18	Pork chop, pan-cooked with oil	mercury	27	0	0	1	0	1	1	2017	2020
+19	Pork sausage (link/patty), pan-cooked	arsenic_total	27	0	0	3	0	3	3	2017	2020
+19	Pork sausage (link/patty), pan-cooked	cadmium	27	2	0.0851852	1.01111	1.3	1	1	2017	2020
+19	Pork sausage (link/patty), pan-cooked	lead	27	6	0.996296	4.10741	4.9	4	4	2017	2020
+19	Pork sausage (link/patty), pan-cooked	mercury	27	0	0	1	0	1	1	2017	2020
+20	Pork bacon, oven-cooked	arsenic_total	27	5	0.611111	3.05556	3.8	3	3	2017	2020
+20	Pork bacon, oven-cooked	cadmium	27	14	1.62222	2.1037	11	1	1	2017	2020
+20	Pork bacon, oven-cooked	lead	27	4	0.62963	4.03704	4.7	4	4	2017	2020
+20	Pork bacon, oven-cooked	mercury	27	0	0	1	0	1	1	2017	2020
+22	Lamb chop, pan-cooked with oil	arsenic_total	27	0	0	3	0	3	3	2017	2020
+22	Lamb chop, pan-cooked with oil	cadmium	27	1	0.037037	1	1	1	1	2017	2020
+22	Lamb chop, pan-cooked with oil	lead	27	1	0.162963	4.01481	4.4	4	4	2017	2020
+22	Lamb chop, pan-cooked with oil	mercury	27	0	0	1	0	1	1	2017	2020
+26	Turkey breast, oven-roasted	arsenic_total	27	12	2.17778	3.84444	9.6	3	3	2017	2020
+26	Turkey breast, oven-roasted	cadmium	27	0	0	1	0	1	1	2017	2020
+26	Turkey breast, oven-roasted	lead	27	0	0	4	0	4	4	2017	2020
+26	Turkey breast, oven-roasted	mercury	27	0	0	1	0	1	1	2017	2020
+28	Frankfurter (all beef/beef and pork), boiled	arsenic_total	22	2	0.331818	3.05909	4.2	3	3	2017	2020
+28	Frankfurter (all beef/beef and pork), boiled	cadmium	22	20	2.85455	2.94545	4.8	1	1	2017	2020
+28	Frankfurter (all beef/beef and pork), boiled	lead	22	7	1.67273	4.4	7.1	4	4	2017	2020
+28	Frankfurter (all beef/beef and pork), boiled	mercury	22	0	0	1	0	1	1	2017	2020
+29	Luncheon meat, bologna	arsenic_total	3	0	0	3	0	3	3	2018	2020
+29	Luncheon meat, bologna	cadmium	3	3	2.4	2.4	4.4	1	1	2018	2020
+29	Luncheon meat, bologna	lead	3	0	0	4	0	4	4	2018	2020
+29	Luncheon meat, bologna	mercury	3	0	0	1	0	1	1	2018	2020
+34	Fish sticks or patty, frozen, oven-cooked	arsenic_total	3	3	756.667	756.667	810	3	3	2018	2020
+34	Fish sticks or patty, frozen, oven-cooked	cadmium	3	3	12	12	13	1	1	2018	2020
+34	Fish sticks or patty, frozen, oven-cooked	lead	3	1	1.4	4.06667	4.2	4	4	2018	2020
+34	Fish sticks or patty, frozen, oven-cooked	mercury	3	3	7.13333	7.13333	9.8	1	1	2018	2020
+37	Eggs, hard-boiled	arsenic_total	27	0	0	3	0	3	3	2017	2020
+37	Eggs, hard-boiled	cadmium	27	0	0	1	0	1	1	2017	2020
+37	Eggs, hard-boiled	lead	27	0	0	4	0	4	4	2017	2020
+37	Eggs, hard-boiled	mercury	27	0	0	1	0	1	1	2017	2020
+39	Pork and beans, canned	arsenic_total	3	0	0	3	0	3	3	2018	2020
+39	Pork and beans, canned	cadmium	3	3	3.13333	3.13333	3.4	1	1	2018	2020
+39	Pork and beans, canned	lead	3	0	0	4	0	4	4	2018	2020
+39	Pork and beans, canned	mercury	3	0	0	1	0	1	1	2018	2020
+42	Lima beans, immature, frozen, boiled	arsenic_total	2	0	0	3	0	3	3	2018	2019
+42	Lima beans, immature, frozen, boiled	cadmium	2	0	0	1	0	1	1	2018	2019
+42	Lima beans, immature, frozen, boiled	lead	2	0	0	4	0	4	4	2018	2019
+42	Lima beans, immature, frozen, boiled	mercury	2	0	0	1	0	1	1	2018	2019
+46	Peas, green, frozen, boiled	arsenic_total	3	0	0	3	0	3	3	2018	2020
+46	Peas, green, frozen, boiled	cadmium	3	2	1.56667	1.9	3.2	1	1	2018	2020
+46	Peas, green, frozen, boiled	lead	3	0	0	4	0	4	4	2018	2020
+46	Peas, green, frozen, boiled	mercury	3	0	0	1	0	1	1	2018	2020
+47	Peanut butter, creamy	arsenic_total	3	3	7.96667	7.96667	9.9	3	3	2018	2020
+47	Peanut butter, creamy	cadmium	3	3	52.3333	52.3333	60	1	1	2018	2020
+47	Peanut butter, creamy	lead	3	3	5.63333	5.63333	6.1	4	4	2018	2020
+47	Peanut butter, creamy	mercury	3	0	0	1	0	1	1	2018	2020
+48	Peanuts, dry roasted, salted	arsenic_total	3	2	3.3	4.3	5	3	3	2018	2020
+48	Peanuts, dry roasted, salted	cadmium	3	3	40.6667	40.6667	45	1	1	2018	2020
+48	Peanuts, dry roasted, salted	lead	3	0	0	4	0	4	4	2018	2020
+48	Peanuts, dry roasted, salted	mercury	3	0	0	1	0	1	1	2018	2020
+50	Rice, white, enriched, cooked	arsenic_inorganic	1	1	41.6	41.6	41.6	1	1	2019	2019
+50	Rice, white, enriched, cooked	arsenic_total	27	27	44.7778	44.7778	75	3	3	2017	2020
+50	Rice, white, enriched, cooked	cadmium	27	27	6.54444	6.54444	23	1	1	2017	2020
+50	Rice, white, enriched, cooked	lead	27	0	0	4	0	4	4	2017	2020
+50	Rice, white, enriched, cooked	mercury	27	1	0.0518519	1.01481	1.4	1	1	2017	2020
+51	Oatmeal, plain, quick, cooked	arsenic_total	3	1	1.7	3.7	5.1	3	3	2018	2020
+51	Oatmeal, plain, quick, cooked	cadmium	3	3	2.2	2.2	2.6	1	1	2018	2020
+51	Oatmeal, plain, quick, cooked	lead	3	0	0	4	0	4	4	2018	2020
+51	Oatmeal, plain, quick, cooked	mercury	3	0	0	1	0	1	1	2018	2020
+52	Cream of wheat (farina), enriched, cooked	arsenic_total	3	1	1.6	3.6	4.8	3	3	2018	2020
+52	Cream of wheat (farina), enriched, cooked	cadmium	3	3	4.73333	4.73333	4.9	1	1	2018	2020
+52	Cream of wheat (farina), enriched, cooked	lead	3	0	0	4	0	4	4	2018	2020
+52	Cream of wheat (farina), enriched, cooked	mercury	3	0	0	1	0	1	1	2018	2020
+53	Corn/hominy grits, enriched, cooked	arsenic_total	3	0	0	3	0	3	3	2018	2020
+53	Corn/hominy grits, enriched, cooked	cadmium	3	0	0	1	0	1	1	2018	2020
+53	Corn/hominy grits, enriched, cooked	lead	3	0	0	4	0	4	4	2018	2020
+53	Corn/hominy grits, enriched, cooked	mercury	3	0	0	1	0	1	1	2018	2020
+54	Corn, frozen, boiled	arsenic_total	27	0	0	3	0	3	3	2017	2020
+54	Corn, frozen, boiled	cadmium	27	26	2.48519	2.52222	4.8	1	1	2017	2020
+54	Corn, frozen, boiled	lead	27	0	0	4	0	4	4	2017	2020
+54	Corn, frozen, boiled	mercury	27	0	0	1	0	1	1	2017	2020
+55	Corn, canned, drained solids	arsenic_total	3	2	2.86667	3.86667	5	3	3	2018	2020
+55	Corn, canned, drained solids	cadmium	3	2	1.1	1.43333	2.2	1	1	2018	2020
+55	Corn, canned, drained solids	lead	3	0	0	4	0	4	4	2018	2020
+55	Corn, canned, drained solids	mercury	3	0	0	1	0	1	1	2018	2020
+58	Bread, white, enriched, pre-sliced	arsenic_total	27	26	5.05926	5.17037	9	3	3	2017	2020
+58	Bread, white, enriched, pre-sliced	cadmium	27	27	27.4444	27.4444	37	1	1	2017	2020
+58	Bread, white, enriched, pre-sliced	lead	27	9	2.28148	4.94815	23	4	4	2017	2020
+58	Bread, white, enriched, pre-sliced	mercury	27	0	0	1	0	1	1	2017	2020
+60	Cornbread, homemade	arsenic_total	3	3	3.23333	3.23333	3.5	3	3	2018	2020
+60	Cornbread, homemade	cadmium	3	3	10.0333	10.0333	11	1	1	2018	2020
+60	Cornbread, homemade	lead	3	2	6.43333	7.76667	14	4	4	2018	2020
+60	Cornbread, homemade	mercury	3	3	3.3	3.3	4.2	1	1	2018	2020
+62	Bread, whole wheat, pre-sliced	arsenic_total	27	27	10.2926	10.2926	18	3	3	2017	2020
+62	Bread, whole wheat, pre-sliced	cadmium	27	27	29.8519	29.8519	42	1	1	2017	2020
+62	Bread, whole wheat, pre-sliced	lead	27	20	3.88148	4.91852	7.3	4	4	2017	2020
+62	Bread, whole wheat, pre-sliced	mercury	27	0	0	1	0	1	1	2017	2020
+63	Tortilla, flour	arsenic_total	27	25	4.62963	4.85185	8.5	3	3	2017	2020
+63	Tortilla, flour	cadmium	27	27	25.5556	25.5556	31	1	1	2017	2020
+63	Tortilla, flour	lead	27	3	1	4.55556	17	4	4	2017	2020
+63	Tortilla, flour	mercury	27	1	0.125926	1.08889	3.4	1	1	2017	2020
+65	Muffin, blueberry	arsenic_total	27	12	1.7963	3.46296	5.3	3	3	2017	2020
+65	Muffin, blueberry	cadmium	27	27	8.81481	8.81481	12	1	1	2017	2020
+65	Muffin, blueberry	lead	27	1	0.185185	4.03704	5	4	4	2017	2020
+65	Muffin, blueberry	mercury	27	0	0	1	0	1	1	2017	2020
+66	Crackers, saltine	arsenic_total	3	3	3.5	3.5	4	3	3	2018	2020
+66	Crackers, saltine	cadmium	3	3	28	28	35	1	1	2018	2020
+66	Crackers, saltine	lead	3	1	1.36667	4.03333	4.1	4	4	2018	2020
+66	Crackers, saltine	mercury	3	0	0	1	0	1	1	2018	2020
+67	Chips, tortilla	arsenic_total	3	1	1.03333	3.03333	3.1	3	3	2018	2020
+67	Chips, tortilla	cadmium	3	3	2	2	2.2	1	1	2018	2020
+67	Chips, tortilla	lead	3	0	0	4	0	4	4	2018	2020
+67	Chips, tortilla	mercury	3	0	0	1	0	1	1	2018	2020
+69	Noodles, egg, enriched, boiled	arsenic_total	3	0	0	3	0	3	3	2018	2020
+69	Noodles, egg, enriched, boiled	cadmium	3	3	22.3333	22.3333	26	1	1	2018	2020
+69	Noodles, egg, enriched, boiled	lead	3	2	3.63333	4.96667	6.6	4	4	2018	2020
+69	Noodles, egg, enriched, boiled	mercury	3	0	0	1	0	1	1	2018	2020
+71	Cereal, corn flakes	arsenic_total	3	0	0	3	0	3	3	2018	2020
+71	Cereal, corn flakes	cadmium	3	3	1.26667	1.26667	1.3	1	1	2018	2020
+71	Cereal, corn flakes	lead	3	1	1.46667	4.13333	4.4	4	4	2018	2020
+71	Cereal, corn flakes	mercury	3	0	0	1	0	1	1	2018	2020
+74	Cereal, bran with raisins	arsenic_total	3	3	17.6667	17.6667	26	3	3	2018	2020
+74	Cereal, bran with raisins	cadmium	3	3	37.6667	37.6667	44	1	1	2018	2020
+74	Cereal, bran with raisins	lead	3	2	7.06667	8.4	16	4	4	2018	2020
+74	Cereal, bran with raisins	mercury	3	0	0	1	0	1	1	2018	2020
+75	Cereal, crisped rice	arsenic_inorganic	3	3	93.0667	93.0667	103	1	1	2018	2020
+75	Cereal, crisped rice	arsenic_total	3	3	170	170	210	3	3	2018	2020
+75	Cereal, crisped rice	cadmium	3	3	21.6667	21.6667	39	1	1	2018	2020
+75	Cereal, crisped rice	lead	3	1	1.5	4.16667	4.5	4	4	2018	2020
+75	Cereal, crisped rice	mercury	3	2	2.36667	2.7	4.1	1	1	2018	2020
+77	Cereal, oat ring	arsenic_total	3	3	29	29	35	3	3	2018	2020
+77	Cereal, oat ring	cadmium	3	3	20	20	25	1	1	2018	2020
+77	Cereal, oat ring	lead	3	2	3.6	4.93333	6.4	4	4	2018	2020
+77	Cereal, oat ring	mercury	3	0	0	1	0	1	1	2018	2020
+78	Apple, red, with peel, raw	arsenic_total	27	7	1.87778	4.1	20	3	3	2017	2020
+78	Apple, red, with peel, raw	cadmium	27	0	0	1	0	1	1	2017	2020
+78	Apple, red, with peel, raw	lead	27	0	0	4	0	4	4	2017	2020
+78	Apple, red, with peel, raw	mercury	27	0	0	1	0	1	1	2017	2020
+79	Orange, raw	arsenic_total	27	2	0.366667	3.14444	6.7	3	3	2017	2020
+79	Orange, raw	cadmium	27	1	0.0444444	1.00741	1.2	1	1	2017	2020
+79	Orange, raw	lead	27	0	0	4	0	4	4	2017	2020
+79	Orange, raw	mercury	27	0	0	1	0	1	1	2017	2020
+80	Banana, raw	arsenic_total	27	1	0.118519	3.00741	3.2	3	3	2017	2020
+80	Banana, raw	cadmium	27	0	0	1	0	1	1	2017	2020
+80	Banana, raw	lead	27	0	0	4	0	4	4	2017	2020
+80	Banana, raw	mercury	27	0	0	1	0	1	1	2017	2020
+81	Watermelon, raw/frozen	arsenic_total	27	7	1.08148	3.3037	6.8	3	3	2017	2020
+81	Watermelon, raw/frozen	cadmium	27	11	0.566667	1.15926	2.6	1	1	2017	2020
+81	Watermelon, raw/frozen	lead	27	0	0	4	0	4	4	2017	2020
+81	Watermelon, raw/frozen	mercury	27	0	0	1	0	1	1	2017	2020
+83	Peach, raw/frozen	arsenic_total	27	17	3.64074	4.75185	12	3	3	2017	2020
+83	Peach, raw/frozen	cadmium	27	10	0.640741	1.27037	3.4	1	1	2017	2020
+83	Peach, raw/frozen	lead	27	0	0	4	0	4	4	2017	2020
+83	Peach, raw/frozen	mercury	27	0	0	1	0	1	1	2017	2020
+84	Applesauce, bottled	arsenic_total	3	0	0	3	0	3	3	2018	2020
+84	Applesauce, bottled	cadmium	3	0	0	1	0	1	1	2018	2020
+84	Applesauce, bottled	lead	3	0	0	4	0	4	4	2018	2020
+84	Applesauce, bottled	mercury	3	0	0	1	0	1	1	2018	2020
+85	Pear, with peel, raw	arsenic_total	27	18	3.93704	4.93704	9.3	3	3	2017	2020
+85	Pear, with peel, raw	cadmium	27	12	0.803704	1.35926	4	1	1	2017	2020
+85	Pear, with peel, raw	lead	27	0	0	4	0	4	4	2017	2020
+85	Pear, with peel, raw	mercury	27	0	0	1	0	1	1	2017	2020
+86	Strawberry, raw/frozen	arsenic_total	27	16	2.77778	4	8.3	3	3	2017	2020
+86	Strawberry, raw/frozen	cadmium	27	27	9.25556	9.25556	34	1	1	2017	2020
+86	Strawberry, raw/frozen	lead	27	0	0	4	0	4	4	2017	2020
+86	Strawberry, raw/frozen	mercury	27	0	0	1	0	1	1	2017	2020
+87	Fruit cocktail, canned in light syrup, solids and liquids	arsenic_total	3	0	0	3	0	3	3	2018	2020
+87	Fruit cocktail, canned in light syrup, solids and liquids	cadmium	3	0	0	1	0	1	1	2018	2020
+87	Fruit cocktail, canned in light syrup, solids and liquids	lead	3	2	3.5	4.83333	5.5	4	4	2018	2020
+87	Fruit cocktail, canned in light syrup, solids and liquids	mercury	3	0	0	1	0	1	1	2018	2020
+88	Grapes, seedless, red/green, raw	arsenic_total	27	16	3.11852	4.34074	9	3	3	2017	2020
+88	Grapes, seedless, red/green, raw	cadmium	27	0	0	1	0	1	1	2017	2020
+88	Grapes, seedless, red/green, raw	lead	27	0	0	4	0	4	4	2017	2020
+88	Grapes, seedless, red/green, raw	mercury	27	0	0	1	0	1	1	2017	2020
+89	Cantaloupe, raw/frozen	arsenic_total	27	23	9.02963	9.47407	26	3	3	2017	2020
+89	Cantaloupe, raw/frozen	cadmium	27	26	8.71111	8.74815	36	1	1	2017	2020
+89	Cantaloupe, raw/frozen	lead	27	0	0	4	0	4	4	2017	2020
+89	Cantaloupe, raw/frozen	mercury	27	0	0	1	0	1	1	2017	2020
+92	Grapefruit, raw	arsenic_total	27	0	0	3	0	3	3	2017	2020
+92	Grapefruit, raw	cadmium	27	0	0	1	0	1	1	2017	2020
+92	Grapefruit, raw	lead	27	0	0	4	0	4	4	2017	2020
+92	Grapefruit, raw	mercury	27	0	0	1	0	1	1	2017	2020
+95	Raisins	arsenic_total	3	3	22.6667	22.6667	32	3	3	2018	2020
+95	Raisins	cadmium	3	1	0.333333	1	1	1	1	2018	2020
+95	Raisins	lead	3	3	9.7	9.7	16	4	4	2018	2020
+95	Raisins	mercury	3	3	1.33333	1.33333	1.6	1	1	2018	2020
+97	Avocado, raw	arsenic_total	27	6	5.6037	7.93704	50	3	3	2017	2020
+97	Avocado, raw	cadmium	27	27	9.40741	9.40741	59	1	1	2017	2020
+97	Avocado, raw	lead	27	1	0.444444	4.2963	12	4	4	2017	2020
+97	Avocado, raw	mercury	27	3	0.125926	1.01481	1.3	1	1	2017	2020
+99	Juice, apple, bottled	arsenic_total	3	3	2.63333	2.63333	4.4	1	1	2018	2020
+99	Juice, apple, bottled	cadmium	3	0	0	1	0	1	1	2018	2020
+99	Juice, apple, bottled	lead	3	2	1.4	1.73333	2.7	1	1	2018	2020
+99	Juice, apple, bottled	mercury	3	0	0	1	0	1	1	2018	2020
+100	Juice, grapefruit, bottled/cartoned	arsenic_total	3	0	0	1	0	1	1	2018	2020
+100	Juice, grapefruit, bottled/cartoned	cadmium	3	0	0	1	0	1	1	2018	2020
+100	Juice, grapefruit, bottled/cartoned	lead	3	0	0	1	0	1	1	2018	2020
+100	Juice, grapefruit, bottled/cartoned	mercury	3	0	0	1	0	1	1	2018	2020
+108	Collards, fresh/frozen, boiled	arsenic_total	27	8	1.41852	3.52963	7.2	3	3	2017	2020
+108	Collards, fresh/frozen, boiled	cadmium	27	27	26.8074	26.8074	65	1	1	2017	2020
+108	Collards, fresh/frozen, boiled	lead	27	6	1.1037	4.21481	5.9	4	4	2017	2020
+108	Collards, fresh/frozen, boiled	mercury	27	9	0.385185	1.05185	1.4	1	1	2017	2020
+109	Lettuce, iceberg, raw	arsenic_total	27	0	0	3	0	3	3	2017	2020
+109	Lettuce, iceberg, raw	cadmium	27	27	34.237	34.237	73	1	1	2017	2020
+109	Lettuce, iceberg, raw	lead	27	0	0	4	0	4	4	2017	2020
+109	Lettuce, iceberg, raw	mercury	27	0	0	1	0	1	1	2017	2020
+113	Broccoli, fresh/frozen, boiled	arsenic_total	27	0	0	3	0	3	3	2017	2020
+113	Broccoli, fresh/frozen, boiled	cadmium	27	27	16.4519	16.4519	84	1	1	2017	2020
+113	Broccoli, fresh/frozen, boiled	lead	27	0	0	4	0	4	4	2017	2020
+113	Broccoli, fresh/frozen, boiled	mercury	27	0	0	1	0	1	1	2017	2020
+114	Celery, raw	arsenic_total	27	4	0.755556	3.31111	9	3	3	2017	2020
+114	Celery, raw	cadmium	27	27	38.3333	38.3333	100	1	1	2017	2020
+114	Celery, raw	lead	27	0	0	4	0	4	4	2017	2020
+114	Celery, raw	mercury	27	0	0	1	0	1	1	2017	2020
+115	Asparagus, fresh/frozen, boiled	arsenic_total	27	15	2.7	4.03333	10	3	3	2017	2020
+115	Asparagus, fresh/frozen, boiled	cadmium	27	27	17.3407	17.3407	54	1	1	2017	2020
+115	Asparagus, fresh/frozen, boiled	lead	27	2	0.318519	4.02222	4.3	4	4	2017	2020
+115	Asparagus, fresh/frozen, boiled	mercury	27	0	0	1	0	1	1	2017	2020
+116	Cauliflower, fresh/frozen, boiled	arsenic_total	27	0	0	3	0	3	3	2017	2020
+116	Cauliflower, fresh/frozen, boiled	cadmium	27	27	11.5074	11.5074	28	1	1	2017	2020
+116	Cauliflower, fresh/frozen, boiled	lead	27	0	0	4	0	4	4	2017	2020
+116	Cauliflower, fresh/frozen, boiled	mercury	27	0	0	1	0	1	1	2017	2020
+117	Tomato, raw	arsenic_total	27	0	0	3	0	3	3	2017	2020
+117	Tomato, raw	cadmium	27	24	3.45185	3.56296	7.6	1	1	2017	2020
+117	Tomato, raw	lead	27	0	0	4	0	4	4	2017	2020
+117	Tomato, raw	mercury	27	0	0	1	0	1	1	2017	2020
+121	Green beans, fresh/frozen, boiled	arsenic_total	27	2	0.244444	3.02222	3.3	3	3	2017	2020
+121	Green beans, fresh/frozen, boiled	cadmium	27	11	0.711111	1.3037	4.2	1	1	2017	2020
+121	Green beans, fresh/frozen, boiled	lead	27	1	0.151852	4.0037	4.1	4	4	2017	2020
+121	Green beans, fresh/frozen, boiled	mercury	27	0	0	1	0	1	1	2017	2020
+122	Green beans, canned, drained solids	arsenic_total	3	0	0	3	0	3	3	2018	2020
+122	Green beans, canned, drained solids	cadmium	3	0	0	1	0	1	1	2018	2020
+122	Green beans, canned, drained solids	lead	3	0	0	4	0	4	4	2018	2020
+122	Green beans, canned, drained solids	mercury	3	0	0	1	0	1	1	2018	2020
+123	Cucumber, peeled, raw	arsenic_total	27	25	13.2037	13.4259	31	3	3	2017	2020
+123	Cucumber, peeled, raw	cadmium	27	18	1.30741	1.64074	3.2	1	1	2017	2020
+123	Cucumber, peeled, raw	lead	27	0	0	4	0	4	4	2017	2020
+123	Cucumber, peeled, raw	mercury	27	0	0	1	0	1	1	2017	2020
+125	Pepper, bell, green, raw	arsenic_total	27	0	0	3	0	3	3	2017	2020
+125	Pepper, bell, green, raw	cadmium	27	27	8.85926	8.85926	24	1	1	2017	2020
+125	Pepper, bell, green, raw	lead	27	0	0	4	0	4	4	2017	2020
+125	Pepper, bell, green, raw	mercury	27	0	0	1	0	1	1	2017	2020
+126	Squash, winter, fresh/frozen, boiled	arsenic_total	27	8	1.95185	4.06296	17	3	3	2017	2020
+126	Squash, winter, fresh/frozen, boiled	cadmium	27	25	2.12222	2.1963	4.4	1	1	2017	2020
+126	Squash, winter, fresh/frozen, boiled	lead	27	0	0	4	0	4	4	2017	2020
+126	Squash, winter, fresh/frozen, boiled	mercury	27	0	0	1	0	1	1	2017	2020
+128	Onion, mature, raw	arsenic_total	27	17	3.9	5.01111	15	3	3	2017	2020
+128	Onion, mature, raw	cadmium	27	27	7.6037	7.6037	26	1	1	2017	2020
+128	Onion, mature, raw	lead	27	1	0.274074	4.12593	7.4	4	4	2017	2020
+128	Onion, mature, raw	mercury	27	0	0	1	0	1	1	2017	2020
+130	Mushrooms, canned, drained solids	arsenic_total	1	1	6.7	6.7	6.7	3	3	2020	2020
+130	Mushrooms, canned, drained solids	cadmium	1	1	1.8	1.8	1.8	1	1	2020	2020
+130	Mushrooms, canned, drained solids	lead	1	0	0	4	0	4	4	2020	2020
+130	Mushrooms, canned, drained solids	mercury	1	1	1.4	1.4	1.4	1	1	2020	2020
+136	Potato, peeled, boiled	arsenic_total	27	2	0.318519	3.0963	4.8	3	3	2017	2020
+136	Potato, peeled, boiled	cadmium	27	27	24.7778	24.7778	42	1	1	2017	2020
+136	Potato, peeled, boiled	lead	27	0	0	4	0	4	4	2017	2020
+136	Potato, peeled, boiled	mercury	27	0	0	1	0	1	1	2017	2020
+137	Potato, with peel, baked	arsenic_total	27	19	4.30741	5.1963	18	3	3	2017	2020
+137	Potato, with peel, baked	cadmium	27	27	43	43	66	1	1	2017	2020
+137	Potato, with peel, baked	lead	27	9	2.31852	4.98519	12	4	4	2017	2020
+137	Potato, with peel, baked	mercury	27	0	0	1	0	1	1	2017	2020
+138	Chips, potato	arsenic_total	3	1	1.33333	3.33333	4	3	3	2018	2020
+138	Chips, potato	cadmium	3	3	129.667	129.667	200	1	1	2018	2020
+138	Chips, potato	lead	3	1	2.13333	4.8	6.4	4	4	2018	2020
+138	Chips, potato	mercury	3	0	0	1	0	1	1	2018	2020
+145	Chili con carne with beans, canned	arsenic_total	3	3	3.86667	3.86667	5.3	3	3	2018	2020
+145	Chili con carne with beans, canned	cadmium	3	3	6.33333	6.33333	7.3	1	1	2018	2020
+145	Chili con carne with beans, canned	lead	3	1	2.2	4.86667	6.6	4	4	2018	2020
+145	Chili con carne with beans, canned	mercury	3	0	0	1	0	1	1	2018	2020
+146	Macaroni and cheese, prepared from boxed mix	arsenic_total	3	0	0	3	0	3	3	2018	2020
+146	Macaroni and cheese, prepared from boxed mix	cadmium	3	3	11.1333	11.1333	13	1	1	2018	2020
+146	Macaroni and cheese, prepared from boxed mix	lead	3	0	0	4	0	4	4	2018	2020
+146	Macaroni and cheese, prepared from boxed mix	mercury	3	0	0	1	0	1	1	2018	2020
+152	Chicken potpie, frozen, heated	arsenic_total	3	0	0	3	0	3	3	2018	2020
+152	Chicken potpie, frozen, heated	cadmium	3	3	6.63333	6.63333	7.5	1	1	2018	2020
+152	Chicken potpie, frozen, heated	lead	3	0	0	4	0	4	4	2018	2020
+152	Chicken potpie, frozen, heated	mercury	3	0	0	1	0	1	1	2018	2020
+155	Soup, chicken noodle, canned, condensed, prepared with water	arsenic_total	3	0	0	3	0	3	3	2018	2020
+155	Soup, chicken noodle, canned, condensed, prepared with water	cadmium	3	3	2.63333	2.63333	2.8	1	1	2018	2020
+155	Soup, chicken noodle, canned, condensed, prepared with water	lead	3	0	0	4	0	4	4	2018	2020
+155	Soup, chicken noodle, canned, condensed, prepared with water	mercury	3	0	0	1	0	1	1	2018	2020
+156	Soup, tomato, canned, condensed, prepared with water	arsenic_total	3	0	0	3	0	3	3	2018	2020
+156	Soup, tomato, canned, condensed, prepared with water	cadmium	3	3	8.5	8.5	10	1	1	2018	2020
+156	Soup, tomato, canned, condensed, prepared with water	lead	3	0	0	4	0	4	4	2018	2020
+156	Soup, tomato, canned, condensed, prepared with water	mercury	3	0	0	1	0	1	1	2018	2020
+161	Pickles, dill, cucumber	arsenic_total	3	0	0	3	0	3	3	2018	2020
+161	Pickles, dill, cucumber	cadmium	3	3	1.13333	1.13333	1.3	1	1	2018	2020
+161	Pickles, dill, cucumber	lead	3	2	4.6	5.93333	9.8	4	4	2018	2020
+161	Pickles, dill, cucumber	mercury	3	0	0	1	0	1	1	2018	2020
+162	Margarine, salted	arsenic_total	3	0	0	3	0	3	3	2018	2020
+162	Margarine, salted	cadmium	3	0	0	1	0	1	1	2018	2020
+162	Margarine, salted	lead	3	0	0	4	0	4	4	2018	2020
+162	Margarine, salted	mercury	3	0	0	1	0	1	1	2018	2020
+164	Butter, salted	arsenic_total	3	0	0	3	0	3	3	2018	2020
+164	Butter, salted	cadmium	3	0	0	1	0	1	1	2018	2020
+164	Butter, salted	lead	3	0	0	4	0	4	4	2018	2020
+164	Butter, salted	mercury	3	0	0	1	0	1	1	2018	2020
+166	Mayonnaise	arsenic_total	3	0	0	3	0	3	3	2018	2020
+166	Mayonnaise	cadmium	3	0	0	1	0	1	1	2018	2020
+166	Mayonnaise	lead	3	0	0	4	0	4	4	2018	2020
+166	Mayonnaise	mercury	3	0	0	1	0	1	1	2018	2020
+167	Cream, half and half	arsenic_total	27	0	0	3	0	3	3	2017	2020
+167	Cream, half and half	cadmium	27	0	0	1	0	1	1	2017	2020
+167	Cream, half and half	lead	27	0	0	4	0	4	4	2017	2020
+167	Cream, half and half	mercury	27	0	0	1	0	1	1	2017	2020
+168	Cream substitute, non-dairy, liquid	arsenic_total	3	0	0	3	0	3	3	2018	2020
+168	Cream substitute, non-dairy, liquid	cadmium	3	0	0	1	0	1	1	2018	2020
+168	Cream substitute, non-dairy, liquid	lead	3	0	0	4	0	4	4	2018	2020
+168	Cream substitute, non-dairy, liquid	mercury	3	0	0	1	0	1	1	2018	2020
+169	Sugar, white, granulated	arsenic_total	3	0	0	3	0	3	3	2018	2020
+169	Sugar, white, granulated	cadmium	3	0	0	1	0	1	1	2018	2020
+169	Sugar, white, granulated	lead	3	0	0	4	0	4	4	2018	2020
+169	Sugar, white, granulated	mercury	3	0	0	1	0	1	1	2018	2020
+170	Syrup, pancake	arsenic_total	3	0	0	3	0	3	3	2018	2020
+170	Syrup, pancake	cadmium	3	0	0	1	0	1	1	2018	2020
+170	Syrup, pancake	lead	3	0	0	4	0	4	4	2018	2020
+170	Syrup, pancake	mercury	3	0	0	1	0	1	1	2018	2020
+172	Honey	arsenic_total	3	0	0	3	0	3	3	2018	2020
+172	Honey	cadmium	3	0	0	1	0	1	1	2018	2020
+172	Honey	lead	3	0	0	4	0	4	4	2018	2020
+172	Honey	mercury	3	0	0	1	0	1	1	2018	2020
+173	Ketchup, tomato	arsenic_total	3	0	0	3	0	3	3	2018	2020
+173	Ketchup, tomato	cadmium	3	3	20.6667	20.6667	22	1	1	2018	2020
+173	Ketchup, tomato	lead	3	0	0	4	0	4	4	2018	2020
+173	Ketchup, tomato	mercury	3	0	0	1	0	1	1	2018	2020
+178	Cake, chocolate with chocolate icing	arsenic_total	27	25	3.5963	3.81852	4.6	3	3	2017	2020
+178	Cake, chocolate with chocolate icing	cadmium	27	27	17.6296	17.6296	40	1	1	2017	2020
+178	Cake, chocolate with chocolate icing	lead	27	27	8.92222	8.92222	16	4	4	2017	2020
+178	Cake, chocolate with chocolate icing	mercury	27	9	0.448148	1.11481	1.9	1	1	2017	2020
+183	Cookies, chocolate chip	arsenic_total	3	2	3.43333	4.43333	5.2	3	3	2018	2020
+183	Cookies, chocolate chip	cadmium	3	3	48.3333	48.3333	68	1	1	2018	2020
+183	Cookies, chocolate chip	lead	3	3	7.56667	7.56667	10	4	4	2018	2020
+183	Cookies, chocolate chip	mercury	3	1	0.566667	1.23333	1.7	1	1	2018	2020
+184	Cookies, sandwich, with crème filling	arsenic_total	3	3	5.6	5.6	7.2	3	3	2018	2020
+184	Cookies, sandwich, with crème filling	cadmium	3	3	18.3333	18.3333	25	1	1	2018	2020
+184	Cookies, sandwich, with crème filling	lead	3	3	13.4333	13.4333	24	4	4	2018	2020
+184	Cookies, sandwich, with crème filling	mercury	3	1	0.533333	1.2	1.6	1	1	2018	2020
+185	Pie, apple, fresh/frozen	arsenic_total	3	0	0	3	0	3	3	2018	2020
+185	Pie, apple, fresh/frozen	cadmium	3	3	10.5333	10.5333	12	1	1	2018	2020
+185	Pie, apple, fresh/frozen	lead	3	0	0	4	0	4	4	2018	2020
+185	Pie, apple, fresh/frozen	mercury	3	0	0	1	0	1	1	2018	2020
+186	Pie, pumpkin, fresh/frozen	arsenic_total	3	1	1.03333	3.03333	3.1	3	3	2018	2020
+186	Pie, pumpkin, fresh/frozen	cadmium	3	3	7.73333	7.73333	8.8	1	1	2018	2020
+186	Pie, pumpkin, fresh/frozen	lead	3	3	5.33333	5.33333	7.3	4	4	2018	2020
+186	Pie, pumpkin, fresh/frozen	mercury	3	0	0	1	0	1	1	2018	2020
+187	Candy bar, milk chocolate, plain	arsenic_total	3	2	2.13333	3.13333	3.3	3	3	2018	2020
+187	Candy bar, milk chocolate, plain	cadmium	3	3	20	20	26	1	1	2018	2020
+187	Candy bar, milk chocolate, plain	lead	3	3	7.93333	7.93333	8.3	4	4	2018	2020
+187	Candy bar, milk chocolate, plain	mercury	3	1	0.566667	1.23333	1.7	1	1	2018	2020
+190	Gelatin dessert, strawberry	arsenic_total	3	1	1.36667	3.36667	4.1	3	3	2018	2020
+190	Gelatin dessert, strawberry	cadmium	3	0	0	1	0	1	1	2018	2020
+190	Gelatin dessert, strawberry	lead	3	0	0	4	0	4	4	2018	2020
+190	Gelatin dessert, strawberry	mercury	3	0	0	1	0	1	1	2018	2020
+191	Carbonated beverage, cola, regular	arsenic_total	3	0	0	1	0	1	1	2018	2020
+191	Carbonated beverage, cola, regular	cadmium	3	0	0	1	0	1	1	2018	2020
+191	Carbonated beverage, cola, regular	lead	3	0	0	1	0	1	1	2018	2020
+191	Carbonated beverage, cola, regular	mercury	3	0	0	1	0	1	1	2018	2020
+193	Fruit drink, from powder	arsenic_total	3	0	0	1	0	1	1	2018	2020
+193	Fruit drink, from powder	cadmium	3	0	0	1	0	1	1	2018	2020
+193	Fruit drink, from powder	lead	3	0	0	1	0	1	1	2018	2020
+193	Fruit drink, from powder	mercury	3	0	0	1	0	1	1	2018	2020
+194	Carbonated beverage, cola, diet	arsenic_total	3	0	0	1	0	1	1	2018	2020
+194	Carbonated beverage, cola, diet	cadmium	3	0	0	1	0	1	1	2018	2020
+194	Carbonated beverage, cola, diet	lead	3	0	0	1	0	1	1	2018	2020
+194	Carbonated beverage, cola, diet	mercury	3	0	0	1	0	1	1	2018	2020
+197	Tea, brewed from tea bag	arsenic_total	3	0	0	1	0	1	1	2018	2020
+197	Tea, brewed from tea bag	cadmium	3	0	0	1	0	1	1	2018	2020
+197	Tea, brewed from tea bag	lead	3	0	0	1	0	1	1	2018	2020
+197	Tea, brewed from tea bag	mercury	3	0	0	1	0	1	1	2018	2020
+198	Beer	arsenic_total	3	2	2.06667	2.4	3.5	1	1	2018	2020
+198	Beer	cadmium	3	0	0	1	0	1	1	2018	2020
+198	Beer	lead	3	0	0	1	0	1	1	2018	2020
+198	Beer	mercury	3	0	0	1	0	1	1	2018	2020
+200	Alcohol, distilled, whiskey/scotch	arsenic_total	3	0	0	1	0	1	1	2018	2020
+200	Alcohol, distilled, whiskey/scotch	cadmium	3	0	0	1	0	1	1	2018	2020
+200	Alcohol, distilled, whiskey/scotch	lead	3	0	0	1	0	1	1	2018	2020
+200	Alcohol, distilled, whiskey/scotch	mercury	3	0	0	1	0	1	1	2018	2020
+235	Yogurt, lowfat, fruit-flavored	arsenic_total	3	0	0	3	0	3	3	2018	2020
+235	Yogurt, lowfat, fruit-flavored	cadmium	3	0	0	1	0	1	1	2018	2020
+235	Yogurt, lowfat, fruit-flavored	lead	3	0	0	4	0	4	4	2018	2020
+235	Yogurt, lowfat, fruit-flavored	mercury	3	0	0	1	0	1	1	2018	2020
+236	Cheese, Swiss	arsenic_total	27	0	0	3	0	3	3	2017	2020
+236	Cheese, Swiss	cadmium	27	0	0	1	0	1	1	2017	2020
+236	Cheese, Swiss	lead	27	0	0	4	0	4	4	2017	2020
+236	Cheese, Swiss	mercury	27	0	0	1	0	1	1	2017	2020
+237	Cream cheese	arsenic_total	3	0	0	3	0	3	3	2018	2020
+237	Cream cheese	cadmium	3	0	0	1	0	1	1	2018	2020
+237	Cream cheese	lead	3	0	0	4	0	4	4	2018	2020
+237	Cream cheese	mercury	3	0	0	1	0	1	1	2018	2020
+239	Luncheon meat, ham	arsenic_total	3	3	4.03333	4.03333	5.5	3	3	2018	2020
+239	Luncheon meat, ham	cadmium	3	3	3.2	3.2	5.3	1	1	2018	2020
+239	Luncheon meat, ham	lead	3	0	0	4	0	4	4	2018	2020
+239	Luncheon meat, ham	mercury	3	0	0	1	0	1	1	2018	2020
+240	Chicken breast, oven-roasted, skin removed	arsenic_total	27	7	1.11111	3.33333	6.1	3	3	2017	2020
+240	Chicken breast, oven-roasted, skin removed	cadmium	27	6	0.374074	1.15185	2.5	1	1	2017	2020
+240	Chicken breast, oven-roasted, skin removed	lead	27	1	0.27037	4.12222	7.3	4	4	2017	2020
+240	Chicken breast, oven-roasted, skin removed	mercury	27	0	0	1	0	1	1	2017	2020
+241	Chicken nuggets, fast-food	arsenic_total	27	4	0.559259	3.11481	4.8	3	3	2017	2020
+241	Chicken nuggets, fast-food	cadmium	27	27	5.7037	5.7037	8.3	1	1	2017	2020
+241	Chicken nuggets, fast-food	lead	27	1	0.159259	4.01111	4.3	4	4	2017	2020
+241	Chicken nuggets, fast-food	mercury	27	0	0	1	0	1	1	2017	2020
+244	Shrimp, pre-cooked, shells removed, no tails	arsenic_total	27	27	358.148	358.148	1400	3	3	2017	2020
+244	Shrimp, pre-cooked, shells removed, no tails	cadmium	27	18	5.68519	6.01852	36	1	1	2017	2020
+244	Shrimp, pre-cooked, shells removed, no tails	lead	27	14	4.86667	6.79259	28	4	4	2017	2020
+244	Shrimp, pre-cooked, shells removed, no tails	mercury	27	27	7.18519	7.18519	17	1	1	2017	2020
+249	Bagel, plain, toasted	arsenic_total	27	27	7.07037	7.07037	13	3	3	2017	2020
+249	Bagel, plain, toasted	cadmium	27	27	24.2963	24.2963	31	1	1	2017	2020
+249	Bagel, plain, toasted	lead	27	4	1.04815	4.45556	14	4	4	2017	2020
+249	Bagel, plain, toasted	mercury	27	0	0	1	0	1	1	2017	2020
+250	English muffin, plain, toasted	arsenic_total	27	26	5.05926	5.17037	10	3	3	2017	2020
+250	English muffin, plain, toasted	cadmium	27	27	28.5556	28.5556	39	1	1	2017	2020
+250	English muffin, plain, toasted	lead	27	3	0.792593	4.34815	9.7	4	4	2017	2020
+250	English muffin, plain, toasted	mercury	27	1	0.037037	1	1	1	1	2017	2020
+251	Crackers, graham	arsenic_total	3	0	0	4	0	4	4	2018	2020
+251	Crackers, graham	cadmium	3	3	43.3333	43.3333	49	2	2	2018	2020
+251	Crackers, graham	lead	3	1	2.5	5.83333	7.5	5	5	2018	2020
+251	Crackers, graham	mercury	3	0	0	1	0	1	1	2018	2020
+252	Crackers, butter-type	arsenic_total	3	3	7.6	7.6	7.9	4	4	2018	2020
+252	Crackers, butter-type	cadmium	3	3	35.6667	35.6667	43	2	2	2018	2020
+252	Crackers, butter-type	lead	3	1	2.43333	5.76667	7.3	5	5	2018	2020
+252	Crackers, butter-type	mercury	3	0	0	1	0	1	1	2018	2020
+256	Juice, pineapple, canned	arsenic_total	3	1	0.366667	1.03333	1.1	1	1	2018	2020
+256	Juice, pineapple, canned	cadmium	3	0	0	1	0	1	1	2018	2020
+256	Juice, pineapple, canned	lead	3	3	5.83333	5.83333	11	1	1	2018	2020
+256	Juice, pineapple, canned	mercury	3	0	0	1	0	1	1	2018	2020
+257	Juice, grape, bottled	arsenic_inorganic	1	1	6.91	6.91	6.91	0.4	0.4	2019	2019
+257	Juice, grape, bottled	arsenic_total	3	3	7.03333	7.03333	10	1	1	2018	2020
+257	Juice, grape, bottled	cadmium	3	3	1.46667	1.46667	1.5	1	1	2018	2020
+257	Juice, grape, bottled	lead	3	3	4.96667	4.96667	5.8	1	1	2018	2020
+257	Juice, grape, bottled	mercury	3	0	0	1	0	1	1	2018	2020
+258	Potatoes, French fries, fast-food	arsenic_total	27	23	3.97407	4.41852	6.4	3	3	2017	2020
+258	Potatoes, French fries, fast-food	cadmium	27	27	57.9259	57.9259	100	1	1	2017	2020
+258	Potatoes, French fries, fast-food	lead	27	1	0.555556	4.40741	15	4	4	2017	2020
+258	Potatoes, French fries, fast-food	mercury	27	0	0	1	0	1	1	2017	2020
+263	Brussels sprouts, fresh/frozen, boiled	arsenic_total	27	7	1.12593	3.34815	5.8	3	3	2017	2020
+263	Brussels sprouts, fresh/frozen, boiled	cadmium	27	27	10.3037	10.3037	22	1	1	2017	2020
+263	Brussels sprouts, fresh/frozen, boiled	lead	27	0	0	4	0	4	4	2017	2020
+263	Brussels sprouts, fresh/frozen, boiled	mercury	27	0	0	1	0	1	1	2017	2020
+264	Mushrooms, raw	arsenic_total	27	27	15.1926	15.1926	24	3	3	2017	2020
+264	Mushrooms, raw	cadmium	27	27	3.31111	3.31111	6.5	1	1	2017	2020
+264	Mushrooms, raw	lead	27	0	0	4	0	4	4	2017	2020
+264	Mushrooms, raw	mercury	27	25	1.84074	1.91481	3.5	1	1	2017	2020
+265	Eggplant, fresh, peeled, boiled	arsenic_total	6	2	2.71667	4.71667	8.9	3	3	2017	2018
+265	Eggplant, fresh, peeled, boiled	cadmium	6	6	10.7	10.7	18	1	1	2017	2018
+265	Eggplant, fresh, peeled, boiled	lead	6	0	0	4	0	4	4	2017	2018
+265	Eggplant, fresh, peeled, boiled	mercury	6	0	0	1	0	1	1	2017	2018
+268	Mixed vegetables, frozen, boiled	arsenic_total	3	0	0	3	0	3	3	2018	2020
+268	Mixed vegetables, frozen, boiled	cadmium	3	3	5.06667	5.06667	6.7	1	1	2018	2020
+268	Mixed vegetables, frozen, boiled	lead	3	0	0	4	0	4	4	2018	2020
+268	Mixed vegetables, frozen, boiled	mercury	3	0	0	1	0	1	1	2018	2020
+286	Ice cream, vanilla	arsenic_total	27	0	0	3	0	3	3	2017	2020
+286	Ice cream, vanilla	cadmium	27	0	0	1	0	1	1	2017	2020
+286	Ice cream, vanilla	lead	27	0	0	4	0	4	4	2017	2020
+286	Ice cream, vanilla	mercury	27	0	0	1	0	1	1	2017	2020
+288	Popsicle, fruit-flavored	arsenic_total	3	0	0	3	0	3	3	2018	2020
+288	Popsicle, fruit-flavored	cadmium	3	0	0	1	0	1	1	2018	2020
+288	Popsicle, fruit-flavored	lead	3	1	2.1	4.76667	6.3	4	4	2018	2020
+288	Popsicle, fruit-flavored	mercury	3	0	0	1	0	1	1	2018	2020
+290	Doughnut, cake-type, plain	arsenic_total	3	3	3.3	3.3	3.5	3	3	2018	2020
+290	Doughnut, cake-type, plain	cadmium	3	3	10.6	10.6	12	1	1	2018	2020
+290	Doughnut, cake-type, plain	lead	3	1	1.43333	4.1	4.3	4	4	2018	2020
+290	Doughnut, cake-type, plain	mercury	3	0	0	1	0	1	1	2018	2020
+291	Brownie	arsenic_total	3	2	2.26667	3.26667	3.7	3	3	2018	2020
+291	Brownie	cadmium	3	3	21.3333	21.3333	34	1	1	2018	2020
+291	Brownie	lead	3	3	6.7	6.7	8.7	4	4	2018	2020
+291	Brownie	mercury	3	0	0	1	0	1	1	2018	2020
+292	Cookies, sugar	arsenic_total	3	0	0	3	0	3	3	2018	2020
+292	Cookies, sugar	cadmium	3	3	15.6667	15.6667	18	1	1	2018	2020
+292	Cookies, sugar	lead	3	0	0	4	0	4	4	2018	2020
+292	Cookies, sugar	mercury	3	0	0	1	0	1	1	2018	2020
+293	Candy, hard	arsenic_total	3	3	13	13	15	3	3	2018	2020
+293	Candy, hard	cadmium	3	0	0	1	0	1	1	2018	2020
+293	Candy, hard	lead	3	0	0	4	0	4	4	2018	2020
+293	Candy, hard	mercury	3	0	0	1	0	1	1	2018	2020
+294	Pretzels, hard, salted	arsenic_total	3	2	3.73333	4.73333	6	3	3	2018	2020
+294	Pretzels, hard, salted	cadmium	3	3	36.3333	36.3333	42	1	1	2018	2020
+294	Pretzels, hard, salted	lead	3	1	1.4	4.06667	4.2	4	4	2018	2020
+294	Pretzels, hard, salted	mercury	3	0	0	1	0	1	1	2018	2020
+295	Syrup, chocolate-flavored	arsenic_total	3	2	4.1	5.1	6.5	3	3	2018	2020
+295	Syrup, chocolate-flavored	cadmium	3	3	13.3	13.3	17	1	1	2018	2020
+295	Syrup, chocolate-flavored	lead	3	3	9.2	9.2	12	4	4	2018	2020
+295	Syrup, chocolate-flavored	mercury	3	1	0.566667	1.23333	1.7	1	1	2018	2020
+296	Jelly, grape	arsenic_total	3	3	12.9667	12.9667	20	3	3	2018	2020
+296	Jelly, grape	cadmium	3	0	0	1	0	1	1	2018	2020
+296	Jelly, grape	lead	3	0	0	4	0	4	4	2018	2020
+296	Jelly, grape	mercury	3	0	0	1	0	1	1	2018	2020
+298	Mustard, yellow, plain	arsenic_total	3	0	0	3	0	3	3	2018	2020
+298	Mustard, yellow, plain	cadmium	3	3	34.6667	34.6667	38	1	1	2018	2020
+298	Mustard, yellow, plain	lead	3	3	5.83333	5.83333	6.4	4	4	2018	2020
+298	Mustard, yellow, plain	mercury	3	0	0	1	0	1	1	2018	2020
+299	Olives, black, pitted	arsenic_total	3	1	1.03333	3.03333	3.1	3	3	2018	2020
+299	Olives, black, pitted	cadmium	3	0	0	1	0	1	1	2018	2020
+299	Olives, black, pitted	lead	3	0	0	4	0	4	4	2018	2020
+299	Olives, black, pitted	mercury	3	0	0	1	0	1	1	2018	2020
+300	Sour cream	arsenic_total	3	0	0	3	0	3	3	2018	2020
+300	Sour cream	cadmium	3	0	0	1	0	1	1	2018	2020
+300	Sour cream	lead	3	0	0	4	0	4	4	2018	2020
+300	Sour cream	mercury	3	0	0	1	0	1	1	2018	2020
+305	Coffee, brewed from ground	arsenic_total	3	0	0	1	0	1	1	2018	2020
+305	Coffee, brewed from ground	cadmium	3	0	0	1	0	1	1	2018	2020
+305	Coffee, brewed from ground	lead	3	0	0	1	0	1	1	2018	2020
+305	Coffee, brewed from ground	mercury	3	0	0	1	0	1	1	2018	2020
+307	Fruit drink (5% - 25% juice), canned or bottled	arsenic_total	3	1	0.366667	1.03333	1.1	1	1	2018	2020
+307	Fruit drink (5% - 25% juice), canned or bottled	cadmium	3	0	0	1	0	1	1	2018	2020
+307	Fruit drink (5% - 25% juice), canned or bottled	lead	3	0	0	1	0	1	1	2018	2020
+307	Fruit drink (5% - 25% juice), canned or bottled	mercury	3	0	0	1	0	1	1	2018	2020
+318	Salmon, steaks/fillets, baked	arsenic_total	27	27	376.296	376.296	1400	3	3	2017	2020
+318	Salmon, steaks/fillets, baked	cadmium	27	13	1.5963	2.11481	11	1	1	2017	2020
+318	Salmon, steaks/fillets, baked	lead	27	0	0	4	0	4	4	2017	2020
+318	Salmon, steaks/fillets, baked	mercury	27	27	20.7815	20.7815	46	1	1	2017	2020
+332	Cottage cheese, creamed, reduced fat	arsenic_total	3	0	0	3	0	3	3	2018	2020
+332	Cottage cheese, creamed, reduced fat	cadmium	3	0	0	1	0	1	1	2018	2020
+332	Cottage cheese, creamed, reduced fat	lead	3	0	0	4	0	4	4	2018	2020
+332	Cottage cheese, creamed, reduced fat	mercury	3	0	0	1	0	1	1	2018	2020
+334	Beef steak, loin/sirloin, oven-roasted	arsenic_total	27	25	5.55926	5.78148	21	3	3	2017	2020
+334	Beef steak, loin/sirloin, oven-roasted	cadmium	27	0	0	1	0	1	1	2017	2020
+334	Beef steak, loin/sirloin, oven-roasted	lead	27	0	0	4	0	4	4	2017	2020
+334	Beef steak, loin/sirloin, oven-roasted	mercury	27	0	0	1	0	1	1	2017	2020
+336	Chicken breast, fried with skin, fast-food	arsenic_total	27	5	0.614815	3.05926	4.1	3	3	2017	2020
+336	Chicken breast, fried with skin, fast-food	cadmium	27	27	3.78148	3.78148	5.8	1	1	2017	2020
+336	Chicken breast, fried with skin, fast-food	lead	27	1	0.288889	4.14074	7.8	4	4	2017	2020
+336	Chicken breast, fried with skin, fast-food	mercury	27	0	0	1	0	1	1	2017	2020
+337	Chicken thigh, oven-roasted, skin removed	arsenic_total	27	3	0.507407	3.17407	5.8	3	3	2017	2020
+337	Chicken thigh, oven-roasted, skin removed	cadmium	27	4	0.207407	1.05926	1.9	1	1	2017	2020
+337	Chicken thigh, oven-roasted, skin removed	lead	27	0	0	4	0	4	4	2017	2020
+337	Chicken thigh, oven-roasted, skin removed	mercury	27	0	0	1	0	1	1	2017	2020
+338	Chicken leg, fried with skin, fast-food	arsenic_total	27	2	0.237037	3.01481	3.3	3	3	2017	2020
+338	Chicken leg, fried with skin, fast-food	cadmium	27	27	4.18148	4.18148	6.8	1	1	2017	2020
+338	Chicken leg, fried with skin, fast-food	lead	27	1	0.162963	4.01481	4.4	4	4	2017	2020
+338	Chicken leg, fried with skin, fast-food	mercury	27	0	0	1	0	1	1	2017	2020
+339	Catfish, pan-cooked with oil	arsenic_total	27	27	24.8481	24.8481	57	3	3	2017	2020
+339	Catfish, pan-cooked with oil	cadmium	27	3	0.181481	1.07037	1.9	1	1	2017	2020
+339	Catfish, pan-cooked with oil	lead	27	0	0	4	0	4	4	2017	2020
+339	Catfish, pan-cooked with oil	mercury	27	27	8.45556	8.45556	64	1	1	2017	2020
+340	Tuna, canned in water, drained solids	arsenic_total	3	3	1200	1200	1400	3	3	2018	2020
+340	Tuna, canned in water, drained solids	cadmium	3	3	25.3333	25.3333	34	1	1	2018	2020
+340	Tuna, canned in water, drained solids	lead	3	0	0	4	0	4	4	2018	2020
+340	Tuna, canned in water, drained solids	mercury	3	3	230	230	250	1	1	2018	2020
+341	Beans, refried, canned	arsenic_total	3	0	0	3	0	3	3	2018	2020
+341	Beans, refried, canned	cadmium	3	3	1.86667	1.86667	2	1	1	2018	2020
+341	Beans, refried, canned	lead	3	0	0	4	0	4	4	2018	2020
+341	Beans, refried, canned	mercury	3	1	0.8	1.46667	2.4	1	1	2018	2020
+343	Seeds, sunflower, shelled, salted, roasted	arsenic_total	3	1	2.16667	4.83333	6.5	4	4	2018	2020
+343	Seeds, sunflower, shelled, salted, roasted	cadmium	3	3	333.333	333.333	400	2	2	2018	2020
+343	Seeds, sunflower, shelled, salted, roasted	lead	3	0	0	5	0	5	5	2018	2020
+343	Seeds, sunflower, shelled, salted, roasted	mercury	3	1	0.433333	1.1	1.3	1	1	2018	2020
+344	Pancakes, frozen, heated	arsenic_total	3	1	1.4	3.4	4.2	3	3	2018	2020
+344	Pancakes, frozen, heated	cadmium	3	3	13.3333	13.3333	16	1	1	2018	2020
+344	Pancakes, frozen, heated	lead	3	0	0	4	0	4	4	2018	2020
+344	Pancakes, frozen, heated	mercury	3	0	0	1	0	1	1	2018	2020
+345	Breakfast tart/toaster pastry	arsenic_total	3	0	0	3	0	3	3	2018	2020
+345	Breakfast tart/toaster pastry	cadmium	3	3	12.7667	12.7667	16	1	1	2018	2020
+345	Breakfast tart/toaster pastry	lead	3	0	0	4	0	4	4	2018	2020
+345	Breakfast tart/toaster pastry	mercury	3	0	0	1	0	1	1	2018	2020
+347	Spaghetti, enriched, boiled	arsenic_total	3	0	0	3	0	3	3	2018	2020
+347	Spaghetti, enriched, boiled	cadmium	3	3	27.6667	27.6667	32	1	1	2018	2020
+347	Spaghetti, enriched, boiled	lead	3	0	0	4	0	4	4	2018	2020
+347	Spaghetti, enriched, boiled	mercury	3	0	0	1	0	1	1	2018	2020
+350	Fruit juice blend (100% juice), canned/bottled	arsenic_total	3	2	0.9	1.23333	1.4	1	1	2018	2020
+350	Fruit juice blend (100% juice), canned/bottled	cadmium	3	0	0	1	0	1	1	2018	2020
+350	Fruit juice blend (100% juice), canned/bottled	lead	3	1	0.4	1.06667	1.2	1	1	2018	2020
+350	Fruit juice blend (100% juice), canned/bottled	mercury	3	0	0	1	0	1	1	2018	2020
+351	Juice, cranberry cocktail, bottled	arsenic_total	3	0	0	1	0	1	1	2018	2020
+351	Juice, cranberry cocktail, bottled	cadmium	3	1	1	1.66667	3	1	1	2018	2020
+351	Juice, cranberry cocktail, bottled	lead	3	0	0	1	0	1	1	2018	2020
+351	Juice, cranberry cocktail, bottled	mercury	3	0	0	1	0	1	1	2018	2020
+352	Juice, orange, bottled/cartoned	arsenic_total	3	0	0	1	0	1	1	2018	2020
+352	Juice, orange, bottled/cartoned	cadmium	3	0	0	1	0	1	1	2018	2020
+352	Juice, orange, bottled/cartoned	lead	3	0	0	1	0	1	1	2018	2020
+352	Juice, orange, bottled/cartoned	mercury	3	0	0	1	0	1	1	2018	2020
+356	Carrot, baby, raw	arsenic_total	27	24	4.98889	5.32222	10	3	3	2017	2020
+356	Carrot, baby, raw	cadmium	27	27	24.7704	24.7704	83	1	1	2017	2020
+356	Carrot, baby, raw	lead	27	0	0	4	0	4	4	2017	2020
+356	Carrot, baby, raw	mercury	27	0	0	1	0	1	1	2017	2020
+357	Lettuce, leaf, raw	arsenic_total	27	8	1.71481	3.82593	9.2	3	3	2017	2020
+357	Lettuce, leaf, raw	cadmium	27	27	61.0741	61.0741	200	1	1	2017	2020
+357	Lettuce, leaf, raw	lead	27	7	1.86296	4.82593	13	4	4	2017	2020
+357	Lettuce, leaf, raw	mercury	27	0	0	1	0	1	1	2017	2020
+359	Salsa, tomato, bottled	arsenic_total	3	0	0	3	0	3	3	2018	2020
+359	Salsa, tomato, bottled	cadmium	3	3	19.6667	19.6667	21	1	1	2018	2020
+359	Salsa, tomato, bottled	lead	3	0	0	4	0	4	4	2018	2020
+359	Salsa, tomato, bottled	mercury	3	0	0	1	0	1	1	2018	2020
+367	Soup, ramen noodles, prepared with water	arsenic_total	3	0	0	3	0	3	3	2018	2020
+367	Soup, ramen noodles, prepared with water	cadmium	3	3	8.36667	8.36667	15	1	1	2018	2020
+367	Soup, ramen noodles, prepared with water	lead	3	0	0	4	0	4	4	2018	2020
+367	Soup, ramen noodles, prepared with water	mercury	3	0	0	1	0	1	1	2018	2020
+369	Cake, white with white icing	arsenic_total	27	10	1.71852	3.60741	7.4	3	3	2017	2020
+369	Cake, white with white icing	cadmium	27	27	4.12963	4.12963	6.4	1	1	2017	2020
+369	Cake, white with white icing	lead	27	9	2.56296	5.22963	17	4	4	2017	2020
+369	Cake, white with white icing	mercury	27	0	0	1	0	1	1	2017	2020
+371	Candy bar, chocolate, nougat, with nuts	arsenic_total	3	2	3.63333	4.63333	7.8	3	3	2018	2020
+371	Candy bar, chocolate, nougat, with nuts	cadmium	3	3	15.6667	15.6667	17	1	1	2018	2020
+371	Candy bar, chocolate, nougat, with nuts	lead	3	0	0	4	0	4	4	2018	2020
+371	Candy bar, chocolate, nougat, with nuts	mercury	3	0	0	1	0	1	1	2018	2020
+372	Popcorn, microwave, butter-flavored	arsenic_total	3	0	0	4	0	4	4	2018	2020
+372	Popcorn, microwave, butter-flavored	cadmium	3	3	6.03333	6.03333	6.2	2	2	2018	2020
+372	Popcorn, microwave, butter-flavored	lead	3	1	2.16667	5.5	6.5	5	5	2018	2020
+372	Popcorn, microwave, butter-flavored	mercury	3	0	0	1	0	1	1	2018	2020
+374	Brown gravy, canned or bottled	arsenic_total	3	0	0	3	0	3	3	2018	2020
+374	Brown gravy, canned or bottled	cadmium	3	2	0.7	1.03333	1.1	1	1	2018	2020
+374	Brown gravy, canned or bottled	lead	3	0	0	4	0	4	4	2018	2020
+374	Brown gravy, canned or bottled	mercury	3	0	0	1	0	1	1	2018	2020
+377	Salad dressing, Italian, regular	arsenic_total	3	0	0	4	0	4	4	2018	2020
+377	Salad dressing, Italian, regular	cadmium	3	0	0	2	0	2	2	2018	2020
+377	Salad dressing, Italian, regular	lead	3	1	1.93333	5.26667	5.8	5	5	2018	2020
+377	Salad dressing, Italian, regular	mercury	3	0	0	1	0	1	1	2018	2020
+378	Oil, olive	arsenic_total	3	0	0	4	0	4	4	2018	2020
+378	Oil, olive	cadmium	3	0	0	2	0	2	2	2018	2020
+378	Oil, olive	lead	3	0	0	5	0	5	5	2018	2020
+378	Oil, olive	mercury	3	0	0	1	0	1	1	2018	2020
+379	Oil, vegetable	arsenic_total	3	0	0	4	0	4	4	2018	2020
+379	Oil, vegetable	cadmium	3	0	0	2	0	2	2	2018	2020
+379	Oil, vegetable	lead	3	0	0	5	0	5	5	2018	2020
+379	Oil, vegetable	mercury	3	0	0	1	0	1	1	2018	2020
+380	Water, bottled, mineral/spring	arsenic_total	27	23	0.470185	0.477593	1.8	0.05	0.05	2017	2020
+380	Water, bottled, mineral/spring	cadmium	27	3	0.00755556	0.0342222	0.083	0.03	0.03	2017	2020
+380	Water, bottled, mineral/spring	lead	27	0	0	0.4	0	0.4	0.4	2017	2020
+380	Water, bottled, mineral/spring	mercury	27	0	0	0.03	0	0.03	0.03	2017	2020
+385	Sorbet, fruit-flavored	arsenic_total	3	1	1.03333	3.03333	3.1	3	3	2018	2020
+385	Sorbet, fruit-flavored	cadmium	3	3	2.83333	2.83333	3	1	1	2018	2020
+385	Sorbet, fruit-flavored	lead	3	0	0	4	0	4	4	2018	2020
+385	Sorbet, fruit-flavored	mercury	3	0	0	1	0	1	1	2018	2020
+386	Cinnamon roll, iced	arsenic_total	27	27	5.31852	5.31852	8.9	3	3	2017	2020
+386	Cinnamon roll, iced	cadmium	27	27	14.2593	14.2593	18	1	1	2017	2020
+386	Cinnamon roll, iced	lead	27	18	3.8037	5.13704	9.2	4	4	2017	2020
+386	Cinnamon roll, iced	mercury	27	0	0	1	0	1	1	2017	2020
+387	Cod, baked	arsenic_total	27	27	4914.81	4914.81	10900	3	3	2017	2020
+387	Cod, baked	cadmium	27	16	2.18519	2.59259	11	1	1	2017	2020
+387	Cod, baked	lead	27	0	0	4	0	4	4	2017	2020
+387	Cod, baked	mercury	27	27	83.3704	83.3704	140	1	1	2017	2020
+388	Tilapia, baked	arsenic_total	27	27	116.593	116.593	290	3	3	2017	2020
+388	Tilapia, baked	cadmium	27	1	0.0555556	1.01852	1.5	1	1	2017	2020
+388	Tilapia, baked	lead	27	0	0	4	0	4	4	2017	2020
+388	Tilapia, baked	mercury	27	27	6.67778	6.67778	20	1	1	2017	2020
+389	Salami, dry/hard	arsenic_total	27	0	0	3	0	3	3	2017	2020
+389	Salami, dry/hard	cadmium	27	10	0.540741	1.17037	2.4	1	1	2017	2020
+389	Salami, dry/hard	lead	27	1	0.181481	4.03333	4.9	4	4	2017	2020
+389	Salami, dry/hard	mercury	27	0	0	1	0	1	1	2017	2020
+390	Turkey, ground, pan-cooked	arsenic_total	27	14	5.54444	6.98889	48	3	3	2017	2020
+390	Turkey, ground, pan-cooked	cadmium	27	15	0.848148	1.29259	2.3	1	1	2017	2020
+390	Turkey, ground, pan-cooked	lead	27	0	0	4	0	4	4	2017	2020
+390	Turkey, ground, pan-cooked	mercury	27	0	0	1	0	1	1	2017	2020
+391	Cheese, Monterey jack	arsenic_total	27	0	0	3	0	3	3	2017	2020
+391	Cheese, Monterey jack	cadmium	27	0	0	1	0	1	1	2017	2020
+391	Cheese, Monterey jack	lead	27	0	0	4	0	4	4	2017	2020
+391	Cheese, Monterey jack	mercury	27	0	0	1	0	1	1	2017	2020
+392	Cheese, mozzarella	arsenic_total	27	0	0	3	0	3	3	2017	2020
+392	Cheese, mozzarella	cadmium	27	3	0.22963	1.11852	2.9	1	1	2017	2020
+392	Cheese, mozzarella	lead	27	0	0	4	0	4	4	2017	2020
+392	Cheese, mozzarella	mercury	27	0	0	1	0	1	1	2017	2020
+393	Ice cream, chocolate	arsenic_total	27	4	0.485185	3.04074	3.4	3	3	2017	2020
+393	Ice cream, chocolate	cadmium	27	27	7.26667	7.26667	15	1	1	2017	2020
+393	Ice cream, chocolate	lead	27	18	3.95556	5.28889	10	4	4	2017	2020
+393	Ice cream, chocolate	mercury	27	9	0.451852	1.11852	2.3	1	1	2017	2020
+394	Milk shake, vanilla, fast-food	arsenic_total	27	0	0	3	0	3	3	2017	2020
+394	Milk shake, vanilla, fast-food	cadmium	27	0	0	1	0	1	1	2017	2020
+394	Milk shake, vanilla, fast-food	lead	27	2	0.637037	4.34074	11	4	4	2017	2020
+394	Milk shake, vanilla, fast-food	mercury	27	0	0	1	0	1	1	2017	2020
+396	Pineapple, raw/frozen	arsenic_total	27	1	0.162963	3.05185	4.4	3	3	2017	2020
+396	Pineapple, raw/frozen	cadmium	27	2	1	1.92593	26	1	1	2017	2020
+396	Pineapple, raw/frozen	lead	27	0	0	4	0	4	4	2017	2020
+396	Pineapple, raw/frozen	mercury	27	0	0	1	0	1	1	2017	2020
+397	Sweet potato, baked, peel removed	arsenic_total	27	14	4.15926	5.6037	19	3	3	2017	2020
+397	Sweet potato, baked, peel removed	cadmium	27	27	5.7	5.7	12	1	1	2017	2020
+397	Sweet potato, baked, peel removed	lead	27	19	12.0667	13.2519	43	4	4	2017	2020
+397	Sweet potato, baked, peel removed	mercury	27	0	0	1	0	1	1	2017	2020
+398	Blueberries, raw	arsenic_total	27	15	4.8037	6.13704	35	3	3	2017	2020
+398	Blueberries, raw	cadmium	27	2	0.122222	1.04815	2.2	1	1	2017	2020
+398	Blueberries, raw	lead	27	3	0.707407	4.26296	10	4	4	2017	2020
+398	Blueberries, raw	mercury	27	0	0	1	0	1	1	2017	2020
+399	Biscuits, fast-food	arsenic_total	27	27	6.9	6.9	10	3	3	2017	2020
+399	Biscuits, fast-food	cadmium	27	27	19.4444	19.4444	26	1	1	2017	2020
+399	Biscuits, fast-food	lead	27	2	0.418519	4.12222	6.8	4	4	2017	2020
+399	Biscuits, fast-food	mercury	27	1	0.0407407	1.0037	1.1	1	1	2017	2020
+400	Tortilla, corn	arsenic_total	27	9	1.81481	3.81481	7.1	3	3	2017	2020
+400	Tortilla, corn	cadmium	27	24	1.53333	1.64444	2.8	1	1	2017	2020
+400	Tortilla, corn	lead	27	0	0	4	0	4	4	2017	2020
+400	Tortilla, corn	mercury	27	0	0	1	0	1	1	2017	2020
+401	Bread, white roll/bun (hamburger/hotdog)	arsenic_total	27	27	5.73704	5.73704	9.3	3	3	2017	2020
+401	Bread, white roll/bun (hamburger/hotdog)	cadmium	27	27	24.6296	24.6296	37	1	1	2017	2020
+401	Bread, white roll/bun (hamburger/hotdog)	lead	27	5	0.914815	4.17407	6.7	4	4	2017	2020
+401	Bread, white roll/bun (hamburger/hotdog)	mercury	27	0	0	1	0	1	1	2017	2020
+402	Rice, brown, cooked	arsenic_total	27	27	64.3333	64.3333	88	3	3	2017	2020
+402	Rice, brown, cooked	cadmium	27	27	7.97778	7.97778	17	1	1	2017	2020
+402	Rice, brown, cooked	lead	27	0	0	4	0	4	4	2017	2020
+402	Rice, brown, cooked	mercury	27	8	0.355556	1.05926	1.5	1	1	2017	2020
+403	Walnuts, shelled	arsenic_total	22	21	5.81364	5.95	11	3	3	2017	2020
+403	Walnuts, shelled	cadmium	22	2	0.0954545	1.00455	1.1	1	1	2017	2020
+403	Walnuts, shelled	lead	22	1	0.254545	4.07273	5.6	4	4	2017	2020
+403	Walnuts, shelled	mercury	22	0	0	1	0	1	1	2017	2020
+404	Pizza, cheese, fast-food	arsenic_total	27	25	3.74444	3.96667	6	3	3	2017	2020
+404	Pizza, cheese, fast-food	cadmium	27	27	20.5556	20.5556	25	1	1	2017	2020
+404	Pizza, cheese, fast-food	lead	27	2	0.322222	4.02593	4.6	4	4	2017	2020
+404	Pizza, cheese, fast-food	mercury	27	0	0	1	0	1	1	2017	2020
+405	Sauce, barbecue	arsenic_total	27	22	5.04815	5.6037	9.6	3	3	2017	2020
+405	Sauce, barbecue	cadmium	27	27	12.8185	12.8185	17	1	1	2017	2020
+405	Sauce, barbecue	lead	27	25	10.3926	10.6889	23	4	4	2017	2020
+405	Sauce, barbecue	mercury	27	0	0	1	0	1	1	2017	2020
+406	Cabbage, raw	arsenic_total	27	2	0.377778	3.15556	6.6	3	3	2017	2020
+406	Cabbage, raw	cadmium	27	27	5.50741	5.50741	14	1	1	2017	2020
+406	Cabbage, raw	lead	27	0	0	4	0	4	4	2017	2020
+406	Cabbage, raw	mercury	27	0	0	1	0	1	1	2017	2020
+407	Zucchini, fresh/frozen, boiled	arsenic_total	27	3	0.381481	3.04815	3.5	3	3	2017	2020
+407	Zucchini, fresh/frozen, boiled	cadmium	27	24	7.07778	7.18889	84	1	1	2017	2020
+407	Zucchini, fresh/frozen, boiled	lead	27	2	0.688889	4.39259	11	4	4	2017	2020
+407	Zucchini, fresh/frozen, boiled	mercury	27	0	0	1	0	1	1	2017	2020
+408	Spinach, raw	arsenic_total	27	27	5.92222	5.92222	8.8	3	3	2017	2020
+408	Spinach, raw	cadmium	27	27	222.222	222.222	400	1	1	2017	2020
+408	Spinach, raw	lead	27	21	6.36296	7.25185	18	4	4	2017	2020
+408	Spinach, raw	mercury	27	3	0.114815	1.0037	1.1	1	1	2017	2020
+409	Yogurt, frozen, vanilla	arsenic_total	26	1	0.126923	3.01154	3.3	3	3	2017	2020
+409	Yogurt, frozen, vanilla	cadmium	26	0	0	1	0	1	1	2017	2020
+409	Yogurt, frozen, vanilla	lead	26	1	0.153846	4	4	4	4	2017	2020
+409	Yogurt, frozen, vanilla	mercury	26	0	0	1	0	1	1	2017	2020
+410	Eggplant, baked with peel	arsenic_total	21	18	9.38571	9.81429	25	3	3	2018	2020
+410	Eggplant, baked with peel	cadmium	21	21	11.9381	11.9381	26	1	1	2018	2020
+410	Eggplant, baked with peel	lead	21	0	0	4	0	4	4	2018	2020
+410	Eggplant, baked with peel	mercury	21	0	0	1	0	1	1	2018	2020
+411	Kale, fresh, pan-cooked	arsenic_total	6	6	6.93333	6.93333	11	3	3	2019	2020
+411	Kale, fresh, pan-cooked	cadmium	6	6	30.2167	30.2167	78	1	1	2019	2020
+411	Kale, fresh, pan-cooked	lead	6	2	1.81667	4.48333	6.1	4	4	2019	2020
+411	Kale, fresh, pan-cooked	mercury	6	4	0.8	1.13333	1.6	1	1	2019	2020
+412	Mango, raw/frozen	arsenic_total	6	3	2.41667	3.91667	5.4	3	3	2019	2020
+412	Mango, raw/frozen	cadmium	6	5	2.5	2.66667	6	1	1	2019	2020
+412	Mango, raw/frozen	lead	6	0	0	4	0	4	4	2019	2020
+412	Mango, raw/frozen	mercury	6	0	0	1	0	1	1	2019	2020
+413	Garlic, raw	arsenic_total	6	6	8.73333	8.73333	14	3	3	2019	2020
+413	Garlic, raw	cadmium	6	6	20.65	20.65	40	1	1	2019	2020
+413	Garlic, raw	lead	6	0	0	4	0	4	4	2019	2020
+413	Garlic, raw	mercury	6	0	0	1	0	1	1	2019	2020
+414	Cashews, salted	arsenic_total	1	1	3.5	3.5	3.5	1	1	2020	2020
+414	Cashews, salted	cadmium	1	0	0	1	0	1	1	2020	2020
+414	Cashews, salted	lead	1	0	0	1	0	1	1	2020	2020
+414	Cashews, salted	mercury	1	0	0	1	0	1	1	2020	2020
+500	Alcohol, distilled, vodka	arsenic_total	3	0	0	1	0	1	1	2018	2020
+500	Alcohol, distilled, vodka	cadmium	3	0	0	1	0	1	1	2018	2020
+500	Alcohol, distilled, vodka	lead	3	1	1.36667	2.03333	4.1	1	1	2018	2020
+500	Alcohol, distilled, vodka	mercury	3	0	0	1	0	1	1	2018	2020
+501	Wine, red	arsenic_total	3	3	5.5	5.5	6.7	1	1	2018	2020
+501	Wine, red	cadmium	3	0	0	1	0	1	1	2018	2020
+501	Wine, red	lead	3	3	5.26667	5.26667	7.1	1	1	2018	2020
+501	Wine, red	mercury	3	0	0	1	0	1	1	2018	2020
+502	Wine, white	arsenic_inorganic	2	2	11.45	11.45	11.9	0.4	0.4	2019	2020
+502	Wine, white	arsenic_total	3	3	11.3	11.3	12	1	1	2018	2020
+502	Wine, white	cadmium	3	0	0	1	0	1	1	2018	2020
+502	Wine, white	lead	3	3	13	13	15	1	1	2018	2020
+502	Wine, white	mercury	3	0	0	1	0	1	1	2018	2020
+503	Beverage, almond (non-dairy)	arsenic_total	3	2	2.7	3.03333	4.4	1	1	2018	2020
+503	Beverage, almond (non-dairy)	cadmium	3	2	0.966667	1.3	1.6	1	1	2018	2020
+503	Beverage, almond (non-dairy)	lead	3	2	1.26667	1.6	1.9	1	1	2018	2020
+503	Beverage, almond (non-dairy)	mercury	3	0	0	1	0	1	1	2018	2020
+504	Beverage, coconut water	arsenic_total	3	1	0.366667	1.03333	1.1	1	1	2018	2020
+504	Beverage, coconut water	cadmium	3	0	0	1	0	1	1	2018	2020
+504	Beverage, coconut water	lead	3	0	0	1	0	1	1	2018	2020
+504	Beverage, coconut water	mercury	3	0	0	1	0	1	1	2018	2020
+505	Beverage, energy	arsenic_total	3	0	0	1	0	1	1	2018	2020
+505	Beverage, energy	cadmium	3	0	0	1	0	1	1	2018	2020
+505	Beverage, energy	lead	3	0	0	1	0	1	1	2018	2020
+505	Beverage, energy	mercury	3	0	0	1	0	1	1	2018	2020
+506	Beverage, soy (non-dairy)	arsenic_total	3	2	2.4	2.73333	4.1	1	1	2018	2020
+506	Beverage, soy (non-dairy)	cadmium	3	3	2.76667	2.76667	3.1	1	1	2018	2020
+506	Beverage, soy (non-dairy)	lead	3	2	0.7	1.03333	1.1	1	1	2018	2020
+506	Beverage, soy (non-dairy)	mercury	3	0	0	1	0	1	1	2018	2020
+507	Beverage, sports	arsenic_total	3	0	0	1	0	1	1	2018	2020
+507	Beverage, sports	cadmium	3	0	0	1	0	1	1	2018	2020
+507	Beverage, sports	lead	3	0	0	1	0	1	1	2018	2020
+507	Beverage, sports	mercury	3	0	0	1	0	1	1	2018	2020
+508	Carbonated beverage, lemon-lime, regular	arsenic_total	3	0	0	1	0	1	1	2018	2020
+508	Carbonated beverage, lemon-lime, regular	cadmium	3	0	0	1	0	1	1	2018	2020
+508	Carbonated beverage, lemon-lime, regular	lead	3	0	0	1	0	1	1	2018	2020
+508	Carbonated beverage, lemon-lime, regular	mercury	3	0	0	1	0	1	1	2018	2020
+509	Meal replacement, liquid RTD, vanilla	arsenic_total	3	0	0	3	0	3	3	2018	2020
+509	Meal replacement, liquid RTD, vanilla	cadmium	3	2	1.23333	1.56667	2.4	1	1	2018	2020
+509	Meal replacement, liquid RTD, vanilla	lead	3	0	0	4	0	4	4	2018	2020
+509	Meal replacement, liquid RTD, vanilla	mercury	3	0	0	1	0	1	1	2018	2020
+510	Powder, protein	arsenic_total	3	3	4.1	4.1	4.8	3	3	2018	2020
+510	Powder, protein	cadmium	3	3	13.7	13.7	22	1	1	2018	2020
+510	Powder, protein	lead	3	3	6.66667	6.66667	7.9	4	4	2018	2020
+510	Powder, protein	mercury	3	0	0	1	0	1	1	2018	2020
+511	Candies, fruit snacks	arsenic_total	3	0	0	3	0	3	3	2018	2020
+511	Candies, fruit snacks	cadmium	3	0	0	1	0	1	1	2018	2020
+511	Candies, fruit snacks	lead	3	0	0	4	0	4	4	2018	2020
+511	Candies, fruit snacks	mercury	3	0	0	1	0	1	1	2018	2020
+512	Cereal, granola	arsenic_total	3	3	16.3333	16.3333	19	3	3	2018	2020
+512	Cereal, granola	cadmium	3	3	16	16	18	1	1	2018	2020
+512	Cereal, granola	lead	3	0	0	4	0	4	4	2018	2020
+512	Cereal, granola	mercury	3	0	0	1	0	1	1	2018	2020
+513	Cereal, oat ring, honey	arsenic_total	3	3	21	21	24	3	3	2018	2020
+513	Cereal, oat ring, honey	cadmium	3	3	13	13	16	1	1	2018	2020
+513	Cereal, oat ring, honey	lead	3	3	6.43333	6.43333	6.7	4	4	2018	2020
+513	Cereal, oat ring, honey	mercury	3	0	0	1	0	1	1	2018	2020
+514	Cereal, shredded wheat, frosted	arsenic_total	3	1	1.1	3.1	3.3	3	3	2018	2020
+514	Cereal, shredded wheat, frosted	cadmium	3	3	39.6667	39.6667	57	1	1	2018	2020
+514	Cereal, shredded wheat, frosted	lead	3	0	0	4	0	4	4	2018	2020
+514	Cereal, shredded wheat, frosted	mercury	3	0	0	1	0	1	1	2018	2020
+515	Cereal, whole wheat, cooked	arsenic_total	3	0	0	3	0	3	3	2018	2020
+515	Cereal, whole wheat, cooked	cadmium	3	3	3.06667	3.06667	3.2	1	1	2018	2020
+515	Cereal, whole wheat, cooked	lead	3	1	2.1	4.76667	6.3	4	4	2018	2020
+515	Cereal, whole wheat, cooked	mercury	3	0	0	1	0	1	1	2018	2020
+516	Salad dressing, ranch, low-calorie	arsenic_total	3	3	8.83333	8.83333	12	3	3	2018	2020
+516	Salad dressing, ranch, low-calorie	cadmium	3	2	1.26667	1.6	2.6	1	1	2018	2020
+516	Salad dressing, ranch, low-calorie	lead	3	3	12.5667	12.5667	17	4	4	2018	2020
+516	Salad dressing, ranch, low-calorie	mercury	3	0	0	1	0	1	1	2018	2020
+517	Salad dressing, ranch, regular	arsenic_total	3	1	1.23333	3.23333	3.7	3	3	2018	2020
+517	Salad dressing, ranch, regular	cadmium	3	3	3.73333	3.73333	7	1	1	2018	2020
+517	Salad dressing, ranch, regular	lead	3	0	0	4	0	4	4	2018	2020
+517	Salad dressing, ranch, regular	mercury	3	0	0	1	0	1	1	2018	2020
+518	Sauce, soy	arsenic_total	3	0	0	3	0	3	3	2018	2020
+518	Sauce, soy	cadmium	3	3	10.8667	10.8667	12	1	1	2018	2020
+518	Sauce, soy	lead	3	0	0	4	0	4	4	2018	2020
+518	Sauce, soy	mercury	3	0	0	1	0	1	1	2018	2020
+519	Sauce, tomato, canned	arsenic_total	3	2	3.1	4.1	5.7	3	3	2018	2020
+519	Sauce, tomato, canned	cadmium	3	3	20.6667	20.6667	25	1	1	2018	2020
+519	Sauce, tomato, canned	lead	3	0	0	4	0	4	4	2018	2020
+519	Sauce, tomato, canned	mercury	3	0	0	1	0	1	1	2018	2020
+520	Sauce, tomato, pasta	arsenic_total	3	0	0	3	0	3	3	2018	2020
+520	Sauce, tomato, pasta	cadmium	3	3	24.3333	24.3333	26	1	1	2018	2020
+520	Sauce, tomato, pasta	lead	3	0	0	4	0	4	4	2018	2020
+520	Sauce, tomato, pasta	mercury	3	0	0	1	0	1	1	2018	2020
+521	Yogurt, lowfat, vanilla	arsenic_total	3	0	0	3	0	3	3	2018	2020
+521	Yogurt, lowfat, vanilla	cadmium	3	0	0	1	0	1	1	2018	2020
+521	Yogurt, lowfat, vanilla	lead	3	0	0	4	0	4	4	2018	2020
+521	Yogurt, lowfat, vanilla	mercury	3	0	0	1	0	1	1	2018	2020
+522	Quinoa, cooked	arsenic_total	3	1	3.33333	5.33333	10	3	3	2018	2020
+522	Quinoa, cooked	cadmium	3	3	11.1667	11.1667	19	1	1	2018	2020
+522	Quinoa, cooked	lead	3	1	3.66667	6.33333	11	4	4	2018	2020
+522	Quinoa, cooked	mercury	3	0	0	1	0	1	1	2018	2020
+523	Granola bar	arsenic_total	3	3	21.6667	21.6667	28	3	3	2018	2020
+523	Granola bar	cadmium	3	3	8.46667	8.46667	11	1	1	2018	2020
+523	Granola bar	lead	3	0	0	4	0	4	4	2018	2020
+523	Granola bar	mercury	3	0	0	1	0	1	1	2018	2020
+524	Juice, lemon	arsenic_total	3	0	0	1	0	1	1	2018	2020
+524	Juice, lemon	cadmium	3	0	0	1	0	1	1	2018	2020
+524	Juice, lemon	lead	3	0	0	1	0	1	1	2018	2020
+524	Juice, lemon	mercury	3	0	0	1	0	1	1	2018	2020
+525	Juice, tomato-vegetable	arsenic_total	3	1	0.433333	1.1	1.3	1	1	2018	2020
+525	Juice, tomato-vegetable	cadmium	3	3	11.0667	11.0667	15	1	1	2018	2020
+525	Juice, tomato-vegetable	lead	3	1	0.533333	1.2	1.6	1	1	2018	2020
+525	Juice, tomato-vegetable	mercury	3	0	0	1	0	1	1	2018	2020
+526	Almonds, shelled	arsenic_total	3	3	8.7	8.7	12	3	3	2018	2020
+526	Almonds, shelled	cadmium	3	3	15	15	21	1	1	2018	2020
+526	Almonds, shelled	lead	3	0	0	4	0	4	4	2018	2020
+526	Almonds, shelled	mercury	3	0	0	1	0	1	1	2018	2020
+527	Beans, black, canned, drained solids	arsenic_total	3	0	0	3	0	3	3	2018	2020
+527	Beans, black, canned, drained solids	cadmium	3	3	5.5	5.5	14	1	1	2018	2020
+527	Beans, black, canned, drained solids	lead	3	0	0	4	0	4	4	2018	2020
+527	Beans, black, canned, drained solids	mercury	3	0	0	1	0	1	1	2018	2020
+528	Beans, kidney, canned, drained solids	arsenic_total	3	0	0	3	0	3	3	2018	2020
+528	Beans, kidney, canned, drained solids	cadmium	3	0	0	1	0	1	1	2018	2020
+528	Beans, kidney, canned, drained solids	lead	3	0	0	4	0	4	4	2018	2020
+528	Beans, kidney, canned, drained solids	mercury	3	0	0	1	0	1	1	2018	2020
+529	Beans, pinto, canned, drained solids	arsenic_total	3	0	0	3	0	3	3	2018	2020
+529	Beans, pinto, canned, drained solids	cadmium	3	0	0	1	0	1	1	2018	2020
+529	Beans, pinto, canned, drained solids	lead	3	0	0	4	0	4	4	2018	2020
+529	Beans, pinto, canned, drained solids	mercury	3	0	0	1	0	1	1	2018	2020
+530	Beans, white, canned, drained solids	arsenic_total	3	0	0	3	0	3	3	2018	2020
+530	Beans, white, canned, drained solids	cadmium	3	3	1.96667	1.96667	2.1	1	1	2018	2020
+530	Beans, white, canned, drained solids	lead	3	0	0	4	0	4	4	2018	2020
+530	Beans, white, canned, drained solids	mercury	3	0	0	1	0	1	1	2018	2020
+531	Crackers, cheese	arsenic_total	3	2	3.13333	4.13333	6.3	3	3	2018	2020
+531	Crackers, cheese	cadmium	3	3	21.6667	21.6667	25	1	1	2018	2020
+531	Crackers, cheese	lead	3	3	4.83333	4.83333	5.5	4	4	2018	2020
+531	Crackers, cheese	mercury	3	0	0	1	0	1	1	2018	2020
+532	Broth, chicken, cartoned	arsenic_total	3	0	0	3	0	3	3	2018	2020
+532	Broth, chicken, cartoned	cadmium	3	0	0	1	0	1	1	2018	2020
+532	Broth, chicken, cartoned	lead	3	0	0	4	0	4	4	2018	2020
+532	Broth, chicken, cartoned	mercury	3	0	0	1	0	1	1	2018	2020
+533	Soup, broccoli cheese, canned, condensed, prepared with water	arsenic_total	3	0	0	3	0	3	3	2018	2020
+533	Soup, broccoli cheese, canned, condensed, prepared with water	cadmium	3	2	0.833333	1.16667	1.3	1	1	2018	2020
+533	Soup, broccoli cheese, canned, condensed, prepared with water	lead	3	0	0	4	0	4	4	2018	2020
+533	Soup, broccoli cheese, canned, condensed, prepared with water	mercury	3	0	0	1	0	1	1	2018	2020
+534	Soup, clam chowder, New England, canned, ready to serve	arsenic_total	3	3	160	160	210	3	3	2018	2020
+534	Soup, clam chowder, New England, canned, ready to serve	cadmium	3	3	19	19	24	1	1	2018	2020
+534	Soup, clam chowder, New England, canned, ready to serve	lead	3	1	1.7	4.36667	5.1	4	4	2018	2020
+534	Soup, clam chowder, New England, canned, ready to serve	mercury	3	0	0	1	0	1	1	2018	2020
+535	Soup, cream of mushroom, canned, condensed, prepared with water	arsenic_total	3	0	0	3	0	3	3	2018	2020
+535	Soup, cream of mushroom, canned, condensed, prepared with water	cadmium	3	1	0.333333	1	1	1	1	2018	2020
+535	Soup, cream of mushroom, canned, condensed, prepared with water	lead	3	0	0	4	0	4	4	2018	2020
+535	Soup, cream of mushroom, canned, condensed, prepared with water	mercury	3	0	0	1	0	1	1	2018	2020
+536	Soup, cream of potato, canned, condensed, prepared with water	arsenic_total	3	0	0	3	0	3	3	2018	2020
+536	Soup, cream of potato, canned, condensed, prepared with water	cadmium	3	3	4.33333	4.33333	5.5	1	1	2018	2020
+536	Soup, cream of potato, canned, condensed, prepared with water	lead	3	0	0	4	0	4	4	2018	2020
+536	Soup, cream of potato, canned, condensed, prepared with water	mercury	3	0	0	1	0	1	1	2018	2020
+537	Soup, vegetable beef, canned, ready to serve	arsenic_total	3	0	0	3	0	3	3	2018	2020
+537	Soup, vegetable beef, canned, ready to serve	cadmium	3	3	10.2667	10.2667	20	1	1	2018	2020
+537	Soup, vegetable beef, canned, ready to serve	lead	3	0	0	4	0	4	4	2018	2020
+537	Soup, vegetable beef, canned, ready to serve	mercury	3	0	0	1	0	1	1	2018	2020
+538	Soup, vegetable, canned, ready to serve	arsenic_total	3	0	0	3	0	3	3	2018	2020
+538	Soup, vegetable, canned, ready to serve	cadmium	3	3	5.96667	5.96667	9.3	1	1	2018	2020
+538	Soup, vegetable, canned, ready to serve	lead	3	0	0	4	0	4	4	2018	2020
+538	Soup, vegetable, canned, ready to serve	mercury	3	0	0	1	0	1	1	2018	2020
+539	Pasta, rice noodles, cooked	arsenic_total	3	3	16.6667	16.6667	22	3	3	2018	2020
+539	Pasta, rice noodles, cooked	cadmium	3	3	6.73333	6.73333	11	1	1	2018	2020
+539	Pasta, rice noodles, cooked	lead	3	0	0	4	0	4	4	2018	2020
+539	Pasta, rice noodles, cooked	mercury	3	0	0	1	0	1	1	2018	2020
+540	Pasta, whole wheat, cooked	arsenic_total	3	0	0	3	0	3	3	2018	2020
+540	Pasta, whole wheat, cooked	cadmium	3	3	37.6667	37.6667	44	1	1	2018	2020
+540	Pasta, whole wheat, cooked	lead	3	0	0	4	0	4	4	2018	2020
+540	Pasta, whole wheat, cooked	mercury	3	0	0	1	0	1	1	2018	2020
+541	Pie crust	arsenic_total	3	0	0	3	0	3	3	2018	2020
+541	Pie crust	cadmium	3	3	8.63333	8.63333	9.7	1	1	2018	2020
+541	Pie crust	lead	3	0	0	4	0	4	4	2018	2020
+541	Pie crust	mercury	3	0	0	1	0	1	1	2018	2020
+542	Pudding, ready-to-eat, chocolate	arsenic_total	3	1	1.06667	3.06667	3.2	3	3	2018	2020
+542	Pudding, ready-to-eat, chocolate	cadmium	3	3	4.86667	4.86667	6.4	1	1	2018	2020
+542	Pudding, ready-to-eat, chocolate	lead	3	1	1.43333	4.1	4.3	4	4	2018	2020
+542	Pudding, ready-to-eat, chocolate	mercury	3	0	0	1	0	1	1	2018	2020
+543	Luncheon meat, turkey	arsenic_total	3	3	7.83333	7.83333	9	3	3	2018	2020
+543	Luncheon meat, turkey	cadmium	3	3	3.86667	3.86667	6	1	1	2018	2020
+543	Luncheon meat, turkey	lead	3	1	1.4	4.06667	4.2	4	4	2018	2020
+543	Luncheon meat, turkey	mercury	3	0	0	1	0	1	1	2018	2020
+544	Veggie burger	arsenic_total	3	3	5.4	5.4	5.9	3	3	2018	2020
+544	Veggie burger	cadmium	3	3	17	17	21	1	1	2018	2020
+544	Veggie burger	lead	3	2	3.46667	4.8	5.3	4	4	2018	2020
+544	Veggie burger	mercury	3	0	0	1	0	1	1	2018	2020
+545	Beans, garbanzo (chickpeas), canned, drained solids	arsenic_total	1	1	4.9	4.9	4.9	3	3	2020	2020
+545	Beans, garbanzo (chickpeas), canned, drained solids	cadmium	1	1	1.3	1.3	1.3	1	1	2020	2020
+545	Beans, garbanzo (chickpeas), canned, drained solids	lead	1	0	0	4	0	4	4	2020	2020
+545	Beans, garbanzo (chickpeas), canned, drained solids	mercury	1	0	0	1	0	1	1	2020	2020
+546	Lentils, dry, cooked	arsenic_total	1	0	0	3	0	3	3	2020	2020
+546	Lentils, dry, cooked	cadmium	1	1	1.5	1.5	1.5	1	1	2020	2020
+546	Lentils, dry, cooked	lead	1	0	0	4	0	4	4	2020	2020
+546	Lentils, dry, cooked	mercury	1	0	0	1	0	1	1	2020	2020
+547	Tofu, firm, plain, drained solids	arsenic_total	1	0	0	3	0	3	3	2020	2020
+547	Tofu, firm, plain, drained solids	cadmium	1	1	12	12	12	1	1	2020	2020
+547	Tofu, firm, plain, drained solids	lead	1	0	0	4	0	4	4	2020	2020
+547	Tofu, firm, plain, drained solids	mercury	1	0	0	1	0	1	1	2020	2020
+900	Flour, white, all-purpose	arsenic_total	3	3	3.53333	3.53333	3.6	3	3	2018	2020
+900	Flour, white, all-purpose	cadmium	3	3	42.3333	42.3333	45	1	1	2018	2020
+900	Flour, white, all-purpose	lead	3	1	1.63333	4.3	4.9	4	4	2018	2020
+900	Flour, white, all-purpose	mercury	3	0	0	1	0	1	1	2018	2020
+902	Baking powder	arsenic_total	1	1	77	77	77	3	3	2020	2020
+902	Baking powder	cadmium	1	1	20	20	20	1	1	2020	2020
+902	Baking powder	lead	1	1	164	164	164	4	4	2020	2020
+902	Baking powder	mercury	1	1	120	120	120	1	1	2020	2020
+903	Breadcrumbs	arsenic_total	3	3	7.83333	7.83333	8.4	3	3	2018	2020
+903	Breadcrumbs	cadmium	3	3	33.3333	33.3333	36	1	1	2018	2020
+903	Breadcrumbs	lead	3	3	4.93333	4.93333	5.1	4	4	2018	2020
+903	Breadcrumbs	mercury	3	0	0	1	0	1	1	2018	2020
+904	Salt, sea	arsenic_total	1	0	0	7	0	7	7	2020	2020
+904	Salt, sea	cadmium	1	0	0	3	0	3	3	2020	2020
+904	Salt, sea	lead	1	0	0	10	0	10	10	2020	2020
+904	Salt, sea	mercury	1	0	0	3	0	3	3	2020	2020
+909	Salt, iodized	arsenic_total	1	0	0	7	0	7	7	2020	2020
+909	Salt, iodized	cadmium	1	0	0	3	0	3	3	2020	2020
+909	Salt, iodized	lead	1	0	0	10	0	10	10	2020	2020
+909	Salt, iodized	mercury	1	0	0	3	0	3	3	2020	2020
+910	Cocoa powder	arsenic_total	1	1	29	29	29	7	7	2020	2020
+910	Cocoa powder	cadmium	1	1	400	400	400	3	3	2020	2020
+910	Cocoa powder	lead	1	1	63	63	63	10	10	2020	2020
+910	Cocoa powder	mercury	1	1	15	15	15	3	3	2020	2020

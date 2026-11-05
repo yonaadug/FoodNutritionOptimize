@@ -11,6 +11,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
         { url: absoluteUrl('/'), changeFrequency: 'monthly', priority: 1 },
         { url: absoluteUrl('/plan'), changeFrequency: 'monthly', priority: 0.6 },
+        { url: absoluteUrl('/methodology'), changeFrequency: 'monthly', priority: 0.4 },
         { url: absoluteUrl('/nutrients'), changeFrequency: 'monthly', priority: 0.7 },
         ...sortableNutrients().filter(k => k !== 'calories').map(k => ({ url: absoluteUrl(`/nutrients/${nutrientSlug(k)}`), priority: 0.7 })),
         { url: absoluteUrl('/food/category'), changeFrequency: 'monthly', priority: 0.6 },

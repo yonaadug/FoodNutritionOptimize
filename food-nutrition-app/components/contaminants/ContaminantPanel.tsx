@@ -202,11 +202,18 @@ function ItemRow({ item }: { item: ContaminantItem }) {
         <li className={styles.item}>
             <div className={styles.itemHead}>
                 <h4 className={styles.itemName}>{item.name}</h4>
-                <Badge item={item} />
+                <span className={styles.badges}>
+                    {/* Microplastics carry a group-level "Limited data" tag instead. */}
+                    {item.quality?.grade === 'limited' && item.id !== 'microplastics' && item.status !== 'not_rated' && (
+                        <span className={`${styles.badge} ${styles.badgeLimited}`}>Rough estimate</span>
+                    )}
+                    <Badge item={item} />
+                </span>
             </div>
             {item.meter && item.status !== 'not_detected' && <Meter meter={item.meter} id={meterId} />}
             <p className={styles.explanation}>{item.explanation}</p>
             {item.servingsLine && <p className={styles.servings}>{item.servingsLine}</p>}
+            {item.context && <p className={styles.servings}>{item.context}</p>}
             {hasDetails && (
                 <details className={styles.details}>
                     <summary>Details and sources<span className={styles.srOnly}> for {item.name}</span></summary>
@@ -341,7 +348,7 @@ export default function ContaminantPanel({ fdcId, servingGrams }: { fdcId: numbe
         <section className={`panel ${styles.panel}`} aria-labelledby={titleId} aria-busy={loading}>
             <h2 className={styles.title} id={titleId}>Contaminants</h2>
             <p className={styles.intro}>
-                Heavy metals, pesticide residues and microplastics in a {formatAmount(report.serving.grams)} g serving, from government testing and published studies.
+                Heavy metals, pesticide residues and microplastics in one {formatAmount(report.serving.grams)} g serving, from government testing and published studies.
                 Most foods contain traces of these. The meters show typical levels, so you can compare foods without reading raw numbers.
             </p>
             {report.groups.map(g => <Group key={g.id} group={g} />)}

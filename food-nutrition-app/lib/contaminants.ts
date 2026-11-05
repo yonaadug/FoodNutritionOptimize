@@ -279,6 +279,17 @@ function metalItem(
     return item;
 }
 
+const ARSENIC_CONTEXT_FROM_PERCENT = 25;
+const ARSENIC_CONTEXT = "EPA's reference is very cautious: it estimates typical US intake is already about 61% of it.";
+
+/** Arsenic readings rest on a very cautious reference, so elevated rows say so without an expand. */
+function withArsenicContext(item: ContaminantItem, extra?: string): ContaminantItem {
+    if ((item.percentOfReference ?? 0) >= ARSENIC_CONTEXT_FROM_PERCENT) {
+        item.context = extra ? `${ARSENIC_CONTEXT} ${extra}` : ARSENIC_CONTEXT;
+    }
+    return item;
+}
+
 function arsenicItem(ctx: Context): ContaminantItem {
     const name = 'Arsenic';
     const inorganicCaveats = [
@@ -296,14 +307,14 @@ function arsenicItem(ctx: Context): ContaminantItem {
         });
         if (item) {
             item.sources.push(...sourcesFor(ctx, 'fda_arsenic_advice'));
-            return item;
+            return withArsenicContext(item, 'Cooking rice in plenty of water and draining it can remove 40-60%.');
         }
     }
     const tdsInorganic = metalItem(ctx, {
         id: 'arsenic', name: 'Inorganic arsenic', contaminantId: 'arsenic_inorganic', refKey: 'arsenic_inorganic',
         families: ['tds'], edges: REFERENCE_DAILY_EDGES, extraCaveats: inorganicCaveats,
     });
-    if (tdsInorganic) return tdsInorganic;
+    if (tdsInorganic) return withArsenicContext(tdsInorganic);
 
     const total = pick(ctx, 'arsenic_total', ['tds']);
     if (!total) return emptyItem('arsenic', name);
@@ -333,14 +344,14 @@ function arsenicItem(ctx: Context): ContaminantItem {
             ...inorganicCaveats,
         ],
     });
-    return item ?? emptyItem('arsenic', name);
+    return item ? withArsenicContext(item) : emptyItem('arsenic', name);
 }
 
 function mercuryCaveats(ctx: Context, family: string): string[] {
     if (family !== 'fish') return [];
     return [
         'FDA and EPA publish a list of Best Choices, Good Choices and Choices to Avoid. Follow that list if you are pregnant, breastfeeding or feeding children. It is stricter for some species.',
-        'FDA tested fish as sold, and levels vary by size and origin of the fish.',
+        'Levels vary with the size and origin of the fish.',
     ];
 }
 

@@ -19,6 +19,7 @@
 .item { padding: var(--space-3) 0; border-top: 1px solid var(--border); }
 .itemHead { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); flex-wrap: wrap; }
 .itemName { font-size: 15px; font-weight: 600; }
+.badges { display: inline-flex; align-items: center; gap: var(--space-1); flex-wrap: wrap; }
 
 .badge {
   display: inline-block; padding: 2px 9px; border-radius: var(--radius-pill);
@@ -72,7 +73,7 @@
 .tableWrap { margin-top: var(--space-2); overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .table th, .table td { padding: 4px 6px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top; }
-.table th:first-child { text-align: left; font-weight: 500; color: var(--text-primary); overflow-wrap: anywhere; }
+.table th:first-child { text-align: left; font-weight: 500; color: var(--text-primary); overflow-wrap: break-word; }
 .table thead th { font-weight: 700; color: var(--text-muted); }
 .table td { font-variant-numeric: tabular-nums; }
 

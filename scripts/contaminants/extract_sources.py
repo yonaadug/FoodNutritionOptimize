@@ -45,9 +45,12 @@ PDP_BASE = "https://www.ams.usda.gov/sites/default/files/media/"
 
 # (relative path, url, sha256). sha256 None = the publisher serves a page that changes.
 PINNED = [
-    ("tds/tds_fy18_20_elements.txt", "https://www.fda.gov/media/159750/download?attachment", None),
-    ("tds/tds_fy18_20_elements_key.pdf", "https://www.fda.gov/media/159746/download?attachment", None),
-    ("tds/tds_fy18_20_elements_report.pdf", "https://www.fda.gov/media/159745/download?attachment", None),
+    ("tds/tds_fy18_20_elements.txt", "https://www.fda.gov/media/159750/download?attachment",
+     "e358bdff4203eba66825edb8cc131669cdc3205cce752c2e898b5a2aa9e6c46c"),
+    ("tds/tds_fy18_20_elements_key.pdf", "https://www.fda.gov/media/159746/download?attachment",
+     "07f188430292d93f403d45a9c1698452fb782137119e240ae27d5cd2c174294b"),
+    ("tds/tds_fy18_20_elements_report.pdf", "https://www.fda.gov/media/159745/download?attachment",
+     "ba1f8c1ed5a35fe4faef6e48db6c4490d88405739a4480e623fdbc3097e9f1ef"),
     ("fda_mercury/mercury.html",
      "https://www.fda.gov/food/environmental-contaminants-food/mercury-levels-commercial-fish-and-shellfish-1990-2012", None),
     ("fda_rice/risk_assessment_2016.pdf",

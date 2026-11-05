@@ -66,7 +66,7 @@ def M(key: str, pattern: str, confidence: float = 0.6, **kw) -> Rule:
     return Rule(f"mp:{key}", pattern, confidence, **kw)
 
 
-# Organ meats concentrate cadmium and mercury far above muscle meat, so muscle-meat data must not
+# Organ meats such as liver and kidney concentrate cadmium, so muscle-meat data must not
 # stand in for them. Extracts, oils and supplements are not comparable to the whole food either.
 ORGANS = r"\b(liver|livers|kidneys?|heart|hearts|giblets?|gizzards?|tongue|brain|brains|tripe|sweetbreads?|lungs?|spleen|thymus|pancreas|chitterlings|feet|ears?|tail|tails|suet|tallow|skin only|cracklings|mechanically|separable fat|backfat|leaf fat|external fat|seam fat|fatback)\b"
 MIXED = r"\b(with|and|sandwich|salad|soup|stew|casserole|pie|pot pie|dinner|entree|meal|sauce|gravy|burrito|taco|pizza|nachos?)\b"

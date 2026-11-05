@@ -287,6 +287,8 @@ export interface ContaminantItem {
     reference: ReferenceInfo | null;
     percentOfReference: number | null;
     servingsLine: string | null;
+    /** Perspective shown on the row itself, for readings that would otherwise alarm without it. */
+    context?: string;
     alternates: AlternateReference[];
     meter: Meter | null;
     quality: Quality | null;

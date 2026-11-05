@@ -314,6 +314,14 @@ describe('real database', () => {
         assert.equal(profile('Egg, whole, cooked, scrambled', 'tds'), 'tds:37');
     });
 
+    it('puts perspective on a high rice arsenic reading, not behind an expand', { skip }, () => {
+        if (!has(db)) return;
+        const as = getContaminantReportIn(db, fdc('Rice, white, long-grain, regular, enriched, cooked'), 158).groups[0].items.find(i => i.id === 'arsenic')!;
+        assert.equal(as.meter!.level, 'high');
+        assert.match(as.context!, /very cautious/);
+        assert.match(as.context!, /40-60%/);
+    });
+
     it('rates swordfish well above salmon for mercury', { skip }, () => {
         if (!has(db)) return;
         const merc = (d: string) => getContaminantReportIn(db, fdc(d), 113).groups[0].items.find(i => i.id === 'mercury')!;

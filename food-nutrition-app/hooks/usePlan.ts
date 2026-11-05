@@ -24,6 +24,8 @@ export interface PlanResult {
     totalNutrients?: Record<string, number | null>;
     guaranteedStats?: { calories?: number | null; nutrients?: Record<string, number | null> };
     constraintLimits?: Record<string, { min?: number; max?: number }>;
+    /** Keys whose `max` is a safe upper limit added by applyUpperLimits (not a user goal). */
+    upperLimitKeys?: string[];
     debugEquations?: string[];
     lpModel?: { constraints?: unknown };
     warnings?: PlanWarning[];

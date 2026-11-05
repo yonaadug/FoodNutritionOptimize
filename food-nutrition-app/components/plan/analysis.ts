@@ -6,25 +6,68 @@ export type GoalStatus = 'met' | 'low' | 'high' | 'unknown';
 
 export interface GoalProgress {
     key: string;
+    /**
+     * 'goal'   : something the user asked for (counts toward "goals met").
+     * 'safety' : only a safe upper limit applies ("Respect safe upper limits");
+     *            shown separately and never counted as a goal.
+     */
+    kind: 'goal' | 'safety';
+    /** The user's own bounds. */
     min?: number;
     max?: number;
+    /** Tolerable Upper Intake Level the planner also respected, if any. */
+    safeMax?: number;
     value: number | null;
     status: GoalStatus;
 }
 
-/** Compare plan totals against the limits the optimizer actually used. */
+/**
+ * Compare plan totals against the limits the optimizer actually used.
+ * Upper limits added by "Respect safe upper limits" are reported as
+ * `safeMax`, never as the user's `max`, so a nutrient with no goal (e.g.
+ * vitamin D in Everyday essentials) does not become an "on target" goal.
+ */
 export function goalProgress(result: PlanResult): GoalProgress[] {
     const limits = result.constraintLimits ?? {};
-    return Object.entries(limits).map(([key, lim]) => {
+    const ulKeys = new Set(Array.isArray(result.upperLimitKeys) ? result.upperLimitKeys : []);
+    return Object.entries(limits).map(([key, lim]): GoalProgress => {
         const value = key === 'calories' ? num(result.totalCalories) : num(result.totalNutrients?.[key]);
         const min = num(lim?.min) ?? undefined;
-        const max = num(lim?.max) ?? undefined;
+        const rawMax = num(lim?.max) ?? undefined;
+        const fromUl = ulKeys.has(key);
+        const max = fromUl ? undefined : rawMax;
+        const safeMax = fromUl ? rawMax : undefined;
+        const kind = min === undefined && max === undefined ? 'safety' : 'goal';
         let status: GoalStatus = 'met';
         if (value === null) status = 'unknown';
         else if (min !== undefined && value < min * 0.995) status = 'low';
         else if (max !== undefined && value > max * 1.005) status = 'high';
-        return { key, min, max, value, status };
+        else if (safeMax !== undefined && value > safeMax * 1.005) status = 'high';
+        return { key, kind, min, max, safeMax, value, status };
     }).sort((a, b) => (a.key === 'calories' ? -1 : b.key === 'calories' ? 1 : 0));
+}
+
+export interface GoalSummary {
+    /** Nutrient goals the user set (calories excluded). */
+    goals: GoalProgress[];
+    met: number;
+    total: number;
+    /** Ceiling-only safe upper limits (not goals). */
+    safety: GoalProgress[];
+    safetyOver: GoalProgress[];
+}
+
+/** What the "goals met" ring and headline count. */
+export function goalSummary(progress: GoalProgress[]): GoalSummary {
+    const goals = progress.filter(p => p.key !== 'calories' && p.kind === 'goal');
+    const safety = progress.filter(p => p.kind === 'safety');
+    return {
+        goals,
+        met: goals.filter(p => p.status === 'met').length,
+        total: goals.length,
+        safety,
+        safetyOver: safety.filter(p => p.status === 'high'),
+    };
 }
 
 export type IssueKind = 'short' | 'excess' | 'food' | 'other';

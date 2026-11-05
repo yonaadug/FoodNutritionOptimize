@@ -372,4 +372,23 @@ describe('optimizeDiet: tolerable upper intake levels', () => {
         assert.equal(capped.constraintLimits!.iron_mg.max, 45);
         assert.equal(capped.constraintLimits!.magnesium_mg, undefined);
     });
+
+    it('reports which caps are upper limits so clients do not mistake them for goals', () => {
+        const constraints = relaxed();
+        for (const k of Object.keys(constraints)) constraints[k] = {};
+        constraints.protein_g = { min: 20 };
+        constraints.calcium_mg = { min: 100 };
+        constraints.zinc_mg = { max: 30 };
+        const result = optimizeDiet({ foods: [chicken, broccoli], customConstraints: constraints, applyUpperLimits: true });
+        assert.equal(result.success, true, result.message ?? 'expected success');
+        const ul = new Set(result.upperLimitKeys);
+        assert.ok(ul.has('vitamin_d_ug'), 'vitamin D has only its UL');
+        assert.ok(ul.has('calcium_mg'), 'calcium: user minimum + UL maximum');
+        assert.equal(result.constraintLimits!.calcium_mg.min, 100);
+        assert.ok(!ul.has('zinc_mg'), 'the user\'s own zinc maximum is a goal, not a UL');
+        assert.ok(!ul.has('protein_g'));
+
+        const off = optimizeDiet({ foods: [chicken, broccoli], customConstraints: constraints });
+        assert.deepEqual(off.upperLimitKeys, []);
+    });
 });

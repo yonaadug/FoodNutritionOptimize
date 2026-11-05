@@ -518,6 +518,12 @@ button:disabled { cursor: not-allowed; }
 .status-text[data-status='met'] { color: var(--success); }
 .status-text[data-status='low'] { color: var(--warning); }
 .status-text[data-status='high'] { color: var(--danger); }
+.safety-limits { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.safety-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.safety-title { font-weight: 650; font-size: 13px; }
+.safety-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px 16px; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); font-size: 12px; }
+.safety-list li { display: flex; justify-content: space-between; gap: 8px; color: var(--text-secondary); }
+.safety-list li[data-status='high'] { color: var(--danger); font-weight: 650; }
 @keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 .issue-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }

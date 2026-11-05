@@ -81,6 +81,12 @@ export interface OptimizationResult {
     totalCalories?: number;
     totalNutrients?: Record<string, number>;
     constraintLimits?: Record<string, ConstraintLimit>;
+    /**
+     * Nutrients whose `max` in constraintLimits is a Tolerable Upper Intake
+     * Level added by `applyUpperLimits`, not a goal the client asked for.
+     * A key listed here with no `min` is a safety ceiling only.
+     */
+    upperLimitKeys?: string[];
     debugEquations?: string[];
     lpModel?: LpModel;
     /** Set (with success=false) for malformed input; the API maps it to HTTP 400. */
@@ -293,12 +299,14 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
     const custom = (customConstraints ?? {}) as Record<string, unknown>;
     const has = (k: string) => Object.prototype.hasOwnProperty.call(custom, k);
     const constraintLimits: Record<string, ConstraintLimit> = {};
+    const upperLimitKeys: string[] = [];
 
     for (const key of NUTRIENT_KEYS) {
         const bounds = resolveBounds(key, custom[key], has(key));
         const config = ALL_NUTRIENT_CONFIG[key];
         if (applyUpperLimits && bounds.max === undefined && config.ul && isFoodSafeUpperLimit(config)) {
             bounds.max = config.ul.value;
+            upperLimitKeys.push(key);
         }
         if (bounds.min !== undefined || bounds.max !== undefined) {
             constraintLimits[key] = { min: bounds.min, max: bounds.max };
@@ -353,6 +361,7 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
                 success: false,
                 message: `Optimization Failed:\n• ${label(key)}: minimum (${fmt(lim.min)}${unit(key)}) is greater than maximum (${fmt(lim.max)}${unit(key)}).`,
                 constraintLimits,
+                upperLimitKeys,
                 warnings: buildWarnings(new Set()),
             };
         }
@@ -366,6 +375,7 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
             totalCalories: Math.round(guaranteedCalories),
             totalNutrients: { ...guaranteedNutrients, calories: guaranteedCalories },
             constraintLimits,
+            upperLimitKeys,
             message: 'Only guaranteed foods provided.',
             warnings: buildWarnings(new Set()),
         };
@@ -420,6 +430,7 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
             lpModel: model,
             debugEquations: failureEquations(model),
             constraintLimits,
+            upperLimitKeys,
             warnings: buildWarnings(new Set()),
         };
     }
@@ -453,6 +464,7 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
         totalCalories: Math.round(guaranteedCalories + optimizedCaloriesExact),
         totalNutrients,
         constraintLimits,
+        upperLimitKeys,
         debugEquations: successEquations(model, diet),
         lpModel: model,
         warnings: buildWarnings(new Set(diet.map(d => d.food.id))),

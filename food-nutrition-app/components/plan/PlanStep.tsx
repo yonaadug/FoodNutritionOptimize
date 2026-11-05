@@ -8,7 +8,7 @@ import type { FixedFood, PlannerState } from '@/hooks/usePlannerState';
 import type { PlanResult, PlanStatus } from '@/hooks/usePlan';
 import { presetTitle } from '@/components/planner/goals';
 import { GOAL_KEYS, amountFor, fmtNumber, householdAmount, nutrientLabel, nutrientUnit, num, splitFoodName } from '@/components/planner/nutrients';
-import { goalProgress, parseIssues, warningText, type GoalProgress } from './analysis';
+import { goalProgress, goalSummary, parseIssues, warningText, type GoalProgress } from './analysis';
 import InfeasibleHelp from './InfeasibleHelp';
 
 interface PlanStepProps {
@@ -125,8 +125,10 @@ function PlanResultView({ state, result, fixedAtRun, headingId, headingRef, onEd
     ].sort((a, b) => (amountFor(b.food, 'calories', b.grams) ?? 0) - (amountFor(a.food, 'calories', a.grams) ?? 0)), [result, fixedAtRun]);
 
     const progress = useMemo(() => goalProgress(result), [result]);
-    const nutrientGoals = progress.filter(p => p.key !== 'calories');
-    const met = nutrientGoals.filter(p => p.status === 'met').length;
+    const summary = goalSummary(progress);
+    const nutrientGoals = summary.goals;
+    const met = summary.met;
+    const goalRows = progress.filter(p => p.kind === 'goal');
     const totalKcal = num(result.totalCalories);
     const P = num(result.totalNutrients?.protein_g) ?? 0;
     const C = num(result.totalNutrients?.carbohydrate_g) ?? 0;
@@ -229,9 +231,10 @@ function PlanResultView({ state, result, fixedAtRun, headingId, headingRef, onEd
 
                 <section className="panel sticky-col" aria-label="Goal progress">
                     <h3 className="panel-title" style={{ marginBottom: 12 }}>Goal progress</h3>
-                    {progress.length === 0
+                    {goalRows.length === 0
                         ? <p className="small muted">No goals are switched on.</p>
-                        : <div className="stack" style={{ gap: 14 }}>{progress.map(p => <ProgressBar key={p.key} p={p} />)}</div>}
+                        : <div className="stack" style={{ gap: 14 }}>{goalRows.map(p => <ProgressBar key={p.key} p={p} />)}</div>}
+                    {summary.safety.length > 0 && <SafetyLimits rows={summary.safety} />}
                 </section>
             </div>
 
@@ -278,7 +281,11 @@ function ProgressBar({ p }: { p: GoalProgress }) {
         : p.min !== undefined ? `at least ${fmtNumber(p.min)} ${unit}` : `at most ${fmtNumber(p.max)} ${unit}`;
     let statusText = 'On target';
     if (p.status === 'low' && p.min !== undefined && p.value !== null) statusText = `Short by ${fmtNumber(p.min - p.value)} ${unit}`;
-    if (p.status === 'high' && p.max !== undefined && p.value !== null) statusText = `Over by ${fmtNumber(p.value - p.max)} ${unit}`;
+    if (p.status === 'high' && p.value !== null) {
+        statusText = p.max !== undefined && p.value > p.max
+            ? `Over by ${fmtNumber(p.value - p.max)} ${unit}`
+            : `Over the safe upper limit by ${fmtNumber(p.value - (p.safeMax ?? 0))} ${unit}`;
+    }
     if (p.status === 'unknown') statusText = 'No data';
 
     return (
@@ -296,7 +303,32 @@ function ProgressBar({ p }: { p: GoalProgress }) {
             </div>
             <div className="status-text" data-status={p.status === 'unknown' ? 'low' : p.status}>
                 {p.status === 'met' ? '✓ ' : ''}{statusText}
+                {p.safeMax !== undefined && p.status !== 'high' && <span className="muted" style={{ fontWeight: 500 }}> · safe upper limit {fmtNumber(p.safeMax)} {unit}</span>}
             </div>
+        </div>
+    );
+}
+
+/** Ceiling-only safe upper limits: a quiet check, not goals. */
+function SafetyLimits({ rows }: { rows: GoalProgress[] }) {
+    const over = rows.filter(r => r.status === 'high');
+    return (
+        <div className="safety-limits">
+            <div className="safety-head">
+                <span className="safety-title">Safe upper limits</span>
+                <span className={`status-text`} data-status={over.length ? 'high' : 'met'} style={{ marginTop: 0 }}>
+                    {over.length ? `${over.length} over the limit` : `✓ All ${rows.length} within`}
+                </span>
+            </div>
+            <p className="tiny muted">Not goals: the planner only made sure these stay under the adult Tolerable Upper Intake Level.</p>
+            <ul className="safety-list">
+                {rows.map(r => (
+                    <li key={r.key} data-status={r.status}>
+                        <span>{nutrientLabel(r.key)}</span>
+                        <span className="tabular">{fmtNumber(r.value)} <span className="muted">/ max {fmtNumber(r.safeMax)} {nutrientUnit(r.key)}</span></span>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }

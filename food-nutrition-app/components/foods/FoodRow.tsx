@@ -2,6 +2,7 @@
 
 import type { Food } from '@/lib/food-types';
 import Icon from '@/components/ui/Icon';
+import FoodLink from '@/components/food/FoodLink';
 import { dataSourceLabel, fmtNumber, hasCoreData, nv, splitFoodName } from '@/components/planner/nutrients';
 
 interface FoodRowProps {
@@ -26,8 +27,10 @@ export default function FoodRow({ food, added, onToggle, highlight, highlightSub
         <li className="food-row">
             <div className="food-row-main">
                 <div className="food-name-line" title={food.description}>
-                    <span className="food-name">{name}</span>
-                    {detail && <span className="food-detail">, {detail}</span>}
+                    <FoodLink food={food}>
+                        <span className="food-name">{name}</span>
+                        {detail && <span className="food-detail">, {detail}</span>}
+                    </FoodLink>
                 </div>
                 <div className="food-meta">
                     {food.food_category && <span className="chip">{food.food_category}</span>}

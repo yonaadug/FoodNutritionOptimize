@@ -1,11 +1,16 @@
 'use client';
 
 import { useId, useMemo, useState } from 'react';
+import FoodLink, { OlderEntryMark } from '@/components/food/FoodLink';
 import { GOAL_KEYS, fmtNumber, nutrientLabel, nutrientUnit, splitFoodName } from '@/components/planner/nutrients';
+import type { Food } from '@/lib/food-types';
+import { isFilled } from '@/lib/nutrient-fill';
 
 export interface BreakdownItem {
     name: string;
     fixed: boolean;
+    /** For the link to its page, and to mark values from an older USDA entry. */
+    food?: Pick<Food, 'fdc_id' | 'description' | 'recipe' | 'filledFrom'>;
     /** Absolute amounts in this plan (not per 100 g); null = no data. */
     amounts: Record<string, number | null>;
 }
@@ -43,8 +48,11 @@ export default function NutrientBreakdown({ items, initial = 'protein_g' }: { it
                     {rows.map((r, i) => (
                         <li key={i} className="progress-item">
                             <div className="progress-head">
-                                <span className="progress-name">{splitFoodName(r.name).name}{r.fixed && <span className="tiny muted"> (fixed)</span>}</span>
-                                <span className="progress-value">{fmtNumber(r.value)} {unit} · {Math.round(r.pct)}%</span>
+                                <span className="progress-name">
+                                    {r.food ? <FoodLink food={r.food}>{splitFoodName(r.name).name}</FoodLink> : splitFoodName(r.name).name}
+                                    {r.fixed && <span className="tiny muted"> (fixed)</span>}
+                                </span>
+                                <span className="progress-value">{fmtNumber(r.value)} {unit}{isFilled(r.food, nutrient) && <OlderEntryMark />} · {Math.round(r.pct)}%</span>
                             </div>
                             <div className="progress-track" aria-hidden="true">
                                 <div className="progress-fill" style={{ width: `${r.pct}%`, background: r.fixed ? 'var(--text-muted)' : 'var(--primary)' }} />

@@ -34,7 +34,7 @@ export function isNavActive(item: NavItem, pathname: string | null | undefined):
 export const SITE_NAME = 'Micronutrient Diary';
 
 /** One line that says what the site is. */
-export const SITE_TAGLINE = 'Look up the nutrients in any food, using USDA data, then plan a day that meets your goals.';
+export const SITE_TAGLINE = 'Look up the nutrients and contaminants in any food, work out a recipe’s nutrition, and plan a day that meets your goals.';
 
 /** Canonical origin, without a trailing slash. Set NEXT_PUBLIC_SITE_URL per environment. */
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://micronutrientdiary.com').replace(/\/+$/, '');

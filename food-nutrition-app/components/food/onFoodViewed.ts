@@ -5,8 +5,12 @@ import { recordHistory } from '@/lib/auth/client';
 export interface FoodView {
     fdcId: number;
     description: string;
+    /** The name people see elsewhere on the site, e.g. "Salmon, sockeye, raw". */
+    title?: string;
     /** Canonical page path, e.g. /food/173691-salmon-sockeye-raw */
     path: string;
+    /** Facts for the history row. See lib/auth/history-summary.ts. */
+    summary?: { label: string; value: string }[];
 }
 
 /**
@@ -17,5 +21,11 @@ export interface FoodView {
  */
 export function onFoodViewed(view: FoodView): void {
     window.dispatchEvent(new CustomEvent<FoodView>('mnd:food-viewed', { detail: view }));
-    void recordHistory({ kind: 'food', itemId: String(view.fdcId), title: view.description, href: view.path });
+    void recordHistory({
+        kind: 'food',
+        itemId: String(view.fdcId),
+        title: view.title ?? view.description,
+        href: view.path,
+        ...(view.summary?.length ? { data: { summary: view.summary } } : {}),
+    });
 }

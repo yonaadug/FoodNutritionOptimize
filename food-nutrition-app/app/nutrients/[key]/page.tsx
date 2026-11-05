@@ -1,3 +1,4 @@
+import { isFilled } from '@/lib/nutrient-fill';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -68,7 +69,7 @@ export default async function NutrientPage({ params, searchParams }: PageProps<'
                         {foods.map(f => (
                             <FoodResultRow key={f.id} food={f} highlight={{
                                 value: `${fmt(f.best.perServing)} ${unit}`,
-                                sub: `${dv !== null ? `${fmt(f.best.perServing / dv * 100, 0)}% DV · ` : ''}per ${f.best.servingLabel}`,
+                                sub: `${dv !== null ? `${fmt(f.best.perServing / dv * 100, 0)}% DV · ` : ''}per ${f.best.servingLabel}${isFilled(f, key) ? ' · from USDA’s older entry' : ''}`,
                             }} />
                         ))}
                     </ol>

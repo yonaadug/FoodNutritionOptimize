@@ -261,3 +261,9 @@ export function dataSourceLabel(dataType: string | null | undefined): string | n
     if (t.includes('branded')) return 'Branded';
     return dataType.replace(/_/g, ' ');
 }
+
+/** "Fish, salmon, sockeye, raw" -> "Salmon, sockeye, raw": the name used across the site. */
+export function displayFoodName(description: string): string {
+    const { name, detail } = splitFoodName(description);
+    return detail ? `${name}, ${detail}` : name;
+}

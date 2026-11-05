@@ -59,6 +59,12 @@ export function foodPath(food: { fdc_id: number; description: string }): string 
 }
 
 /** Parse the [id] segment of /food/[id]: "173691", "173691-salmon-sockeye-raw". */
+/** Where a food in a list links to: its page, or a recipe's analyzer. Null when it has neither. */
+export function foodHref(food: Pick<Food, 'fdc_id' | 'description' | 'recipe'>): string | null {
+    if (food.recipe) return `/recipes?id=${encodeURIComponent(food.recipe.id)}`;
+    return Number.isSafeInteger(food.fdc_id) && food.fdc_id > 0 ? foodPath(food) : null;
+}
+
 export function parseFoodParam(param: string): { fdcId: number; slug: string } | null {
     let raw = param;
     try { raw = decodeURIComponent(param); } catch { /* keep as is */ }

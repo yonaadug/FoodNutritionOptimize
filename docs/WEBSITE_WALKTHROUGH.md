@@ -1,449 +1,604 @@
-# Micronutrient Diary: a guided tour of the redesigned site
+# Micronutrient Diary: a guided tour
 
-_Toured on 4 November 2026 against the production build (`npm run build`, standalone server) with the full 9,435-food database. Screenshots were taken with headless Chromium at 1440×900 (desktop) and 390×844 (phone), in light and dark themes._
+_Toured on 5 November 2026 against the production build on a laptop (`npm run preview`, port 3620), with the full 9,435-food database, a throwaway account database and the offline demo AI. Screenshots come from headless Chromium at 1440×900 and 390×844, in light and dark themes._
 
-This tour is for the site's owner. You built the original version, but the interface was just redesigned, so much of it will look new. Each section shows a screenshot and then explains what you're looking at and what each control does. The last section is an honest list of rough edges I ran into along the way.
+The site used to be one thing, a meal planner. It is now four things that were built side by side and only just merged: a food lookup, contaminant meters on every food, a recipe analyzer, and optional accounts. This tour walks through all of it as a customer would. Because it was the first look at the finished whole, it also records where the parts don't quite fit. Those are in the [rough edges checklist](#14-rough-edges-checklist).
+
+**The short version:** the site is fast, has no broken internal links, and the contaminant meters always match the chosen serving. The main problems are at the joins between features: the same food can give different nutrition depending on where you look, and accounts promise more than they save.
+
+## The 60-second tour
+
+1. **Open the home page** and type "rice". Results appear as you type ([section 1](#1-home-and-search)).
+2. **Open a food.** Change **Serving size** and watch the Nutrition Facts label and the contaminant meters move together ([sections 2](#2-food-pages) and [3](#3-contaminant-meters)).
+3. **Click Add to my plan,** then **Plan** in the header. Click **Try a sample day** if you'd rather start from 15 staples. You get amounts in grams and household measures ([section 6](#6-the-planner)).
+4. **Click Recipes,** then **Try an example** and **Work out the nutrition.** Fix anything misread, and the per-serving totals update ([section 7](#7-recipes)).
+5. **Click Add a serving to my plan,** then rebuild the plan. The recipe now appears in the day ([section 7.4](#74-adding-a-recipe-to-a-plan)).
+6. **Click Sign in** if you want a history. No password: a link is emailed, or printed in the terminal on a laptop ([section 8](#8-accounts)).
 
 ## Contents
 
-1. [What this site is](#1-what-this-site-is)
-2. [The 60-second tour](#2-the-60-second-tour)
-3. [First look: welcome screen, header, footer](#3-first-look-welcome-screen-header-footer)
-4. [Try a sample day](#4-try-a-sample-day)
-5. [Step 1: Pick foods](#5-step-1-pick-foods)
-   - [Search and popular starting points](#51-search-and-popular-starting-points)
-   - ["Limited data" foods](#52-limited-data-foods)
-   - [Best sources of…](#53-best-sources-of)
-   - [Your foods: fixed amounts and per-food limits](#54-your-foods-fixed-amounts-and-per-food-limits)
-   - [Compare nutrition labels](#55-compare-nutrition-labels)
-   - [Clear all and Undo](#56-clear-all-and-undo)
-6. [Step 2: Set goals](#6-step-2-set-goals)
-   - [Presets](#61-presets)
-   - [Calories, portions and safe upper limits](#62-calories-portions-and-safe-upper-limits)
-   - [Fine-tune individual goals](#63-fine-tune-individual-goals)
-7. [Step 3: Your plan](#7-step-3-your-plan)
-   - [The summary](#71-the-summary)
-   - [What to eat and goal progress](#72-what-to-eat-and-goal-progress)
-   - [The missing-data callout](#73-the-missing-data-callout)
-   - [Where each nutrient comes from](#74-where-each-nutrient-comes-from)
-   - [Show the math](#75-show-the-math)
-   - [The "Update plan" banner](#76-the-update-plan-banner)
-   - [What upper limits look like in a plan](#77-what-upper-limits-look-like-in-a-plan)
-8. [When the goals can't all be met](#8-when-the-goals-cant-all-be-met)
-9. [When something goes wrong](#9-when-something-goes-wrong)
-10. [Dark mode](#10-dark-mode)
-11. [On a phone](#11-on-a-phone)
-12. [Keyboard and accessibility](#12-keyboard-and-accessibility)
-13. [What's remembered after a reload](#13-whats-remembered-after-a-reload)
-14. [Behind the scenes](#14-behind-the-scenes)
-15. [Tips: two questions people will ask](#15-tips-two-questions-people-will-ask)
-16. [Rough edges noticed while touring](#16-rough-edges-noticed-while-touring)
-17. [About these screenshots](#17-about-these-screenshots)
+1. [Home and search](#1-home-and-search)
+2. [Food pages](#2-food-pages)
+3. [Contaminant meters](#3-contaminant-meters)
+4. [Compare](#4-compare)
+5. [Browse by category or nutrient](#5-browse-by-category-or-nutrient)
+6. [The planner](#6-the-planner)
+7. [Recipes](#7-recipes)
+8. [Accounts](#8-accounts)
+9. [Dark mode](#9-dark-mode)
+10. [On a phone](#10-on-a-phone)
+11. [Keyboard](#11-keyboard)
+12. [Behind the scenes](#12-behind-the-scenes)
+13. [Tips: questions people will ask](#13-tips-questions-people-will-ask)
+14. [Rough edges checklist](#14-rough-edges-checklist)
+15. [What was checked, and what couldn't be](#15-what-was-checked-and-what-couldnt-be)
 
 ---
 
-## 1. What this site is
+## 1. Home and search
 
-Micronutrient Diary plans a day of eating. You pick foods you'd happily eat and choose what you're aiming for, such as enough protein, fiber, iron and vitamin C without too much salt. The site then works out **how much of each food to eat**, in grams and in everyday amounts like "≈ 1½ cups". If your foods can't cover every goal, it tells you which goals fall short and suggests foods to add.
+![The home page](walkthrough/01-home.png)
 
-It is free, needs no account, and remembers your choices in your own browser. The food data comes from the US Department of Agriculture (USDA).
+**What you see.** Every page shares the same header and footer.
 
-## 2. The 60-second tour
+- **Header:** the logo (back to home), **Foods**, **Plan** and **Recipes**, then **Sign in** and the moon/sun theme button.
+- **"What's in your food?"** and one big search box, already in focus on a computer.
+- **Popular foods:** 12 cards. Each shows the name, the calories in a typical serving, and what the food is richest in. A card opens that food's page.
+- **Footer:** the food count, the USDA data release (linked) and "not medical advice".
 
-1. **Open the site.** A welcome panel explains the idea in one sentence and offers two buttons ([section 3](#3-first-look-welcome-screen-header-footer)).
-2. **Click "Try a sample day".** About half a second later you land on a finished plan built from 15 everyday foods, with "Every goal met" ([section 4](#4-try-a-sample-day)).
-3. **Read the plan.** At the top are calories with a protein/carbs/fat split, a "goals met" ring and protein. Below that, "What to eat" lists each food with grams and household amounts, and "Goal progress" shows a bar per goal ([section 7](#7-step-3-your-plan)).
-4. **Change something.** Click **Edit goals**, pick another preset such as *High protein*, and return to the plan. A banner says the plan is out of date. Click **Update plan** ([section 7.6](#76-the-update-plan-banner)).
-5. **Try a hard goal set.** Pick *Standard adult (FDA Daily Values)* and click **Make my plan**. You'll see "We can't hit every goal with these foods", with one card per problem and one-click fixes ([section 8](#8-when-the-goals-cant-all-be-met)).
-6. **Make it yours.** Go back to **Pick foods**, search for foods you actually eat, and click **Add**. Use the sliders icon on any food to fix an exact amount or set limits ([section 5](#5-step-1-pick-foods)).
+![Lower on the home page](walkthrough/02-home-browse.png)
 
-The three steps (**Pick foods → Set goals → Your plan**) are always shown in the stepper near the top. A bar fixed to the bottom of the screen always offers **Make my plan**.
+Further down:
 
----
+- **Browse by category:** 16 chips with friendly names and counts, plus **All categories**.
+- **Best sources of:** 12 nutrient chips, plus **All nutrients**.
+- **Planning a whole day?** links to the planner. Once you've picked foods, its link changes to "Continue your plan (2 foods)".
 
-## 3. First look: welcome screen, header, footer
+![Search results for salmon](walkthrough/03-search-salmon.png)
 
-![The welcome screen on a first visit](walkthrough/01-landing.png)
+**Searching.**
 
-**What you see**
+- Results start at 2 letters and update as you type. The address changes to `/?q=salmon`, so a search can be shared and the Back button returns to it.
+- Each row shows the name, category, a USDA dataset badge, the top three nutrients, and calories per typical serving. Clicking a row opens the food page. There's no Add button here; adding happens on the food page.
+- **Show more (N left)** loads the next 20.
+- Keyboard: `/` jumps to the box from anywhere on the page, ↓ moves into the results, Esc clears.
+- Foods you open are remembered as **Recent** chips under the box, in this browser only. Each has an × and there's a **Clear** button.
+- No matches gives "No foods match…" with a tip to use a simpler word and **Browse foods instead**.
 
-- **Header (top strip).** The leaf logo and "Micronutrient Diary" with the tagline "Plan a day of food that meets your nutrition goals". Clicking the logo always takes you back to step 1. The round moon/sun button on the right switches between light and dark mode.
-- **Welcome panel.** "Free · No sign-up · Uses USDA nutrition data", the headline "Eat the foods you like and still hit your nutrition goals.", and two buttons:
-  - **Try a sample day** loads 15 staple foods and builds a plan straight away ([section 4](#4-try-a-sample-day)).
-  - **Start with my own foods** puts the cursor in the search box so you can start typing.
-  - Underneath, a short "how it works" strip: 1 Pick foods, 2 Set goals, 3 Get your plan.
-- **Stepper.** Three clickable cards: **Pick foods** ("Nothing yet" / "15 chosen"), **Set goals** (the current preset and goal count, such as "Everyday essentials · 9 goals") and **Your plan** ("Not made yet", "Ready", "Out of date" or "Needs changes"). Finished steps get a green tick. You can jump to any step at any time.
-- **Step 1 panels.** "Find foods you like" on the left and "Your foods (0)" on the right, which also has its own **Try a sample day** button.
+## 2. Food pages
 
-The welcome panel only shows while your food list is empty. It disappears as soon as you add a food, and comes back if you clear the list.
+![A food page](walkthrough/04-food-salmon.png)
 
-![Footer and the sticky action bar](walkthrough/02-footer-and-action-bar.png)
+**What you see, top to bottom.**
 
-**Footer.** The first line is the data-source line: "9,435 foods · Nutrition data from USDA FoodData Central, Oct 2026 (public domain)". The food count and release month come live from the server, and the link goes to USDA's download page. The second line is the disclaimer: "Plans are estimates for general information, not medical advice."
+- **Breadcrumb:** Foods › category › food.
+- **Name,** with a badge for the USDA dataset. Foods with almost no data also get a **Limited data** badge. An older record that USDA has replaced gets a note linking to the newer one.
+- **Add to my plan** puts the food on your planner list and shows a short message with **Open plan**. The button then becomes **In your plan · Open plan**.
+- **Compare** opens the [comparison panel](#4-compare).
+- **Share** copies the link, or opens the share sheet on a phone.
+- **Serving size:** household measures from USDA, "1 standard serving", 100 g, or **Custom amount…** (1 to 5,000 g; anything else shows a warning and uses 100 g for now). This one menu drives everything else on the page.
+- **Nutrition Facts:** the FDA-style label for that serving.
+- **Rich in:** up to five nutrients at 20% of the Daily Value or more for that serving.
+- **All nutrients:** every nutrient, with the amount, a % Daily Value bar and the value per 100 g. "—" means USDA has no measurement.
+- **Contaminants:** see the [next section](#3-contaminant-meters).
 
-**Action bar (fixed to the bottom of the screen on steps 1 and 2).** On the left is a running summary ("0 foods · 9 goals", plus a hint such as "Add at least one food to make a plan"). On the right is a secondary button (**Set goals →** on step 1, **← Foods** on step 2) and the main **Make my plan** button. Both stay greyed out until you have at least one food. The bar is hidden on the plan step.
+![Related foods and the data source](walkthrough/05-food-related-and-source.png)
 
-## 4. Try a sample day
+At the bottom:
 
-![The button while the sample day loads](walkthrough/03-sample-day-loading.png)
+- **Other forms** and **Nutritionally similar foods** are cards that open those foods.
+- **Where this data comes from** names the dataset, links the USDA record, and gives the publication date and release. Where USDA holds the same food in another dataset, **Same food elsewhere** links to it.
 
-Clicking **Try a sample day** briefly shows "Building a sample day…". Behind the scenes the site searches the database for 15 staples (oats, salmon, spinach, yogurt, banana, almonds, broccoli, chicken breast, orange, whole-wheat bread, carrots, sunflower seeds, egg, kale and milk). For each one it picks the version with the most complete nutrition data. It adds them all to your list and runs the planner. If your goals were set to *Custom* or *FDA Daily Values*, it first switches them to *Everyday essentials* so the sample succeeds. On the local server the whole thing took about 0.4 seconds.
+## 3. Contaminant meters
 
-![The plan produced by the sample day](walkthrough/04-sample-day-plan.png)
+Each food page has a **Contaminants** panel covering heavy metals, pesticide residues and microplastics. It always describes the serving chosen above it.
 
-**The resulting plan** (Everyday essentials):
+![The panel for white rice at a 45 g serving](walkthrough/06-contaminants-rice-45g.png)
 
-- **"Every goal met"**, with 9 of the 15 foods used, about 1,544 g of food in total.
-- **1,800 kcal.** That is the bottom of the 1,800–2,200 kcal range, because the planner always looks for the fewest calories that still meet every goal.
-- **Macro split:** protein 37 %, carbs 24 %, fat 38 %. Protein is 173 g, well over the 50 g minimum.
-- **Goals met:** 9/9.
-- A yellow note says 8 foods are missing some nutrient data ([section 7.3](#73-the-missing-data-callout)).
+**Reading one row:**
 
-> **Worth knowing:** you chose 15 foods but the plan uses 9. Oats, yogurt, egg, almonds, orange and carrots were left out because the cheapest way, in calories, to hit these goals didn't need them. The page doesn't currently say this anywhere (see [rough edges](#16-rough-edges-noticed-while-touring)).
+- **The name and a badge:** Low, Moderate, Elevated or High.
+- **The meter:** four coloured bands with a marker showing where this serving sits.
+- **A sentence with the numbers:** "About 4.6 µg per serving, 97% of US EPA's daily reference."
+- **Sometimes a servings line:** "About 1 serving a day would stay within the reference, if nothing else you eat contains it."
+- **Sometimes context,** such as the note on rice about EPA's cautious reference and cooking in plenty of water.
+- **A Rough estimate tag** when the number rests on few samples, a loose match or old data.
 
----
+The **Based on** line under each group heading names what was actually tested, because similar foods share one set of measurements. For this rice: "Rice, white, enriched, cooked", applied to 24 similar foods.
 
-## 5. Step 1: Pick foods
+**What the bands mean:**
 
-### 5.1 Search and popular starting points
+| Level | Lead, cadmium, arsenic, pesticides (share of a **day's** reference) | Mercury (share of a **week's** reference) | Microplastics (particles per serving, **not a safety rating**) |
+|---|---|---|---|
+| Low | under 10% | under 10% | under 10 |
+| Moderate | 10% to under 25% | 10% to under 33% | 10 to under 50 |
+| Elevated | 25% to under 50% | 33% to under 100% | 50 to under 200 |
+| High | 50% or more | 100% or more | 200 or more |
 
-![Search panel with popular starting points, and Your foods](walkthrough/05-popular-starting-points.png)
+These cut-offs are the site's own judgment, not an agency's. The references they're measured against do come from agencies.
 
-- **The search box** searches as you type once you've entered 2 letters. There's no need to press Enter. The **×** button clears it.
-- The line under the box shows status: "Type at least 2 letters…", "Searching…", or "465 matches, showing 20".
-- **Popular starting points** are one-click searches: oats, egg, salmon, spinach, yogurt, lentils, banana, almonds, chicken, rice, tofu, broccoli. They're shown while the box is empty.
-- **Search / Best sources of…** at the top right switches between the two ways of finding foods ([section 5.3](#53-best-sources-of)).
+**Meters follow the serving.** Here is the same rice at 100 g. Cadmium moves from Low to Moderate, and arsenic goes from 97% to 215% of the daily reference.
 
-![Search results for "salmon"](walkthrough/06-search-results.png)
+![The same rice at 100 g](walkthrough/07-contaminants-rice-100g.png)
 
-**Each result row shows:**
+**Details and sources** opens the working for one row: the amount per serving, the measured level and highest sample, the reference used and why, how good the data is, what to keep in mind, and links to the sources.
 
-- **The name,** split into a bold first part and a lighter rest ("**Fish**, salmon, sockeye, wild caught, raw"). Hover over it to see the full USDA name.
-- **A grey category chip** (for example "Finfish and Shellfish Products").
-- **Calories and protein per 100 g.**
-- **The data source:** "USDA Foundation", "USDA SR Legacy" or "Mixed dish (FNDDS)".
-- **An Add button** that becomes a green **✓ Added** once the food is on your list. Clicking **Added** again removes it.
+![Details for inorganic arsenic](walkthrough/08-contaminant-details.png)
 
-Results come 20 at a time. **Show more results** at the bottom of the list loads the next 20. If nothing matches, you get "No foods match…" with a hint to try a simpler word.
+**The other states a row can show:**
 
-### 5.2 "Limited data" foods
-
-![Rows marked Limited data](walkthrough/07-limited-data-badge.png)
-
-Some USDA entries have no calories or macronutrients recorded at all. Instead of showing a misleading "0 kcal", these rows show an orange **⚠ Limited data** badge. If you hover over it, it says plans may undercount the food. If you add one anyway, the "Your foods" panel warns you that "1 food has limited USDA data and may be undercounted".
-
-### 5.3 Best sources of…
-
-![Best sources tab showing foods richest in vitamin D](walkthrough/08-best-sources-vitamin-d.png)
-
-This tab lists the 40 foods richest in a single nutrient. Choose the nutrient from the **Show foods richest in** menu, which is grouped into macros, limits, vitamins, minerals and omega-3s. The purple badge shows the amount per 100 g, and **Add** works the same way as in search.
-
-A note above the list warns that dried or concentrated foods rank high per 100 g but are eaten in small amounts. That's why cod liver oil tops the vitamin D list. Use this tab to find a food that fixes a specific gap, such as UV-exposed mushrooms for vitamin D.
-
-### 5.4 Your foods: fixed amounts and per-food limits
-
-![Your foods with one fixed food and one food with limits](walkthrough/09-your-foods-fixed-and-limits.png)
-
-The right-hand panel is your shopping basket. Each food shows a one-line summary of how the planner will treat it, and has two small round buttons:
-
-- **Sliders icon ("More options")** opens the food's settings.
-- **×** removes the food.
-
-Inside the options, under **How much should I eat?**:
-
-- **Let the planner choose** is the default.
-- **I'll eat exactly ___ g** locks the amount. The food gets a purple **📌 Fixed** tag and a summary such as "Fixed: 100 g (≈ 2 eggs, whole without shell)". The planner then plans the rest of your day around it. This is the "I'm definitely having two eggs" feature.
-- **Limit the planner (optional)**, shown only when the planner chooses, has **At least ___ g** and **At most ___ g** boxes for that one food. The summary updates to "Planner chooses, at least 40 g, at most 80 g".
-- **For reference** shows household serving weights from USDA, such as "1 egg, whole without shell = 50 g", to help you pick sensible numbers.
-
-At the bottom of the panel are **Compare nutrition labels** and **Clear all**.
-
-### 5.5 Compare nutrition labels
-
-![Side-by-side nutrition labels](walkthrough/10-compare-nutrition-labels.png)
-
-**Compare nutrition labels** opens a panel below the search area with an FDA-style Nutrition Facts label for every food on your list. The labels sit side by side and you scroll sideways to see more. Each label has its own **Serving size** menu (100 g, or any USDA household serving such as "1 egg (50 g)"), and the whole label rescales when you change it. **Close** hides the panel.
-
-On the labels:
-
-- **% Daily Value** is shown where the FDA defines one.
-- **"—" means USDA didn't measure that nutrient for this food. It does not mean zero.** In the example above, the banana entry has no calcium, iron or potassium recorded, which is surprising for a banana but is how the data comes.
-
-### 5.6 Clear all and Undo
-
-![After Clear all, with the Undo button](walkthrough/11-clear-all-undo.png)
-
-**Clear all** empties the list immediately, with no confirmation dialog, and leaves a "Cleared your foods. **Undo**" bar in the panel. Undo puts back the foods, fixed amounts and limits. Because the list is now empty, the big welcome panel reappears at the top.
-
----
-
-## 6. Step 2: Set goals
-
-### 6.1 Presets
-
-![Goal presets](walkthrough/12-goals-presets.png)
-
-**"What are you aiming for?"** offers five cards. Pick one and every goal below it is set for you.
-
-| Preset | What it sets | Calories |
+| Row says | Meaning | Where to see it |
 |---|---|---|
-| **Everyday essentials** (Recommended, the default) | 9 goals: at least 50 g protein, 28 g fiber, 1,300 mg calcium, 18 mg iron, 4,700 mg potassium, 900 mcg vitamin A and 90 mg vitamin C; at most 20 g saturated fat and 2,300 mg sodium | 1,800–2,200 |
-| **Standard adult (FDA Daily Values)** | 26 goals: every vitamin and mineral with an FDA Daily Value, at 100 %, plus the macro references | 1,800–2,200 |
-| **High protein** | At least 120 g protein, plus fiber, calcium, potassium and the saturated-fat and sodium limits (6 goals) | 2,000–2,600 |
-| **Lower carb** | At most 100 g carbs, at least 90 g protein and 20 g fiber, plus the saturated-fat and sodium limits (5 goals) | 1,600–2,000 |
-| **Custom** | Whatever you set below. Any manual edit switches to Custom automatically, and choosing Custom opens the fine-tune list. | yours |
+| **Not detected** | Testing found none, down to the test's limit | Lead in salmon |
+| **Not rated** | The amount can't be fairly judged. Arsenic in seafood is mostly the far less harmful organic forms | Total arsenic in salmon |
+| **No data** | No testing could be matched. It says nothing either way, and it's never shown as zero | Microplastics in rice |
+| **Low among studied foods** | The microplastics wording, with a Limited data badge and a note that this isn't a safety rating | Microplastics in salmon |
 
-The stepper's middle card always shows the active preset and goal count.
+![The panel for salmon](walkthrough/09-contaminants-salmon.png)
 
-### 6.2 Calories, portions and safe upper limits
+When nothing at all can be matched, the panel shrinks to one calm line. This is deliberate for organ meats like this liver, because they concentrate metals and muscle meat is a poor stand-in.
 
-![Calories, portion and upper-limit settings](walkthrough/13-goals-calories-portions-limits.png)
+![A food with no contaminant data](walkthrough/10-contaminants-no-data.png)
 
-- **Daily calories, Between ___ and ___ kcal.** The plan uses the fewest calories that still meet your goals, within this range. In practice it almost always lands on the lower number. Leave a box empty for no limit.
-- **Keep portions realistic** (on by default, **At most 300 g per food**) stops the planner from piling on one food, such as a kilo of spinach. Per-food limits from step 1 still apply on top. _Update:_ this switch now sets the whole cap, "at most 3 servings or 300 g of each food", and off means no general cap (see [rough edges](#16-rough-edges-noticed-while-touring)).
-- **Respect safe upper limits** (optional, off by default) also keeps nutrients such as iron, zinc and selenium under the adult Tolerable Upper Intake Level. Only limits that apply to food are used. Supplement-only limits, such as magnesium's, are skipped.
+At the bottom of a full panel, **How we work this out** repeats the bands and links to the methodology, and a disclaimer says this is general information, not medical advice. If the data can't load, the panel says so and offers **Try again**.
 
-### 6.3 Fine-tune individual goals
+## 4. Compare
 
-![Fine-tune individual goals, with protein edited and vitamin D switched on](walkthrough/14-fine-tune-goals.png)
+![Comparing salmon with two other foods](walkthrough/11-compare.png)
 
-Click **Fine-tune individual goals** to open the full list (the chip on the right counts how many goals are on). Nutrients are grouped as *Protein, carbs & fiber*, *Keep these in check*, *Vitamins*, *Minerals* and *Omega-3 fats*. Each row has:
+**Compare** on a food page opens a panel below the page.
 
-- **An on/off switch.** Switching a goal on fills in its reference value. Switching it off really removes it from the plan.
-- **The nutrient name and its reference value,** for example "FDA Daily Value: 90 mg · Upper limit 2,000 mg". "(limit)" marks values that are ceilings rather than targets. Some rows say "Adequate intake" (omega-3 ALA) or "No official target" (EPA, DHA).
-- **At least ___ and At most ___ boxes,** with units. "At least" is a minimum to reach and "at most" is a ceiling to stay under. You can fill in both to set a range. Typing in a box of a goal that's off switches it on.
+- **Suggestion chips** offer other forms and similar foods. Click to add or remove one.
+- **Or search for another food** finds anything else. You can add up to three foods, and the rest grey out once you have.
+- **The labels** sit side by side. Each has its own **Serving size** menu, and you scroll sideways if they don't fit.
+- **Close** hides the panel. The comparison isn't saved and is gone after a reload.
 
-Total sugars is off by default because the FDA value is for *added* sugars only, and the intro text above the list explains this.
+The planner has a similar view, **Compare nutrition labels**, for the foods on your list. Neither shows contaminants.
 
-![The preset switches to Custom after an edit](walkthrough/15-custom-preset.png)
+## 5. Browse by category or nutrient
 
-After any edit (here protein raised to 80 g and vitamin D switched on), the **Custom** card is ticked and shows "10 goals on".
+![All categories](walkthrough/12-categories.png)
 
----
+**All categories** (`/food/category`) lists every USDA category with its food count.
 
-## 7. Step 3: Your plan
+![One category](walkthrough/13-category-page.png)
 
-You get here with **Make my plan**, **Try a sample day**, or by clicking **Your plan** in the stepper. With no plan yet, you see "No plan yet" with a **Make my plan** button. While the planner works, you see "Balancing your foods…" with grey placeholder blocks, though it's usually too fast to notice.
+**A category page** lists its foods with USDA's newest measurements first, with **Next** and **Previous** links through the pages. Rows work the same as search results.
 
-### 7.1 The summary
+![All nutrients](walkthrough/14-nutrients.png)
 
-The top card (see [the sample plan](#4-try-a-sample-day)) shows:
+**All nutrients** (`/nutrients`) lists each nutrient with its daily reference amount.
 
-- **Header.** "Your day · *preset name*" and a headline: **Every goal met**, or for example **7 of 9 goals met**. Below it, the number of foods and the total weight. **Edit foods** and **Edit goals** jump back to steps 1 and 2.
-- **Calories.** The total, with a coloured bar and legend for protein, carbs and fat as a percentage of calories.
-- **Goals met.** A ring such as "9/9" with "All on target" or "2 need attention".
-- **Protein,** in grams, with fiber below it.
-- (An **Estimated cost** tile is built in but only appears if the data ever includes prices. It doesn't today.)
+![Foods high in vitamin D](walkthrough/15-nutrient-vitamin-d.png)
 
-### 7.2 What to eat and goal progress
-
-![What to eat, with goal progress](walkthrough/16-what-to-eat-and-progress.png)
-
-**What to eat** lists every food in the plan, highest-calorie first:
-
-- the name, with calories and protein for that amount;
-- the amount in **grams** (big green number);
-- a **household amount** underneath where USDA has one: "≈ 1½ breast, bone and skin removed", "≈ ½ fillet", "≈ ¾ cup";
-- a **📌 Fixed amount** tag on foods you locked in step 1.
-
-A note says "Weights are as listed in USDA data (raw or cooked as named)", so "salmon, raw" means raw weight.
-
-**Goal progress** gives each goal (calories first) a bar, the actual amount against the target ("28 g / at least 28 g") and a plain status: **✓ On target**, "Short by 155 mcg", "Over by 3 g" or "No data". For a range goal, a small tick on the bar marks where the minimum is.
-
-### 7.3 The missing-data callout
-
-![The missing-data callout, expanded](walkthrough/17-missing-data-callout.png)
-
-When any of your foods lacks data for a goal you've switched on, a yellow callout appears: "**8 foods are missing some nutrient data.** USDA didn't measure everything for every food. Missing values count as 0, so your real totals may be a little higher than shown." **See which foods** expands the exact list, for example "'Kale, raw' has no data for Saturated Fat…". This callout is normal. With USDA data it appears on almost every plan.
-
-### 7.4 Where each nutrient comes from
-
-![Where iron comes from](walkthrough/18-nutrient-breakdown-iron.png)
-
-This collapsed section answers "where does my iron come from?". Choose any nutrient from the **Nutrient** menu to see one bar per food, with its amount and share of the day (kale 23 %, sunflower seeds 22 %, and so on). Fixed foods are labelled "(fixed)" and drawn in grey.
-
-![Where vitamin D comes from, showing the data gap](walkthrough/19-nutrient-breakdown-vitamin-d.png)
-
-The line under the bars, "No data for: …", is where data gaps become visible. In the sample day, the only vitamin D counted is 0.26 mcg from chicken, because the salmon entry the sample picked has no vitamin D recorded.
-
-### 7.5 Show the math
-
-![Show the math (advanced)](walkthrough/20-show-the-math.png)
-
-**Show the math (advanced)** shows the actual optimization problem in readable form: "Minimize Calories: 142 × [Fish] + 22 × [Spinach] …", then one line per goal ("Fiber: 2 × Amt[Spinach] + … >= 28"). The numbers are per 100 g of each food. A nested **Raw solver constraints** section shows the solver's input as JSON. This is the old debug panel, now tucked away.
-
-### 7.6 The "Update plan" banner
-
-![The out-of-date banner after changing the preset](walkthrough/21-update-plan-banner.png)
-
-If you change foods or goals after making a plan, the old plan stays on screen instead of disappearing, with a purple banner: "**You changed your foods or goals.** This plan is out of date. **Update plan**". The stepper also says "Out of date". Click **Update plan** to re-run it.
-
-### 7.7 What upper limits look like in a plan
-
-![Summary with safe upper limits on](walkthrough/22-upper-limits-summary.png)
-![Goal progress with safe upper limits on](walkthrough/23-upper-limits-progress.png)
-
-With **Respect safe upper limits** on, every nutrient that has a food-relevant upper limit gets an "at most" bar. Some goals become ranges ("Calcium 1,300 mg / 1,300–2,500 mg"), and new ceiling-only rows appear (vitamin D, B6, zinc, copper, manganese, selenium, phosphorus, choline). Before the polish pass the ring counted these limits as goals (9/9 became **17/17**); they now sit in a separate "Safe upper limits" list and the ring stays 9/9 (see [rough edges](#16-rough-edges-noticed-while-touring)).
+**A nutrient page** ranks foods by what a realistic serving provides, with familiar, well-measured foods first. Each row shows the amount and % Daily Value. **Include specialty foods** adds supplements, powders, organ meats and the like. This ranking matches the planner's **Best sources of…** tab.
 
 ---
 
-## 8. When the goals can't all be met
+## 6. The planner
 
-![FDA Daily Values with the sample foods](walkthrough/24-cant-hit-every-goal.png)
+The planner answers "how much of each food should I eat today?". It has three steps, shown as a stepper you can click at any time: **Pick foods**, **Set goals**, **Your plan**. It works without an account.
 
-Choosing **Standard adult (FDA Daily Values)** with the 15 sample foods gives this screen. The stepper says "Needs changes".
+![The planner on a first visit](walkthrough/16-plan-welcome.png)
 
-- **Headline:** "We can't hit every goal with these foods", with a one-sentence explanation.
-- **One card per problem goal:** "Not enough Vitamin D", with a **short by 18 mcg** chip and a sentence explaining why. Problems with limits read "Too much sodium" with **over by…**.
-- **Drop this minimum** (or **Drop this limit**) removes just that bound. This switches your preset to Custom.
-- **Good sources:** up to 3 chips per shortfall, each with its amount per 100 g. Click a chip to add that food to your list in one click.
-- **Other quick fixes:** **Switch to Everyday essentials** (hidden if you're already on it), **Allow bigger portions** (turns off the portion cap), **Review all goals** (opens step 2), and **Try again**.
-- **Show the math** is available below the cards.
+A first visit shows a welcome panel with two buttons. **Try a sample day** loads 15 staples and builds a plan straight away. **Start with my own foods** puts the cursor in the search box. The panel goes away once you've added a food.
 
-![After adding a suggested food and dropping the vitamin E minimum](walkthrough/25-after-one-click-fixes.png)
+### 6.1 Your plan
 
-After clicking the first vitamin D suggestion (crimini mushrooms exposed to UV light) and **Drop this minimum** on vitamin E, the out-of-date banner appears and the step 1 count rises to 16. The cards themselves don't change, though: the mushroom chip simply vanishes and the next suggestion takes its place, and the vitamin E card stays put. Clicking **Update plan** then gives:
+![A sample plan](walkthrough/17-plan-sample.png)
 
-![The fixed plan](walkthrough/26-fixed-plan.png)
+**The summary.** The sample day took about 0.1 seconds and gives "Every goal met":
 
-"Every goal met" on Custom goals (25 goals). Mushrooms supply the vitamin D.
+- 12 of the 15 foods are used, about 1,585 g in total.
+- **Calories:** 2,140 kcal, with a protein, carbs and fat split.
+- **Goals met:** a 9/9 ring.
+- **Protein:** 94 g, with fiber underneath.
+- **Edit foods** and **Edit goals** jump back to those steps.
+- A yellow note lists any foods missing data for your goals, under **See which foods**.
 
-![A harder case: three foods, one with a fixed amount](walkthrough/27-infeasible-few-foods.png)
+![What to eat](walkthrough/18-plan-what-to-eat.png)
 
-**A harder case:** only rice, chicken and bread, with bread fixed at 600 g. This shows the other card types:
+**What to eat** lists each food with its calories, protein, grams and a household amount such as "≈ 3 large". Foods you fixed show a **Fixed amount** tag.
 
-- **Too much sodium:** "Your fixed-amount foods already go over this on their own. Lower their amounts in Your foods."
-- **Shortfalls** in vitamin A, vitamin C and calcium, each with suggestions.
-- "…and 1 more goal that can't be met yet."
+![Goal progress](walkthrough/19-plan-goal-progress.png)
 
-Look at the suggestions here: cod liver oil, imported beef variety meats, veal liver, acerola, wild rose hips, rennin dessert tablets and dried acid whey. They're technically rich sources, but not what a beginner wants to add (see [rough edges](#16-rough-edges-noticed-while-touring)).
+**Goal progress** gives each goal a bar, the amount against the target, and a status such as "On target" or "Short by…". A total that includes unmeasured foods shows "≥", meaning at least this much.
 
-## 9. When something goes wrong
+Below those:
 
-![The error state when the planner can't be reached](walkthrough/28-error-state.png)
+- **Foods the plan didn't need.** "3 of your 15 foods weren't needed", each with a reason and **Include it**.
+- **Where each nutrient comes from.** Pick a nutrient to see each food's share.
+- **Show the math (advanced).** The actual equations the solver used.
 
-If the planner can't be reached, the plan step shows a red "**Something went wrong**" card. It explains that your foods and goals are saved and offers **Try again**. (I triggered this by blocking the request in the test browser. Search and "Best sources" have similar error cards with retry buttons.)
+![Where each nutrient comes from](walkthrough/20-plan-nutrient-breakdown.png)
+
+![Show the math](walkthrough/21-plan-show-the-math.png)
+
+### 6.2 Pick foods
+
+![Your foods, with one food's options open](walkthrough/22-plan-your-foods.png)
+
+**Find foods you like** searches the same way as the home page, but each row has an **Add** button and the name isn't a link. **Popular starting points** are one-click searches.
+
+**Your foods** is the list the plan is built from. Each food has two buttons:
+
+- **Sliders** opens its options: **Let the planner choose**, or **I'll eat exactly ___ g**, which makes it a fixed amount and plans the rest of the day around it. There are also optional **At least** and **At most** limits, with USDA serving weights for reference.
+- **×** removes it.
+
+**Compare nutrition labels** opens the labels, and **Clear all** empties the list with an **Undo**.
+
+![Best sources of](walkthrough/23-plan-best-sources.png)
+
+**Best sources of…** swaps search for a nutrient menu. It ranks by typical serving, and **Everyday foods only** keeps out supplements and other specialty items.
+
+### 6.3 Set goals
+
+![Goal presets](walkthrough/24-goals-presets.png)
+
+| Preset | What it asks for | Calories |
+|---|---|---|
+| **Everyday essentials** (default) | 9 goals: protein, fiber, key vitamins and minerals, with limits on salt and saturated fat | 1,800–2,200 |
+| **Standard adult (FDA Daily Values)** | 26 goals: everything with a Daily Value, at 100% | 1,800–2,200 |
+| **High protein** | 6 goals, including at least 120 g protein | 2,000–2,600 |
+| **Lower carb** | 5 goals: carbs capped at 100 g, at least 90 g protein and 20 g fiber | 1,600–2,000 |
+| **Custom** | Whatever you set. Any edit switches to this | yours |
+
+![Calories, portions and upper limits](walkthrough/25-goals-limits.png)
+
+- **Daily calories:** a range. The plan uses the fewest calories that still meet your goals.
+- **Keep portions realistic:** on by default, at most 3 servings or 300 g of each food. Limits you set on one food always win.
+- **Respect safe upper limits:** optional. It also keeps nutrients like iron and zinc under the adult upper limit, and skips limits that apply only to supplements.
+
+![Fine-tune individual goals](walkthrough/26-goals-fine-tune.png)
+
+**Fine-tune individual goals** lists every nutrient with an on/off switch, its reference value, and **At least** and **At most** boxes.
+
+The bar along the bottom of steps 1 and 2 shows the food and goal counts and the **Make my plan** button.
+
+### 6.4 When things change, or can't be met
+
+![The out-of-date banner](walkthrough/27-plan-out-of-date.png)
+
+**Change anything** after making a plan, including adding a food from another page, and the old plan stays visible with an **Update plan** banner. The stepper says "Out of date".
+
+![Can't meet every goal](walkthrough/28-plan-cant-meet.png)
+
+**If the goals can't all be met,** you get "We can't hit every goal with these foods" and one card per problem:
+
+- the shortfall ("short by 2.4 mg");
+- **Drop this minimum**;
+- **Good sources**, which add a food in one click.
+
+**Other quick fixes** are **Switch to Everyday essentials**, **Allow bigger portions** (highlighted when that alone would work) and **Review all goals**. Then **Try again**.
+
+**What's remembered.** Foods, goals, the last plan and your current step are all kept in this browser, through reloads and visits to other pages. The step also appears in the address (`/plan#goals`).
 
 ---
 
-## 10. Dark mode
+## 7. Recipes
 
-![Dark mode welcome screen](walkthrough/29-dark-landing.png)
-![Dark mode plan](walkthrough/30-dark-plan.png)
-![Dark mode goals](walkthrough/31-dark-goals.png)
-![Dark mode nutrition labels](walkthrough/32-dark-compare.png)
+### 7.1 Three ways in
 
-On a first visit the theme follows your device's light/dark setting, with no flash of white while the page loads. The moon/sun button in the header switches it, and that choice is remembered. Every screen, including the nutrition labels, has a proper dark version.
+![The recipe start page](walkthrough/29-recipes-start.png)
 
-## 11. On a phone
+- **Paste a recipe,** then **Work out the nutrition.** **Try an example** fills in banana oat pancakes.
+- **Use a photo:** **Take a photo** or **Upload a photo.** It works best on a recipe card. A photo of a plate gives only a rough estimate.
+- **Start blank:** add ingredients one at a time.
+
+### 7.2 Checking the ingredients
+
+![The recipe editor](walkthrough/30-recipes-editor.png)
+
+"Check your recipe" is an editor, and the totals update as you type.
+
+- **Recipe name** and **Servings** are at the top. **New recipe** goes back to the start.
+- **Ingredient:** what was read, with any preparation note.
+- **Amount:** a number and a unit you can change.
+- **USDA food:** the match. Its name is a link that opens the food page in a new tab. **Change** opens a search under the row, with suggestions.
+- **Weight:** the grams used, and how they were worked out, such as "USDA: 1 cup = 249 g". An **Estimated** badge means a typical density was used instead of a USDA measure.
+- **Trash** removes a row, with **Undo**.
+- **Add an ingredient** takes a line like "2 tbsp olive oil".
+
+![Changing the food for one ingredient](walkthrough/31-recipes-change-food.png)
+
+![Ingredients that couldn't be counted](walkthrough/32-recipes-not-counted.png)
+
+**Ingredients it isn't sure about** show **Check this** or **Check match**. An ingredient with no amount ("salt to taste") shows **Not counted**, and the totals list what was left out.
+
+### 7.3 The totals
+
+![Per-serving totals and the label](walkthrough/33-recipes-totals.png)
+
+**Per serving** shows calories, ten key nutrients with % Daily Value, and **All vitamins and minerals**. Then:
+
+- "≥" means at least this much, because one or more ingredients have no USDA value for that nutrient.
+- If the newest USDA entry lacks a nutrient, the older entry for the same food fills it in, and a note says so. Only recipes do this; see [H1](#14-rough-edges-checklist).
+- A Nutrition Facts label for one serving sits underneath.
+
+**Photos, in demo mode.** No AI is connected on a laptop, so any photo returns a built-in sample meal, and the page says so. A plated-meal result adds a warning and a calorie range ("Could be roughly 407 to 846 kcal"). **Show my photo** shows your picture. Pasted text is read by a simple built-in reader with its own Demo mode note.
+
+![A photo result in demo mode](walkthrough/34-recipes-photo-demo.png)
+
+**Recent recipes.** Each analysis saves itself about a second after you stop editing. Click one to reopen it with all its ingredients, or × to remove it. These live in this browser only.
+
+![Recent recipes](walkthrough/35-recipes-recents.png)
+
+### 7.4 Adding a recipe to a plan
+
+![After adding a serving](walkthrough/36-recipes-added-to-plan.png)
+
+**Add a serving to my plan** shows a message with **Open plan**. The recipe joins **Your foods** as a fixed amount, one serving's weight. It's a snapshot; see [M7](#14-rough-edges-checklist).
+
+![A recipe in the plan](walkthrough/37-recipe-in-plan.png)
+
+After **Make my plan**, it appears in **What to eat** as "Recipe: Banana oat pancakes" with a Fixed amount tag, and the planner fills in the rest of the day around it.
+
+---
+
+## 8. Accounts
+
+Accounts are optional, and every feature above works without one. They add a history of what you've looked at, plus export and delete.
+
+### 8.1 Signing in
+
+![The sign-in page](walkthrough/38-sign-in.png)
+
+**Sign in** in the header opens this page. Enter an email and click **Email me a sign-in link.** There are no passwords. **Continue without signing in** goes home.
+
+![Check the terminal](walkthrough/39-sign-in-check-terminal.png)
+
+**On a laptop nothing is emailed.** The page says to check the terminal, where the link is printed. A deployed site would say "Check your email", and the link works once and expires in 15 minutes.
+
+![Finish signing in](walkthrough/40-sign-in-confirm.png)
+
+**The link opens a page with one button.** Email security scanners open links automatically, so the link is spent only when you press **Sign in**. You land on your account, or the page you were trying to reach. An already-used link brings you back to sign-in with an explanation.
+
+### 8.2 Your account
+
+![The account page](walkthrough/41-account.png)
+
+- **Display name** is optional. Your initial appears in the header.
+- **Export my data** downloads everything held about you as a JSON file.
+- **Sign out** returns you to the home page.
+- **History** has three tabs. Food rows link back to the food. Each row has an × to remove it, and **Clear** empties the tab.
+- **Delete account** is at the bottom.
+
+![The account menu](walkthrough/42-account-menu.png)
+
+The **account menu** behind your initial offers **Account**, **History** (the history on a page of its own) and **Sign out**. Signing in or out in one tab updates the header in your other tabs.
+
+![Recipes in history](walkthrough/43-history-recipes.png)
+
+**Recipes** show per-serving calories, protein, carbs and fat. The row updates as you edit, so one recipe stays one row. Its link goes to the Recipes page, not to that recipe ([M2](#14-rough-edges-checklist)).
+
+![The Plans tab](walkthrough/44-history-plans-empty.png)
+
+**Plans** says "Plans you make will show up here", but nothing records plans yet ([H2](#14-rough-edges-checklist)).
+
+### 8.3 Deleting an account
+
+![The delete dialog](walkthrough/45-account-delete.png)
+
+**Delete my account…** asks you to type your email before **Delete permanently** will work. **Keep my account** or Esc backs out.
+
+![After deleting](walkthrough/46-account-deleted.png)
+
+Afterwards you're signed out, with a confirmation, and the site works as normal. What's kept in this browser isn't removed, though:
+
+![Recent recipes still there after deleting the account](walkthrough/47-recipes-after-delete.png)
+
+See [M3](#14-rough-edges-checklist).
+
+---
+
+## 9. Dark mode
+
+The theme follows your device on a first visit, with no white flash. The moon/sun button overrides it, and that choice is remembered. Labels, meters, tables and dialogs all have proper dark versions.
+
+![Dark home](walkthrough/48-dark-home.png)
+
+![Dark contaminants, for dark chocolate](walkthrough/49-dark-contaminants.png)
+
+![Dark plan](walkthrough/50-dark-plan.png)
+
+![Dark recipe editor](walkthrough/51-dark-recipe.png)
+
+![Dark account](walkthrough/52-dark-account.png)
+
+## 10. On a phone
 
 | | | |
 |---|---|---|
-| ![Phone welcome](walkthrough/33-phone-landing.png) | ![Phone search](walkthrough/34-phone-search.png) | ![Phone plan](walkthrough/35-phone-plan.png) |
-| ![Phone what to eat](walkthrough/36-phone-what-to-eat.png) | ![Phone goals](walkthrough/37-phone-goals.png) | ![Phone plan, dark](walkthrough/38-phone-dark-plan.png) |
-| ![Phone fine-tune, dark](walkthrough/39-phone-dark-fine-tune.png) | | |
+| ![Phone home](walkthrough/53-phone-home.png) | ![Phone food page](walkthrough/54-phone-food.png) | ![Phone message after adding a food](walkthrough/55-phone-add-toast.png) |
+| ![Phone contaminants](walkthrough/56-phone-contaminants.png) | ![Phone planner](walkthrough/57-phone-plan-foods.png) | ![Phone plan result](walkthrough/58-phone-plan-result.png) |
+| ![Phone recipe](walkthrough/59-phone-recipe.png) | ![Phone account](walkthrough/60-phone-account.png) | ![Phone account menu](walkthrough/61-phone-account-menu.png) |
 
-At phone width (390 px) everything collapses to one column, and the page never scrolls sideways (checked on every step, light and dark):
+At 390 px everything becomes one column and no page scrolled sideways.
 
-- The stepper becomes three compact tiles.
-- The "Your foods" panel moves below search.
-- Goal rows stack their inputs.
-- The bottom bar keeps only **Make my plan**. Use the stepper to move between steps.
+- The navigation becomes a row of three tabs under the logo, so nothing hides behind a menu.
+- The search box isn't focused automatically, so the keyboard doesn't jump up.
+- The planner's stepper becomes three tiles, and **Make my plan** stays fixed at the bottom.
+- Recipe ingredients stack, and a bar at the bottom keeps "362 kcal per serving" and **See totals** in view.
 
-## 12. Keyboard and accessibility
+## 11. Keyboard
 
-![The skip link on the first Tab press](walkthrough/40-keyboard-skip-link.png)
-![Focus ring on a button](walkthrough/41-keyboard-focus-ring.png)
+![The skip link](walkthrough/62-keyboard-skip-link.png)
 
-- **The first Tab press shows "Skip to content",** which jumps past the header. The Tab order after that is logical: logo, theme switch, the welcome buttons, the three steps, then search.
-- **Every control has a visible focus ring.** I checked a 2 px outline on each of the first stops.
-- Switches, presets and radio buttons all work with the keyboard (Space toggles a switch).
-- When a plan finishes, focus moves to its headline and a hidden announcement ("Your plan is ready.") is read out to screen-reader users. Every input has a proper label.
+![A focus ring](walkthrough/63-keyboard-focus.png)
 
-## 13. What's remembered after a reload
+- The first Tab on most pages shows **Skip to content**.
+- Focus rings are visible on every control reached.
+- On the home page, `/` focuses search, ↓ and ↑ move through results, Enter opens one.
+- The account menu works with Enter, the arrow keys and Esc, and returns focus to its button.
+- The delete dialog holds focus inside it, and Esc closes it.
+- After a recipe is read, focus moves to "Check your recipe". **Change** opens its search with focus in the box, and Esc closes it and returns to **Change**.
 
-![After reloading the page](walkthrough/42-after-reload.png)
-
-After a reload:
-
-- **Kept:** your food list (16 here), fixed amounts, per-food limits, your goals and preset, the calorie range, the portion cap, the upper-limits switch, and your light/dark choice.
-- **Not kept:** the plan itself, which step you were on (you always land back on **Pick foods**, and the stepper shows "Your plan: Not made yet"), anything typed in search, and open panels such as the comparison.
-
-One click on **Make my plan** rebuilds the plan instantly.
+Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader was run.
 
 ---
 
-## 14. Behind the scenes
+## 12. Behind the scenes
 
-> **Where the data comes from.** 9,435 foods from the USDA's FoodData Central (release Oct 2026, public domain), drawn from three USDA collections: *Foundation* (carefully measured basics), *SR Legacy* (the classic reference set) and *FNDDS* (mixed dishes). All values are per 100 g. When USDA didn't measure a nutrient, the site stores "unknown" rather than zero, which is why you see "—" and the missing-data callout.
+> **Nutrition data.** 9,435 foods from USDA FoodData Central (October 2026 release, public domain), from three USDA collections: Foundation (newest lab analyses), SR Legacy (the classic reference) and FNDDS (mixed dishes). Everything is stored per 100 g. When USDA didn't measure something the site stores "unknown", not zero.
 >
-> **How the plan is calculated.** A technique called *linear programming* tries every possible mix of your foods at once. It looks for the amounts with the **fewest total calories** that still satisfy every goal you've switched on, every calorie bound, and every portion limit. If no mix can do it, the site reports which goals are blocking it. That's why plans tend to sit at your calorie minimum, and why foods that aren't needed get left out.
+> **Contaminant data.** Heavy metals come from FDA's Total Diet Study (FY2018 to FY2020), FDA's fish mercury tables and its rice arsenic assessment. Pesticides come from USDA's Pesticide Data Program (2016 to 2024). References come from FDA and EPA. Microplastics come from a few published studies, and no health limit exists for them. Details and citations are in [CONTAMINANT_DATA.md](CONTAMINANT_DATA.md).
 >
-> **What's saved, and where.** Only in your own browser (its "local storage"): your foods, fixed amounts, per-food limits, goals and settings, and your theme. Nothing is sent anywhere except the anonymous requests the page makes to its own server to search foods and build the plan. There are no accounts and no tracking.
+> **How a plan is calculated.** A method called linear programming finds the amounts of your foods with the fewest total calories that satisfy every goal, calorie bound and portion limit. If no mix can, it reports what's blocking it. Unmeasured values count as 0, which is why plans can undercount and why the yellow note exists.
 >
-> **More depth:** [README](../README.md) · [Why the UI was redesigned (UX audit)](UX_AUDIT.md) · [Which nutrients and why](KEY_NUTRIENTS.md) · [API reference](README_API.md) · [Testing it locally](LOCAL_TESTING.md)
+> **How a recipe is calculated.** The AI (or, in demo mode, a built-in reader) only reads the ingredient list. It never supplies nutrition. Each ingredient is matched to a USDA food, converted to grams, and added up. Cooking changes aren't modelled. See [RECIPES.md](RECIPES.md).
+>
+> **What's stored where.**
+>
+> | Where | What | Who can see it |
+> |---|---|---|
+> | **This browser** | Planner foods, goals, last plan and step; recent recipes with their ingredients; recent searches; theme; a flag that says "this browser was signed in" | Anyone using this browser. Survives sign-out and account deletion |
+> | **The site's database, if you have an account** | Email, display name, sign-in sessions, and history rows: title, link, date, and for recipes a per-serving summary. No ingredients and no plans | You, through export. Delete removes it |
+> | **The AI provider** | Pasted recipes and photos, when a real provider is switched on. Photos aren't stored by the site | Nothing is sent in demo mode |
+>
+> Anonymous visitors make no account requests and have nothing stored on the server.
+>
+> **More depth:** [ACCOUNTS.md](ACCOUNTS.md) · [RECIPES.md](RECIPES.md) · [CONTAMINANT_DATA.md](CONTAMINANT_DATA.md) · [KEY_NUTRIENTS.md](KEY_NUTRIENTS.md) · [README_API.md](README_API.md) · [LOCAL_TESTING.md](LOCAL_TESTING.md)
 
-## 15. Tips: two questions people will ask
+## 13. Tips: questions people will ask
 
-**"Why can't the FDA Daily Values preset be met?"** It switches on 26 goals at 100 % at once. Some of them are hard to reach from ordinary foods within 1,800–2,200 kcal and realistic portions:
+**"Why does rice read High?"** Mainly because the arsenic reference is very cautious. A 45 g serving of raw long-grain white rice has about 4.6 µg of inorganic arsenic, against EPA's 4.8 µg a day. EPA's own estimate is that typical US intake is already about 61% of that reference. Any single serving over half of it counts as High on the site's scale. FDA doesn't advise avoiding rice. Cooking it in plenty of water and draining it removes 40–60% of the inorganic arsenic, though the meter doesn't adjust for that, and eating a variety of grains helps too.
 
-- **Vitamin D** (20 mcg): very few foods have much, and many entries have no vitamin D recorded at all.
-- **Vitamin E** (15 mg): mostly nuts, seeds and oils.
-- **Potassium** (4,700 mg).
-- The preset also asks for *at least* 275 g of carbohydrate, the FDA's reference amount.
+**"Why do some values show "—"?"** USDA has no measurement for that nutrient in that exact entry. It does not mean zero. Foundation entries are the newest but often the sparsest, so raw spinach has no vitamin K on its "mature" Foundation page. For planning, an older SR Legacy entry of the same food is often more complete.
 
-Because missing data counts as zero, a food that really contains vitamin D can still count for nothing. To get a plan, either add the foods suggested on each card, use **Drop this minimum** for the one or two blockers, or start from *Everyday essentials*, which covers the nutrients most people actually fall short on.
+**"What do the meters actually mean?"** Each compares one serving with a health-based reference, as a share of a day (a week for mercury). High doesn't mean harmful, and Low doesn't mean none: references are cautious planning values, and exposure adds up across everything you eat, over time. The bands are the site's judgment. See the [table](#3-contaminant-meters).
 
-**"Why do some values show "—"?"** A dash means USDA never measured that nutrient for that exact food entry. It does **not** mean the food contains none. Calories and protein use "—" (or the "Limited data" badge) for the same reason. The planner has to count unknowns as 0, so plans can undercount (minimums might actually be met more easily) and, for limits like saturated fat, can also miss some of the amount. Choosing "USDA Foundation" entries, which have the fullest data, reduces the gaps.
+**"Why does the meter change when I change the serving?"** It's per serving, because a bigger portion is more exposure. Compare foods at similar, realistic servings. A spoonful of a spice and a cup of rice aren't comparable at 100 g.
+
+**"No data, Not detected, Not rated: what's the difference?"** Not detected means tested and not found, down to the test's limit. No data means no usable testing, so it says nothing either way. Not rated means an amount is known but can't be fairly judged.
+
+**"Why do similar foods have identical numbers?"** Testing programs measure a food once, while USDA lists many versions. The **Based on** line says which record was used and how many foods share it. A brand maps to the general food.
+
+**"Why does the plan leave out some of my foods?"** The planner uses the fewest calories that meet your goals, so it doesn't need everything. Use **Include it**, or set **At least** on that food.
+
+**"Why can't the FDA preset be met?"** It turns on 26 goals at 100%, and gaps in the data count as 0. With the sample foods, it falls short by 2.4 mg of iron and a fraction of a gram of carbohydrate, and allowing bigger portions alone fixes it.
+
+**"Is the recipe reader really AI?"** Not on a laptop or until a provider is switched on. The page says "Demo mode" when it isn't.
 
 ---
 
-## 16. Rough edges noticed while touring
+## 14. Rough edges checklist
 
-Severity: **High** = undermines the core job or misleads; **Medium** = confusing or not doing what it says; **Low** = polish.
+**Severity:** **High** means it misleads people or breaks a promise the site makes. **Medium** means it's confusing or doesn't do what it says. **Low** is polish. Nothing here was changed in the code. Unless a step says otherwise, start from a fresh browser profile.
 
-Things that worked well and need no action: every page action was fast (API calls took under 40 ms locally, and the sample day took about 0.4 s), there were no console errors in any journey, there was no sideways scrolling on phones, and the skip link, focus rings and dark mode all work.
+### High
 
-> **Status after the November 2026 polish pass.** Every item below is marked **Fixed** (with a one-line note) or **Still open**. The fixes were checked with `npm run check` (139 unit tests), `npm run smoke` against the standalone build, and a headless Playwright 1.64.1 run through the sample day, my own foods, the FDA preset with one-click fixes, the upper-limits and portion switches, a reload, a 390×844 phone and dark mode. The `polish-*.png` screenshots in [walkthrough/](walkthrough/) show the result; the numbered screenshots above still show the site *before* the pass.
+- [ ] **H1. The same food gives different nutrition in different features.** Recipes fill gaps in a newer USDA entry from the older entry. Food pages and the planner don't. So spinach has no vitamin K on its page and in a plan, but 483 mcg in a recipe, and the plan tells people spinach can't help with vitamin K. Vitamin E, cholesterol and sugars do the same.
+  1. Open `/food/1999633-spinach-mature`, set **Serving size** to **100 g**. **Vitamin K** shows **—** ([screenshot](walkthrough/64-edge-spinach-food-page.png)).
+  2. Open `/recipes`, click **Start blank**, type `100 g spinach` under **Add an ingredient**, click **Add**. It matches "Spinach, mature". Set **Servings** to 1 and open **All vitamins and minerals**. **Vitamin K** shows **483 mcg, 402%** ([screenshot](walkthrough/65-edge-spinach-recipe.png)).
+  3. Back on the spinach page, click **Add to my plan**. Go to **Plan**, **Set goals**, choose **Standard adult (FDA Daily Values)**, click **Make my plan**. The plan says **Not enough Vitamin K, short by 120 mcg. None of your foods have enough Vitamin K**.
 
-**High**
+- [ ] **H2. Plans are promised but never saved to an account.** The sign-in page says "Keep the foods, recipes and plans you look at, on any device". The account pages repeat it, and the Plans tab says "Plans you make will show up here". Nothing records a plan ([screenshot](walkthrough/44-history-plans-empty.png)). `docs/ACCOUNTS.md` notes this as not built yet, but the customer-facing words don't.
+  1. Sign in. Go to **Plan**, click **Try a sample day**.
+  2. Open the account menu, **Account**, tab **Plans**. It's empty.
+  3. Sign in to the same account in a second browser and open **Plan**. It says "Nothing yet".
 
-- [x] **Fix-it suggestions are often obscure.** **Fixed:** suggestions and *Best sources of…* now rank by a realistic serving (3 oz fish, 1 oz nuts, 1 cup beans), put familiar, well-measured single foods first, keep supplements, tablets, baby food, powders, dried concentrates, organ meats and spices last, show one entry per food, and always fill up so a card is never empty. Vitamin D now suggests UV mushrooms, halibut, salmon and trout; the tab has an *Everyday foods only* switch to see everything ([polish-best-sources](walkthrough/polish-best-sources.png), [polish-infeasible](walkthrough/polish-infeasible.png)).
+### Medium
 
-**Medium**
+- [ ] **M1. The methodology links are dead today, and go to a developer page.** "How we match foods" and "Read the full methodology and all sources" on contaminant panels open `github.com/yonaadug/FoodNutritionOptimize/blob/main/docs/CONTAMINANT_DATA.md`. That returns **404** without a login, because local `main` is 106 commits ahead of GitHub. Pushing will fix the 404, but customers still land on a code-hosting page ending in a "For developers" section.
+  1. Open `/food/2512381`, then **How we work this out**, then **Read the full methodology and all sources**.
+  2. In a signed-out browser, you get GitHub's 404. (Checked with an anonymous request.)
 
-- [x] **Data gaps quietly undermine goals.** **Fixed:** the sample day only picks entries that measured what each staple is known for (salmon and fortified milk with vitamin D, oats with saturated fat), so it now has one gap (vitamin A and D in raw almonds). Plans count only foods actually used, totals that include unmeasured foods show "≥", and a limit that looks met but includes unmeasured foods says "Could be over", all under the same single callout ([polish-sample-plan](walkthrough/polish-sample-plan.png)).
-- [x] **"Keep portions realistic" off often changes nothing.** **Fixed:** the setting now *is* the cap: "At most 3 servings or 300 g of each food", explained in plain words; switched off there is no general cap (the sample plan goes from a 300 g maximum to 426 g). **Allow bigger portions** doubles the cap, says so in a toast, and is highlighted when it alone would make the plan work ([polish-goals](walkthrough/polish-goals.png)).
-- [x] **The plan doesn't explain unused foods.** **Fixed:** "3 of your 15 foods weren't needed for these goals", each with a short reason ("Your protein goal was already met by other foods") and an **Include it** button ([polish-unused-foods](walkthrough/polish-unused-foods.png)).
-- [x] **One-click fixes give no feedback.** **Fixed:** every quick fix shows a toast (announced through an `aria-live` region) with an **Update plan** button; a dropped goal's card shows "✓ Minimum dropped" with **Undo**, and added suggestions stay on the card as green "Added" chips ([polish-one-click-fixes](walkthrough/polish-one-click-fixes.png)).
-- [x] **Upper limits inflate the "goals met" count.** **Fixed (root cause):** the optimizer added each upper limit as an "at most" bound and the plan counted every bound as a goal. It now reports which bounds are upper limits; they appear in a separate "Safe upper limits" list and the ring stays 9/9 ([polish-upper-limits](walkthrough/polish-upper-limits.png)).
-- [x] **The plan is lost on reload,** and the site always reopens on step 1. **Fixed:** the last plan (or "can't hit every goal" result) is saved on the device and restored without re-running, the site reopens on the step you were on, and the step is in the address (`#plan`), so it can be bookmarked and Back works ([polish-after-reload](walkthrough/polish-after-reload.png)).
-- [x] **Sample-day plans look odd for "Everyday essentials".** **Fixed:** with better-measured foods the sample plan is 12 foods, 94 g protein, 17 % protein / 40 % carbs / 43 % fat, with real broccoli and whole-wheat bread. *Still open:* fat is on the high side because nuts and seeds are the cheapest source of several minerals in calories.
+- [ ] **M2. A recipe in History can't be reopened.** The row's link goes to the blank Recipes page. Only a summary is stored, so on another device the ingredients are gone.
+  1. Sign in and analyze a recipe. On **Account**, tab **Recipes**, click its name. You land on the start page, not the recipe.
+  2. Sign in on a second browser and do the same. The start page has no **Recent recipes** at all.
 
-**Low**
+- [ ] **M3. Browser-kept data outlives sign-out and deletion, and can move between accounts.** After "Your account and history have been deleted", the recipes with all their ingredients and the plan are still there ([screenshot](walkthrough/47-recipes-after-delete.png)). On a shared computer, the next person sees them, and opening one copies it into their own history.
+  1. Sign in as person A. Analyze a recipe. Sign out.
+  2. Sign in as person B in the same browser. Open **Recipes**. A's recipe is under **Recent recipes**.
+  3. Click it, then open **Account**, tab **Recipes**. It's now in B's history.
+  4. Alternatively, delete an account and open **Recipes** and **Plan**. Both still show its work.
 
-- [x] **Stale plans show the new preset name.** **Fixed:** the plan keeps the preset it was made with ("Your day · Everyday essentials (before your changes)").
-- [x] **Household amounts can read oddly.** **Fixed:** counts are preferred ("≈ 3 large" eggs), plain weights such as "¾ oz" are dropped, USDA jargon and measurements in brackets are removed, qualifiers are lower-case ("bananas, peeled"), and counts of 4 or more are whole numbers. *Still open:* some foods (raw almonds) have no household serving, so only grams are shown.
-- [x] **"RACC" jargon.** **Fixed:** shown as "standard serving" in serving hints, the label menu and suggestions.
-- [x] **"Limited data" badge on genuinely zero-calorie foods.** **Fixed:** a measured 0 kcal with measured macros or water (tea, water, salt) no longer gets the badge.
-- [x] **The bold "short name" is sometimes the USDA category word.** **Fixed:** "**Salmon**, sockeye…", "**Tea**, green…", "**Chicken**, breast, meat only…" (filler such as "broilers or fryers" is dropped).
-- [x] **The error message is run together.** **Fixed:** "We couldn't reach the planner." on its own line, then "Your foods and goals are saved. Check your connection, then try again." The browser's raw text is never shown.
-- [x] **"…and 1 more goal that can't be met yet"** doesn't say which goal. **Fixed:** the optimizer now returns every issue; all cards are listed (six at first, then "Show N more goals: …"), and shortfalls under 1 % get one quiet line.
-- [x] **"Too much sodium" has no "over by" amount.** **Fixed:** limits broken by fixed-amount foods report the amount ("over by 700 mg").
-- [x] **Switching on a "No official target" goal** (EPA, DHA) sets "at least 0". **Fixed:** the switch asks for an amount instead, and "at least 0" is never counted as a goal.
-- [x] **The phone search box has two clear (×) buttons.** **Fixed:** the browser's own button is hidden.
-- [x] **The bottom action bar covers content.** **Fixed** on the welcome screen (the bar appears once there is a food to plan); focused fields scroll clear of it. *Still open:* at 1440×900 the last goals setting still sits under the bar until you scroll, as with any fixed bar.
-- [x] **Clear all makes the page jump.** **Fixed:** the welcome panel no longer comes back after **Clear all** (the Undo bar and the panel's own *Try a sample day* stay).
-- [x] **Search ranking quirks.** **Fixed:** "banana" opens with ripe bananas and "chicken" with breast or thigh; *Best sources of vitamin D* opens with UV mushrooms. *Still open:* "lentils" still lists dry lentils before cooked.
-- [x] **The preset grid leaves "Custom" alone on a second row.** **Fixed:** 3 + 2 cards at desktop width.
+- [ ] **M4. Clear all leaves a plan behind, and Update plan does nothing.** With no foods, step 3 still shows the old plan under an **Update plan** banner, and the button has no effect, even after a reload ([screenshot](walkthrough/66-edge-plan-with-no-foods.png)). If the old plan had failed, it reads "No mix of your 0 foods covers everything".
+  1. Open `/plan`, click **Try a sample day**.
+  2. Click **Pick foods**, then **Clear all**.
+  3. Click **Your plan**, then **Update plan**. Nothing changes.
 
-**Also changed in the polish pass**
+- [ ] **M5. The planner is a dead end for food pages.** Food pages link to the planner, but nothing links back. Names in **Your foods**, search results, **Best sources**, **What to eat**, **Good sources** and the compare labels aren't links. Contaminant information can't be reached from the planner at all, and a plan can suggest a large amount of a High food without any mention. The recipe editor does link to food pages, so the two features behave differently.
+  1. Open `/plan`, click **Try a sample day**.
+  2. Try to click any food name. None of them is a link: the plan step has no links at all.
 
-- Updating a plan keeps the previous plan on screen (dimmed, with a spinner) instead of flashing a skeleton.
-- "Safe upper limits" and per-goal "safe upper limit" notes explain that these are safety checks, not goals; an infeasible upper limit offers *Turn off upper limits* rather than a "Drop this limit" that wouldn't work.
-- The skip link focuses the content without changing the address; switches can be clicked anywhere on the track.
-- Phone plan summary: calories full width, the goals ring and protein side by side.
+- [ ] **M6. Add to my plan ignores the serving you chose.** You pick a serving, the label and meters change, and the button discards it. Recipes do the opposite and add a fixed serving.
+  1. Open `/food/171689`, choose **1 large (3-1/4" dia) (216 g)**, click **Add to my plan**.
+  2. Open `/plan#foods`. The apple says **Planner chooses the amount**.
 
-## 17. About these screenshots
+- [ ] **M7. A recipe in the plan is a disconnected copy.**
+  - Clicking **Add a serving** again says "Added one serving" but the plan stays at one serving, and the button never shows it's already in the plan, unlike the food page.
+  - Edits to the recipe don't reach the plan, which still says **Ready**.
+  - "Not counted" ingredients and "≥" warnings don't carry over.
 
-The screenshots were taken with headless Chromium (Playwright 1.64.1) against `npm run build` plus `node scripts/standalone.mjs` on port 3520, with each browser session starting empty. Two states were set up artificially: the "Building a sample day…" spinner (searches were slowed down so it stayed on screen) and the error card (the planner request was blocked). I didn't test a real screen reader, the desktop (Electron) app, or the migration of settings saved by the old version of the site.
+  To reproduce:
+  1. Analyze the example recipe. Click **Add a serving to my plan** twice. **Open plan** shows one recipe at **Fixed: 258.1 g**.
+  2. Click **Make my plan**, go to **Recipes**, reopen the recipe from **Recent recipes**, and set **Servings** to 1. Return to **Plan**. The stepper says **Ready** and the recipe is still 258 g.
+  3. Analyze a recipe with these three lines: `2 heads lettuce`, `salt to taste`, `1 cup milk`. The page warns "Not counted: salt". Add it to a plan and click **Make my plan**. The plan doesn't mention this.
+
+- [ ] **M8. Leaving the recipe editor loses your place, and Sign in doesn't bring you back.** The editor isn't in the address or the browser history, so Back, a reload or the header goes to the start page. The work is safe under **Recent recipes**, but it looks lost. Sign in always lands on **Account**, and a recipe analyzed just before it isn't in History until reopened, which contradicts "what someone viewed before signing in is not added" in `docs/ACCOUNTS.md`.
+  1. Analyze the example. Click **Add a serving to my plan**, then **Open plan**, then the browser's Back button. You're on the start page, not the editor.
+  2. Analyze the example. Click **Sign in** and finish signing in. You land on **Account**, with an empty **Recipes** tab.
+  3. Open **Recipes** and reopen it from **Recent recipes**. It's now in History.
+
+- [ ] **M9. A failed recipe read throws away the pasted text.** The error appears, but the box is empty, so people have to find and paste the recipe again. Demo mode rarely fails, but a real AI provider will sometimes be busy, rate-limited or slow, so this will matter more. **Cancel** while reading clears it too.
+  1. Open `/recipes`, then stop the server in its terminal.
+  2. Paste some text and click **Work out the nutrition**. An error appears and the box is empty. (Checked by forcing a 503 reply in the test browser, which takes the same path.)
+
+- [ ] **M10. There's no privacy or terms page.** The site now holds email addresses and, once AI is on, sends recipes and photos to a provider. The footer has only the data credit and disclaimer, and a crawl of the whole site found no such page.
+  1. Scroll to the footer of any page. There are no links besides USDA.
+
+### Low
+
+- [ ] **L1. One Back press seems to do nothing in the planner.** Click **Plan** in the header while on step 3, click **Pick foods**, press Back. The address changes to `/plan` but step 1 stays.
+- [ ] **L2. A second open tab doesn't get the new plan.** Open a plan in two tabs. In tab 2, add a food and click **Make my plan**. Tab 1 says **Out of date** until reloaded.
+- [ ] **L3. Compare starts at a different serving.** On `/food/2684440` the page shows 3 oz, 116 kcal. Click **Compare**. The label for the same food shows 100 g, 136 kcal.
+- [ ] **L4. Two spellings of microgram.** Nutrients use "mcg" and contaminants use "µg", on the same food page. Compare **All nutrients** and **Contaminants** on any food.
+- [ ] **L5. Inconsistent food and category names.**
+  - History shows raw USDA names ("Fish, salmon, sockeye, wild caught, raw") where everywhere else says "Salmon, sockeye, wild caught, raw".
+  - The home chip says "Fish & shellfish" and leads to "Finfish and Shellfish Products". "Grains & pasta" leads to "Cereal Grains and Pasta".
+- [ ] **L6. Small wording slips.**
+  - An unnamed recipe is "My recipe" (Start blank), "Untitled recipe" (Recent recipes), "Recipe: Untitled" (planner) or "your recipe" (message).
+  - Recent recipes can say "1 ingredients".
+  - Details say "a 80 kg adult".
+- [ ] **L7. Food rows in History show only a date.** The home cards show calories and what a food is rich in. History has none of that, as `docs/ACCOUNTS.md` notes. Open a food signed in, then **Account**.
+- [ ] **L8. A tab left open after signing out elsewhere.** Open `/account/history` in two tabs. Sign out in one. The other's header changes to **Sign in**, but the page stays, and changing tabs gives "Couldn't load your history".
+- [ ] **L9. Page titles and headings.** `/account/sign-in` and `/account/history` have the title "Sign in" and "History" with no site name, while other pages have one. `/plan` has no main heading once the welcome panel is gone.
+- [ ] **L10. Keyboard gaps.** After **Add to my plan** the button is replaced and focus drops to the page, and **Open plan** in the message is the far end of the page by Tab. On the home page focus starts in search, so the skip link is only reachable with Shift+Tab.
+- [ ] **L11. Search order for "rice".** The first results are black and then red rice, ahead of everyday white or brown rice. Search `rice` on the home page.
+- [ ] **L12. Some contaminant matches look loose.** All disclosed in **Based on**, but they may surprise people.
+  - Sockeye salmon's microplastics are based on "Alaska pollock".
+  - "Apples, raw, without skin" uses "Apple, red, with peel, raw".
+  - Black rice has no metals data, while white rice does.
+- [ ] **L13. Demo-mode wording.** "Your photo goes to our AI provider" appears even when no provider is connected. The demo reader treats any text as ingredients: paste `hello there, how are you today?`, and you get a row called "hello there how are you today?". Neither applies once real AI is on.
+- [ ] **L14. A console warning.** Pages left open for a few seconds log "preloaded using link preload but not used" for one stylesheet. It's harmless and doesn't affect anything visible.
+- [ ] **L15. The site's one-line description is out of date.** The home tagline and search-engine description mention looking up nutrients and planning, but not recipes or contaminants.
+- [ ] **L16. Rest of the README.** The first page and Features are updated. The Usage Guide, Project Structure and Screenshots sections weren't in scope and still describe the planner as the main page.
+
+## 15. What was checked, and what couldn't be
+
+**Checked and working:**
+
+| Looked for | Result |
+|---|---|
+| Meters disagreeing with the serving selector | None. Every serving on salmon, egg, white rice, spinach and apple, custom amounts, invalid amounts and rapid switching all matched the label and table |
+| Broken links | None. Crawled 9,772 internal addresses from the page HTML and sitemap, including all 9,435 food pages. The only redirects were `/account` and `/account/history` to sign-in when signed out |
+| Duplicate headers or footers | None on any page type, including 404s. Every page has one header, one footer and one main area |
+| Sign-in state updating without a reload | Works, including across tabs |
+| Planner state across navigation | Foods, goals, plan and step all survive leaving `/plan`, reloads, and Back and Forward |
+| Home card numbers against food pages | All 12 match on serving and calories |
+| Best sources rankings | The nutrient page and the planner tab match (checked vitamin D) |
+| Anonymous use after sign-out and account deletion | Works |
+| Sideways scrolling at 390 px | None on 12 page types, plus the plan, recipe and account screens |
+| Error states | Contaminants, search and the planner each explain a failed request and offer **Try again**, and the planner keeps your foods and goals. Recipes show the error but lose the text ([M9](#14-rough-edges-checklist)) |
+| 404 pages | Friendly on food, nutrient, category and general addresses, each with a way back |
+| Console errors | None in normal use. The only ones were for the deliberate 404s, forced failures, and L8 |
+| Speed | Nothing over 1 second. Across the crawl, the typical page took 79 ms and the slowest 325 ms. Reading a recipe took about 0.4 s and a sample day about 0.1 s. This is on a laptop with no network in between, so a deployed site will be slower |
+
+**Couldn't reach:**
+
+- **Real email:** links were read from the terminal. **Google sign-in** isn't set up locally.
+- **A real AI provider:** recipes and photos ran on the offline demo reader, so real-world reading accuracy is unknown.
+- **Stripe and any paid features,** which were out of scope, and the deployed site on AWS.
+- **External links:** USDA and the contaminant source links weren't opened, other than the GitHub check in M1.
+- **Screen readers.** Labels, roles and focus were checked in code and by keyboard, but no screen reader was run.

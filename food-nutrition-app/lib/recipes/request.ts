@@ -3,6 +3,7 @@
  * imports so it runs under `node --test`; responses live in lib/recipes/respond.ts.
  */
 import { DatabaseUnavailableError, hydrateFoodsIn, openDatabase, resolveDbPath, type Food } from '../db';
+import { withPortionsIn } from './match';
 import { computeRecipeNutrition, MAX_GRAMS_PER_INGREDIENT, MAX_SERVINGS, roundedNutrition } from './nutrition';
 import type { RecipeNutrition } from './types';
 
@@ -101,9 +102,8 @@ export function nutritionFor(conn: Connection, request: NutritionRequest): Recip
     if (unknown.length) {
         throw new RequestError(400, 'invalid_input', `Unknown food ids: ${Array.from(new Set(unknown)).join(', ')}`, { unknownFdcIds: Array.from(new Set(unknown)) });
     }
-    const items = request.ingredients.map((ing, i) => {
-        const food = hydrated[i] as Food;
-        return { name: food.description, food, grams: ing.grams };
-    });
+    // Fill gaps the same way the editor does, so the two totals agree.
+    const foods = withPortionsIn(conn, hydrated as Food[]);
+    const items = request.ingredients.map((ing, i) => ({ name: foods[i].description, food: foods[i], grams: ing.grams }));
     return roundedNutrition(computeRecipeNutrition(items, request.servings));
 }

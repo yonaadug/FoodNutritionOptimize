@@ -9,8 +9,10 @@
  */
 import { getFoodsByIdsIn, searchFoodsIn } from '../db';
 import type { openDatabase, Food } from '../db';
+import { nutrientValue } from '../food-types';
 import type { MatchCandidate, ParsedIngredient, RecipeFood } from './types';
 import { mergePortions } from './grams';
+import { RECIPE_NUTRIENTS } from './nutrition';
 import { wordStem, words } from './text';
 
 type Connection = ReturnType<typeof openDatabase>;
@@ -138,7 +140,7 @@ const ALIASES: Alias[] = [
     { re: /\blime juice\b/, queries: ['lime juice raw'] },
     { re: /\blemons?$/, queries: ['lemons raw without peel'] },
     { re: /\blimes?$/, queries: ['limes raw'] },
-    { re: /\bbananas?$/, queries: ['bananas raw'] },
+    { re: /\bbananas?$/, queries: ['bananas ripe and slightly ripe raw', 'bananas raw'] },
     { re: /\bapples?$/, queries: ['apples raw with skin'] },
     { re: /\bblueberries$/, queries: ['blueberries raw'] },
     { re: /\bstrawberries$/, queries: ['strawberries raw'] },
@@ -183,7 +185,7 @@ const COOKED_RE = new RegExp(`\\b(${COOKED_WORDS.join('|')})\\b`, 'i');
 const RAW_ASK_RE = /\b(raw|uncooked|dry|dried)\b/i;
 
 /** Forms that are wrong for a plain recipe ingredient unless the recipe asks for them. */
-const SPECIALTY_RE = /\b(dry|ultraviolet|babyfood|baby food|infant|toddler|fast foods?|restaurant|imitation|substitute|replacement|dehydrated|freeze-dried|frozen|canned|powder|powdered|breaded|nuggets|mix|concentrate|industrial|low sodium|reduced sodium|sodium added|low fat|lowfat|nonfat|fat free|reduced fat|light|sweetened|flavored|snacks?|candies|cookies|soup|sauce|dressing|school|meatless)\b/gi;
+const SPECIALTY_RE = /\b(dry|overripe|underripe|ultraviolet|babyfood|baby food|infant|toddler|fast foods?|restaurant|imitation|substitute|replacement|dehydrated|freeze-dried|frozen|canned|powder|powdered|breaded|nuggets|mix|concentrate|industrial|low sodium|reduced sodium|sodium added|low fat|lowfat|nonfat|fat free|reduced fat|light|sweetened|flavored|snacks?|candies|cookies|soup|sauce|dressing|school|meatless)\b/gi;
 /** Words in a description's leading segments that don't change what the food is. */
 const PLAIN_LEADING = new Set(['raw', 'fresh', 'whole', 'plain', 'regular', 'mature', 'grade', 'spices', 'fish', 'cheese', 'oil', 'seeds', 'nuts']);
 /** Brand names are upper-case words in SR Legacy descriptions ("HORMEL ALWAYS TENDER"). */
@@ -224,10 +226,18 @@ export function buildQueries(ing: ParsedIngredient): string[] {
     return Array.from(new Set(queries)).slice(0, 8);
 }
 
-export interface Scored { food: Food; score: number; coverage: number; headMatch: boolean }
+const COMPLETENESS_WEIGHT = 10;
+
+/** Share of nutrient columns with a value (0..1), counting those filled from a related food. */
+function completeness(food: Food): number {
+    const known = RECIPE_NUTRIENTS.filter(k => nutrientValue(food, k) !== null).length;
+    return known / RECIPE_NUTRIENTS.length;
+}
+
+export interface Scored { food: RecipeFood; score: number; coverage: number; headMatch: boolean }
 
 /** Score one candidate. Exported for tests; higher is better and only comparable within one ingredient. */
-export function scoreCandidate(food: Food, ing: ParsedIngredient, rank: number, queryIndex: number, aliasQueries: string[] = []): Scored {
+export function scoreCandidate(food: RecipeFood, ing: ParsedIngredient, rank: number, queryIndex: number, aliasQueries: string[] = []): Scored {
     const desc = food.description;
     const lower = desc.toLowerCase();
     const descWords = new Set(words(lower).map(wordStem));
@@ -296,6 +306,9 @@ export function scoreCandidate(food: Food, ing: ParsedIngredient, rank: number, 
     else if (dt.includes('sr')) score += 3;
     if (dt.includes('survey') || dt.includes('fndds')) score -= 6;
 
+    // Between similar foods, prefer the fuller nutrient profile: this is a micronutrient total.
+    score += completeness(food) * COMPLETENESS_WEIGHT;
+
     score -= desc.length * 0.05;
     return { food, score, coverage, headMatch };
 }
@@ -311,7 +324,8 @@ function confidenceOf(best: Scored | undefined, runnerUp: Scored | undefined, al
 }
 
 export interface MatchResult {
-    food: Food | null;
+    /** Already has its portions and filled nutrients (see withPortionsIn). */
+    food: RecipeFood | null;
     confidence: number;
     candidates: MatchCandidate[];
 }
@@ -326,7 +340,7 @@ export function matchIngredientIn(conn: Connection, ing: ParsedIngredient): Matc
     const aliasQueries = alias ? [...(isCookedAsk(ing) && alias.cooked ? alias.cooked : []), ...alias.queries] : [];
     buildQueries(ing).forEach((q, qi) => {
         const { foods } = searchFoodsIn(conn, q, 1, CANDIDATES_PER_QUERY);
-        foods.forEach((food, rank) => {
+        withPortionsIn(conn, foods).forEach((food, rank) => {
             const scored = scoreCandidate(food, ing, rank, qi, aliasQueries);
             const prev = pool.get(food.id);
             if (!prev || scored.score > prev.score) pool.set(food.id, scored);
@@ -346,29 +360,50 @@ export function matchIngredientIn(conn: Connection, ing: ParsedIngredient): Matc
     };
 }
 
-interface RelatedRow { target: number; label: string; weight_g: number }
+type RelatedFood = Food & { target: number };
 
 /**
- * Attach conversion portions to foods. Foundation foods often list no household
- * measures, but the SR Legacy food they supersede does ("Garlic, raw: 1 clove = 3 g").
+ * Make a food usable for recipe totals, using the SR Legacy food it supersedes.
+ *
+ * Foundation foods are carefully measured but sparse: 80% have no vitamin D value and
+ * "Garlic, raw" has no minerals at all, while the SR Legacy food they replaced usually
+ * has a full profile and household measures ("1 clove = 3 g"). In a micronutrient total
+ * a gap would silently undercount, so nulls are filled from the older row and listed in
+ * `filledNutrients`. A value the Foundation food does have is never overwritten.
  */
 export function withPortionsIn(conn: Connection, foods: Food[]): RecipeFood[] {
     const fdcIds = Array.from(new Set(foods.map(f => f.fdc_id).filter(id => Number.isSafeInteger(id))));
-    const related = new Map<number, { label: string; weight_g: number }[]>();
-    if (fdcIds.length && conn.schema.foodColumns.has('superseded_by_fdc_id') && conn.schema.hasServingSizes) {
+    const related = new Map<number, RelatedFood[]>();
+    if (fdcIds.length && conn.schema.foodColumns.has('superseded_by_fdc_id')) {
         const rows = conn.db.prepare(
-            `SELECT f.superseded_by_fdc_id AS target, s.label AS label, s.weight_g AS weight_g
-             FROM foods f JOIN serving_sizes s ON s.food_id = f.id
-             WHERE f.superseded_by_fdc_id IN (${fdcIds.map(() => '?').join(',')})
-             ORDER BY s.weight_g, s.id`,
-        ).all(...fdcIds) as RelatedRow[];
-        for (const r of rows) {
-            const list = related.get(r.target);
-            if (list) list.push(r);
-            else related.set(r.target, [r]);
+            `SELECT *, superseded_by_fdc_id AS target FROM foods WHERE superseded_by_fdc_id IN (${fdcIds.map(() => '?').join(',')}) ORDER BY id`,
+        ).all(...fdcIds) as RelatedFood[];
+        if (rows.length) {
+            const withServings = getFoodsByIdsIn(conn, rows.map(r => r.id));
+            const servings = new Map(withServings.map(f => [f.id, f.serving_sizes]));
+            for (const r of rows) {
+                r.serving_sizes = servings.get(r.id) ?? [];
+                const list = related.get(r.target);
+                if (list) list.push(r);
+                else related.set(r.target, [r]);
+            }
         }
     }
-    return foods.map(f => ({ ...f, portions: mergePortions(f.serving_sizes, related.get(f.fdc_id)) }));
+    return foods.map(f => {
+        const donors = related.get(f.fdc_id) ?? [];
+        const filled: Record<string, number> = {};
+        for (const key of RECIPE_NUTRIENTS) {
+            if ((f as unknown as Record<string, unknown>)[key] !== null) continue;
+            const donor = donors.find(d => nutrientValue(d, key) !== null);
+            if (donor) filled[key] = nutrientValue(donor, key)!;
+        }
+        return {
+            ...f,
+            ...filled,
+            portions: mergePortions(f.serving_sizes, donors.flatMap(d => d.serving_sizes ?? [])),
+            filledNutrients: Object.keys(filled),
+        };
+    });
 }
 
 /** One food by FDC id, with its conversion portions. */

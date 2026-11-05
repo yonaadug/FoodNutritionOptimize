@@ -65,6 +65,7 @@ export function toRecord(state: EditorState, nutrition: RecipeNutrition, now: st
         title: state.title.trim() || 'Untitled recipe',
         servings: state.servings,
         source: state.source,
+        platedMeal: state.platedMeal,
         createdAt: state.createdAt,
         updatedAt: now,
         ingredients: state.rows.map(r => ({
@@ -91,7 +92,7 @@ export function editorFromRecord(record: AnalyzedRecipe, foods: Map<number, Reci
         title: record.title,
         servings: record.servings,
         source: record.source,
-        platedMeal: false,
+        platedMeal: record.platedMeal === true,
         warnings: [],
         provider: record.provider,
         createdAt: record.createdAt,

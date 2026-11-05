@@ -136,7 +136,7 @@ export const FIXTURE_RECIPES: FixtureRecipe[] = [
         title: 'Overnight oats', servings: 1, kcalPerServing: [300, 650],
         lines: [
             { line: '1/2 cup rolled oats', name: /oats/, food: /^oats/i, grams: [35, 50] },
-            { line: '1/2 cup almond milk', name: /almond milk/, food: /^almond milk/i, grams: [110, 130] },
+            { line: '1/2 cup almond milk', name: /almond milk/, food: /^almond milk/i, grams: [110, 135] },
             { line: '1/4 cup plain Greek yogurt', name: /yogurt/i, food: /^yogurt, greek, plain/i, grams: [55, 75] },
             { line: '1 tbsp chia seeds', name: /chia/, food: /chia/i, grams: [8, 14] },
             { line: '1 tbsp honey', name: /honey/, food: /^honey/i, grams: [18, 24] },

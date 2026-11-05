@@ -63,6 +63,24 @@ describe('matching on the real database', { skip: !hasDb && 'nutrition.db not av
         assert.equal(a.conversion.grams, 9);
         assert.ok(a.food!.portions.some(p => p.source === 'related' && /clove/.test(p.label)));
     });
+    it('fills missing nutrients from the superseded food, and says which', () => {
+        const garlic = analyzeIngredient(conn, ing('3 cloves garlic'), 'x').food!;
+        const raw = conn.db.prepare('SELECT * FROM foods WHERE fdc_id = ?').get(garlic.fdc_id) as Record<string, number | null>;
+        assert.equal(raw.iron_mg, null, 'the Foundation row has no iron');
+        assert.ok(garlic.iron_mg! > 0);
+        assert.ok(garlic.filledNutrients.includes('iron_mg'));
+    });
+    it('never overwrites a value the food has', () => {
+        const garlic = analyzeIngredient(conn, ing('3 cloves garlic'), 'x').food!;
+        const raw = conn.db.prepare('SELECT * FROM foods WHERE fdc_id = ?').get(garlic.fdc_id) as Record<string, number | null>;
+        assert.equal(garlic.calories, raw.calories);
+        assert.ok(!garlic.filledNutrients.includes('calories'));
+    });
+    it('a plain banana is not an overripe one', () => {
+        const a = analyzeIngredient(conn, ing('2 ripe bananas'), 'x');
+        assert.doesNotMatch(a.food!.description, /overripe/i);
+        assert.ok(a.food!.potassium_mg! > 0, 'and it has mineral data');
+    });
     it('keeps portions of the food itself ahead of related ones', () => {
         const foods = conn.db.prepare(`SELECT * FROM foods WHERE fdc_id = 748967`).all() as never[];
         if (!foods.length) return;

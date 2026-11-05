@@ -57,7 +57,11 @@ export interface Portion {
 }
 
 /** A matched food sent to the client: the full Food plus conversion portions. */
-export type RecipeFood = Food & { portions: Portion[] };
+export type RecipeFood = Food & {
+    portions: Portion[];
+    /** Nutrients this food lacks that were filled from the equivalent SR Legacy food it supersedes. */
+    filledNutrients: string[];
+};
 
 export interface MatchCandidate {
     fdcId: number;
@@ -122,6 +126,8 @@ export interface AnalyzedRecipe {
     title: string;
     servings: number;
     source: RecipeSource;
+    /** Estimated from a photo of a plated meal, so amounts are rough. */
+    platedMeal: boolean;
     createdAt: string;
     updatedAt: string;
     ingredients: {

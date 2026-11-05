@@ -11,10 +11,12 @@ import type { AnalyzedIngredient, AnalyzedRecipe, ParseResponse, RecipeFood } fr
 const rice: RecipeFood = {
     ...makeFood({ id: 1, description: 'Rice, white, cooked', calories: 130, protein_g: 2.7 }),
     portions: [{ label: '1 cup', grams: 158, source: 'food' }],
+    filledNutrients: [],
 };
 const oil: RecipeFood = {
     ...makeFood({ id: 2, description: 'Oil, olive', calories: 884, total_fat_g: 100 }),
     portions: [{ label: '1 tbsp', grams: 13.5, source: 'food' }],
+    filledNutrients: [],
 };
 
 function row(o: Partial<AnalyzedIngredient> = {}): AnalyzedIngredient {
@@ -113,6 +115,11 @@ describe('records', () => {
         assert.equal(back.rows[1].food, null);
         assert.equal(rowsNutrition(back.rows, back.servings).perServing.calories.value, rowsNutrition(state.rows, state.servings).perServing.calories.value);
     });
+    it('keeps the plated-meal flag, so a reopened estimate still carries its warning', () => {
+        const plated = toRecord({ ...state, platedMeal: true }, rowsNutrition(state.rows, state.servings), 'x');
+        assert.equal(plated.platedMeal, true);
+        assert.equal(editorFromRecord(plated, new Map()).platedMeal, true);
+    });
     it('survives a food that no longer exists', () => {
         const back = editorFromRecord(rec, new Map());
         assert.equal(back.rows[0].food, null);
@@ -126,7 +133,7 @@ describe('records', () => {
 });
 
 describe('recents', () => {
-    const rec = (id: string): AnalyzedRecipe => ({ version: 1, id, title: id, servings: 1, source: 'text', createdAt: 'x', updatedAt: 'x', ingredients: [], perServing: {}, incomplete: [], servingGrams: 0, provider: null });
+    const rec = (id: string): AnalyzedRecipe => ({ version: 1, id, title: id, servings: 1, source: 'text', platedMeal: false, createdAt: 'x', updatedAt: 'x', ingredients: [], perServing: {}, incomplete: [], servingGrams: 0, provider: null });
 
     it('inserts newest first and updates by id', () => {
         const s = storage();

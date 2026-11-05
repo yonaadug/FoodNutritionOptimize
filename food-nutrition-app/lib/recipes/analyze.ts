@@ -7,7 +7,7 @@
 import type { openDatabase } from '../db';
 import type { AnalyzedIngredient, MatchCandidate, ParsedIngredient, ParsedRecipe, ParseResponse, RecipeSource } from './types';
 import { convertToGrams } from './grams';
-import { foodWithPortionsIn, matchIngredientIn, withPortionsIn, type MatchResult } from './match';
+import { foodWithPortionsIn, matchIngredientIn, type MatchResult } from './match';
 import { MAX_SERVINGS } from './nutrition';
 
 type Connection = ReturnType<typeof openDatabase>;
@@ -30,7 +30,7 @@ function safeServings(s: number | null): { servings: number; stated: boolean } {
 
 export function analyzeIngredient(conn: Connection, ing: ParsedIngredient, id: string, match?: MatchResult): AnalyzedIngredient {
     const m = match ?? matchIngredientIn(conn, ing);
-    const food = m.food ? withPortionsIn(conn, [m.food])[0] : null;
+    const food = m.food;
     return {
         id,
         name: ing.name,

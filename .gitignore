@@ -49,6 +49,8 @@ config/*
 *.sqlite
 *.sqlite3
 !food-nutrition-app/nutrition.db
+# Local account data (APP_DB_PATH default). Real user data: never commit it.
+.data/
 
 # Data directories (raw USDA downloads are large and re-downloadable)
 data/raw/

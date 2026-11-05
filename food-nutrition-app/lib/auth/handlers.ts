@@ -135,6 +135,13 @@ export async function getHistory(request: Request, deps: AccountDeps): Promise<R
     await enforce(deps.table, 'read-user', user.id, RATE_RULES.readUser, deps.config.secret);
     const params = new URL(request.url).searchParams;
     const rawKind = params.get('kind');
+    const rawItemId = params.get('itemId');
+    if (rawItemId !== null) {
+        if (!rawKind) throw new AccountError(400, 'invalid_request', 'Pass kind with itemId', { field: 'kind' });
+        const item = await deps.store.getHistoryItem(user.id, validateKind(rawKind), validateItemId(rawItemId));
+        if (!item) throw new AccountError(404, 'not_found', 'History item not found');
+        return jsonOk({ item });
+    }
     const page = await deps.store.listHistory(user.id, {
         kind: rawKind ? validateKind(rawKind) : undefined,
         limit: pageSize(params),

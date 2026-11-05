@@ -1,6 +1,9 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import type { HistoryItem } from '@/lib/user-store/history';
+import { LOCAL_DATA_CLEARED_EVENT, reconcileLocalData } from '@/lib/local-data';
+import { afterSignInPath, signInPath } from './next-path';
 
 /**
  * Browser side of accounts. Everything here is optional sugar on an anonymous site:
@@ -51,6 +54,8 @@ let state: UserState = SERVER_STATE;
 let inflight: Promise<void> | null = null;
 let lastChecked = 0;
 let started = false;
+/** Who the last definite answer said was signed in. Undefined until there has been one. */
+let lastIdentity: string | null | undefined;
 const listeners = new Set<() => void>();
 
 function readHint(): boolean {
@@ -73,6 +78,27 @@ function writeHint(signedIn: boolean) {
 function setState(next: UserState) {
     state = next;
     listeners.forEach(l => l());
+}
+
+/**
+ * Apply the rule for data in this browser (lib/local-data.ts) after a definite answer
+ * about who is signed in. A failed request is not an answer, so being offline never
+ * clears anything.
+ */
+function settleIdentity(user: CurrentUser | null) {
+    const id = user?.id ?? null;
+    let storage: Storage | null = null;
+    try {
+        storage = localStorage;
+    } catch {
+        /* blocked storage: nothing is kept, so nothing can be left behind */
+    }
+    const cleared = reconcileLocalData(storage, id);
+    const leftOrSwitched = lastIdentity !== undefined && lastIdentity !== null && lastIdentity !== id;
+    lastIdentity = id;
+    if ((cleared || leftOrSwitched) && typeof window !== 'undefined') {
+        window.dispatchEvent(new Event(LOCAL_DATA_CLEARED_EVENT));
+    }
 }
 
 /**
@@ -103,6 +129,7 @@ function load(): Promise<void> {
             if (!res.ok) throw new Error(`status ${res.status}`);
             const { user } = (await res.json()) as { user: CurrentUser | null };
             writeHint(Boolean(user));
+            settleIdentity(user);
             setState({ user, loading: false });
         } catch {
             // Offline or a server problem. Keep what we had rather than signing anyone out.
@@ -117,6 +144,7 @@ function load(): Promise<void> {
 
 function check(): Promise<void> {
     if (readHint()) return load();
+    settleIdentity(null);
     if (state.loading || state.user) setState({ user: null, loading: false });
     return Promise.resolve();
 }
@@ -158,21 +186,28 @@ export function refreshCurrentUser(): Promise<void> {
 export function primeCurrentUser(user: CurrentUser) {
     start();
     writeHint(true);
+    settleIdentity(user);
     lastChecked = Date.now();
     if (state.user?.id !== user.id || state.loading) setState({ user, loading: false });
 }
 
-/** Clear the local view of the session after sign-out or account deletion. */
+/** Clear the local view of the session after sign-out or account deletion, and what that person left in this browser. */
 export function clearCurrentUser() {
     writeHint(false);
+    settleIdentity(null);
     setState({ user: null, loading: false });
+}
+
+/** The signed-in person's id right now, for code outside React. */
+export function currentUserId(): string | null {
+    return state.user?.id ?? null;
 }
 
 /** Ask for a sign-in link. Resolves to the HTTP status so forms can explain rate limits. */
 export async function requestSignInLink(email: string, next = '/account'): Promise<number> {
     const res = await apiFetch('/api/auth/sign-in/magic-link', {
         method: 'POST',
-        json: { email, callbackURL: next, errorCallbackURL: '/account/sign-in' },
+        json: { email, callbackURL: afterSignInPath(next), errorCallbackURL: signInPath(next) },
     });
     return res.status;
 }
@@ -207,8 +242,47 @@ export async function recordHistory(item: HistoryRecord): Promise<RecordResult> 
     }
 }
 
+export type HistoryLookup =
+    | { status: 'ok'; item: HistoryItem }
+    | { status: 'signed-out' | 'not-found' | 'failed' };
+
+/** One saved item, for reopening it on this or another device. Asks the server nothing when signed out. */
+export async function fetchHistoryItem(kind: string, itemId: string): Promise<HistoryLookup> {
+    try {
+        start();
+        if (inflight) await inflight;
+        if (!state.user) return { status: 'signed-out' };
+        const res = await apiFetch(`/api/history?${new URLSearchParams({ kind, itemId })}`);
+        if (res.status === 401) {
+            clearCurrentUser();
+            return { status: 'signed-out' };
+        }
+        if (res.status === 404) return { status: 'not-found' };
+        if (!res.ok) return { status: 'failed' };
+        const { item } = (await res.json()) as { item: HistoryItem };
+        return { status: 'ok', item };
+    } catch {
+        return { status: 'failed' };
+    }
+}
+
+/** The newest saved items of a kind, or an empty list when signed out or on any problem. */
+export async function fetchLatestHistory(kind: string, limit = 1): Promise<HistoryItem[]> {
+    try {
+        start();
+        if (inflight) await inflight;
+        if (!state.user) return [];
+        const res = await apiFetch(`/api/history?${new URLSearchParams({ kind, limit: String(limit) })}`);
+        if (!res.ok) return [];
+        return ((await res.json()) as { items: HistoryItem[] }).items;
+    } catch {
+        return [];
+    }
+}
+
 /** For tests: forget everything this module has learned. */
 export function __resetClientState() {
+    lastIdentity = undefined;
     state = SERVER_STATE;
     inflight = null;
     lastChecked = 0;

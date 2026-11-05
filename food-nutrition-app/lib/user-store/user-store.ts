@@ -163,6 +163,12 @@ export class UserStore {
         return { items: page.items.map(toHistoryItem), nextCursor: page.cursor ?? null };
     }
 
+    /** One item, or null. Read directly by key, so it is never behind an index. */
+    async getHistoryItem(userId: string, kind: string, itemId: string): Promise<HistoryItem | null> {
+        const item = await this.table.get({ PK: userPk(userId), SK: histSk(kind, itemId) });
+        return item ? toHistoryItem(item) : null;
+    }
+
     /** Returns whether an item was actually removed. */
     async deleteHistory(userId: string, kind: string, itemId: string): Promise<boolean> {
         const removed = await this.table.take({ PK: userPk(userId), SK: histSk(kind, itemId) });

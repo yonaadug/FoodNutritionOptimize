@@ -45,6 +45,14 @@ for (const backend of backends) {
             assert.equal((await store.listHistory(id)).items[0].data, null);
         });
 
+        it('gets one item by kind and id, for that user only', async () => {
+            const id = user();
+            await store.upsertHistory(id, input('one', 'plan', { title: 'A plan' }));
+            assert.equal((await store.getHistoryItem(id, 'plan', 'one'))?.title, 'A plan');
+            assert.equal(await store.getHistoryItem(id, 'food', 'one'), null);
+            assert.equal(await store.getHistoryItem(user(), 'plan', 'one'), null);
+        });
+
         it('kinds are separate: the same itemId can exist under two kinds', async () => {
             const id = user();
             await store.upsertHistory(id, input('1', 'food'));

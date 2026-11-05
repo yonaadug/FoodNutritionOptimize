@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 import Icon from '@/components/ui/Icon';
 import { apiFetch, requestSignInLink } from '@/lib/auth/client';
+import { afterSignInPath, signInPath } from '@/lib/auth/next-path';
 import styles from './account.module.css';
 
 type Status =
@@ -43,7 +44,7 @@ export default function SignInForm({ next, consoleLinks, google }: Props) {
         try {
             const res = await apiFetch('/api/auth/sign-in/social', {
                 method: 'POST',
-                json: { provider: 'google', callbackURL: next, errorCallbackURL: '/account/sign-in' },
+                json: { provider: 'google', callbackURL: afterSignInPath(next), errorCallbackURL: signInPath(next) },
             });
             const { url } = (await res.json()) as { url?: string };
             if (!res.ok || !url) throw new Error('no url');

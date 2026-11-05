@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    __resetClientState, clearCurrentUser, primeCurrentUser, recordHistory, refreshCurrentUser, requestSignInLink, signOut,
+    __resetClientState, clearCurrentUser, fetchHistoryItem, primeCurrentUser, recordHistory, refreshCurrentUser, requestSignInLink, signOut,
 } from './client';
 
 class MemoryStorage {
@@ -139,7 +139,12 @@ describe('requests', () => {
     it('sign-in asks for the callback and an error page on this site', async () => {
         respond = () => Response.json({ status: true });
         assert.equal(await requestSignInLink('a@example.com', '/recipes'), 200);
-        assert.deepEqual(calls[0].body, { email: 'a@example.com', callbackURL: '/recipes', errorCallbackURL: '/account/sign-in' });
+        assert.deepEqual(calls[0].body, {
+            email: 'a@example.com',
+            // Through the page that tells the browser who signed in, then on to /recipes.
+            callbackURL: '/account/sign-in/done?next=%2Frecipes',
+            errorCallbackURL: '/account/sign-in?next=%2Frecipes',
+        });
     });
 
     it('includes the body hash CloudFront needs, and only on writes', async () => {
@@ -149,5 +154,117 @@ describe('requests', () => {
         assert.match(calls[0].headers['x-amz-content-sha256'], /^[0-9a-f]{64}$/);
         await refreshCurrentUser();
         assert.equal(calls[1].headers['x-amz-content-sha256'], undefined);
+    });
+});
+
+describe('data left in this browser', () => {
+    const WORK = { selectedFoods: '[1]', 'nc.plan.v1': '{"v":2}', 'recipes.recent.v1': '[{"id":"r"}]', 'mnd.recentSearches.v1': '["rice"]' };
+    const put = () => Object.entries(WORK).forEach(([k, v]) => storage.setItem(k, v));
+    const left = () => Object.keys(WORK).filter(k => storage.getItem(k) !== null);
+    const events: string[] = [];
+    const realWindow = (globalThis as { window?: unknown }).window;
+
+    beforeEach(() => {
+        events.length = 0;
+        // Only what the module needs: the "cleared" announcement.
+        (globalThis as { window?: unknown }).window = {
+            addEventListener() {},
+            dispatchEvent: (e: Event) => { events.push(e.type); return true; },
+        };
+    });
+    afterEach(() => { (globalThis as { window?: unknown }).window = realWindow; });
+
+    it('stays for anonymous visitors, who make no requests', async () => {
+        put();
+        await recordHistory(item());
+        clearCurrentUser();
+        assert.deepEqual(left(), Object.keys(WORK));
+        assert.equal(calls.length, 0);
+        assert.deepEqual(events, []);
+    });
+
+    it('stays when someone signs in, and is not uploaded', async () => {
+        put();
+        primeCurrentUser(USER);
+        respond = () => Response.json({ user: USER });
+        await refreshCurrentUser();
+        assert.deepEqual(left(), Object.keys(WORK));
+        assert.ok(calls.every(c => c.path !== '/api/history'));
+    });
+
+    it('is cleared by signing out', async () => {
+        put();
+        primeCurrentUser(USER);
+        respond = () => Response.json({ status: true });
+        await signOut();
+        assert.deepEqual(left(), []);
+        assert.deepEqual(events, ['mnd:local-data-cleared']);
+    });
+
+    it('is cleared after account deletion (which ends in clearCurrentUser)', () => {
+        put();
+        primeCurrentUser(USER);
+        clearCurrentUser();
+        assert.deepEqual(left(), []);
+    });
+
+    it('is cleared when the session turns out to have ended', async () => {
+        put();
+        primeCurrentUser(USER);
+        respond = () => new Response('{}', { status: 401 });
+        await recordHistory(item());
+        assert.deepEqual(left(), []);
+    });
+
+    it('is cleared when the server says nobody is signed in any more', async () => {
+        put();
+        primeCurrentUser(USER);
+        respond = () => Response.json({ user: null });
+        await refreshCurrentUser();
+        assert.deepEqual(left(), []);
+    });
+
+    it('is not cleared by a network or server problem', async () => {
+        put();
+        primeCurrentUser(USER);
+        respond = () => new Response('{}', { status: 500 });
+        await refreshCurrentUser();
+        globalThis.fetch = (async () => { throw new Error('offline'); }) as typeof fetch;
+        await refreshCurrentUser();
+        assert.deepEqual(left(), Object.keys(WORK));
+    });
+
+    it('never reaches a second person signing in on the same browser', async () => {
+        put();
+        primeCurrentUser(USER);
+        respond = () => Response.json({ user: { ...USER, id: 'u2', email: 'b@example.com' } });
+        await refreshCurrentUser();
+        assert.deepEqual(left(), []);
+        assert.deepEqual(events, ['mnd:local-data-cleared']);
+    });
+});
+
+describe('fetchHistoryItem', () => {
+    it('asks nothing when signed out', async () => {
+        assert.deepEqual(await fetchHistoryItem('plan', 'p1'), { status: 'signed-out' });
+        assert.equal(calls.length, 0);
+    });
+
+    it('returns the item, read by kind and id', async () => {
+        primeCurrentUser(USER);
+        respond = () => Response.json({ item: { itemId: 'p1' } });
+        const got = await fetchHistoryItem('plan', 'p 1');
+        assert.equal(got.status, 'ok');
+        assert.equal(calls[0].path, '/api/history?kind=plan&itemId=p+1');
+    });
+
+    it('tells apart gone, signed out and failed', async () => {
+        primeCurrentUser(USER);
+        respond = () => new Response('{}', { status: 404 });
+        assert.equal((await fetchHistoryItem('plan', 'p1')).status, 'not-found');
+        respond = () => new Response('{}', { status: 500 });
+        assert.equal((await fetchHistoryItem('plan', 'p1')).status, 'failed');
+        respond = () => new Response('{}', { status: 401 });
+        assert.equal((await fetchHistoryItem('plan', 'p1')).status, 'signed-out');
     });
 });

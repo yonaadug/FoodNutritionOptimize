@@ -44,6 +44,9 @@ registerHooks({
         if (context.parentURL?.includes('/node_modules/')) {
             return nextResolve(specifier, context);
         }
+        // next's package has no exports map, so Node's ESM resolver needs the file name.
+        // This lets tests call route handlers directly, the way the server does.
+        if (specifier === 'next/server') return nextResolve('next/server.js', context);
         let candidate = null;
         if (specifier.startsWith('@/')) {
             candidate = path.join(projectRoot, specifier.slice(2));

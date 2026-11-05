@@ -59,8 +59,6 @@ export interface Portion {
 /** A matched food sent to the client: the full Food plus conversion portions. */
 export type RecipeFood = Food & {
     portions: Portion[];
-    /** Nutrients this food lacks that were filled from the equivalent SR Legacy food it supersedes. */
-    filledNutrients: string[];
 };
 
 export interface MatchCandidate {

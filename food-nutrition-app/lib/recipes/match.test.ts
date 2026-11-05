@@ -68,13 +68,13 @@ describe('matching on the real database', { skip: !hasDb && 'nutrition.db not av
         const raw = conn.db.prepare('SELECT * FROM foods WHERE fdc_id = ?').get(garlic.fdc_id) as Record<string, number | null>;
         assert.equal(raw.iron_mg, null, 'the Foundation row has no iron');
         assert.ok(garlic.iron_mg! > 0);
-        assert.ok(garlic.filledNutrients.includes('iron_mg'));
+        assert.ok(garlic.filledFrom?.iron_mg);
     });
     it('never overwrites a value the food has', () => {
         const garlic = analyzeIngredient(conn, ing('3 cloves garlic'), 'x').food!;
         const raw = conn.db.prepare('SELECT * FROM foods WHERE fdc_id = ?').get(garlic.fdc_id) as Record<string, number | null>;
         assert.equal(garlic.calories, raw.calories);
-        assert.ok(!garlic.filledNutrients.includes('calories'));
+        assert.equal(garlic.filledFrom?.calories, undefined);
     });
     it('a plain banana is not an overripe one', () => {
         const a = analyzeIngredient(conn, ing('2 ripe bananas'), 'x');

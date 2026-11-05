@@ -7,7 +7,7 @@
  * The scorer is deterministic. An optional LLM re-rank (lib/recipes/analyze.ts)
  * can only choose among these candidates, so it cannot invent a food.
  */
-import { getFoodsByIdsIn, searchFoodsIn } from '../db';
+import { getFoodsByIdsIn, olderEntriesIn, searchFoodsIn, withFilledNutrientsIn } from '../db';
 import type { openDatabase, Food } from '../db';
 import { nutrientValue } from '../food-types';
 import type { MatchCandidate, ParsedIngredient, RecipeFood } from './types';
@@ -360,50 +360,16 @@ export function matchIngredientIn(conn: Connection, ing: ParsedIngredient): Matc
     };
 }
 
-type RelatedFood = Food & { target: number };
-
 /**
- * Make a food usable for recipe totals, using the SR Legacy food it supersedes.
- *
- * Foundation foods are carefully measured but sparse: 80% have no vitamin D value and
- * "Garlic, raw" has no minerals at all, while the SR Legacy food they replaced usually
- * has a full profile and household measures ("1 clove = 3 g"). In a micronutrient total
- * a gap would silently undercount, so nulls are filled from the older row and listed in
- * `filledNutrients`. A value the Foundation food does have is never overwritten.
+ * Make a food usable for recipe totals: its nutrition gaps filled by the site-wide rule
+ * (lib/nutrient-fill.ts), plus the household measures of the SR Legacy food it supersedes
+ * ("1 clove = 3 g").
  */
 export function withPortionsIn(conn: Connection, foods: Food[]): RecipeFood[] {
-    const fdcIds = Array.from(new Set(foods.map(f => f.fdc_id).filter(id => Number.isSafeInteger(id))));
-    const related = new Map<number, RelatedFood[]>();
-    if (fdcIds.length && conn.schema.foodColumns.has('superseded_by_fdc_id')) {
-        const rows = conn.db.prepare(
-            `SELECT *, superseded_by_fdc_id AS target FROM foods WHERE superseded_by_fdc_id IN (${fdcIds.map(() => '?').join(',')}) ORDER BY id`,
-        ).all(...fdcIds) as RelatedFood[];
-        if (rows.length) {
-            const withServings = getFoodsByIdsIn(conn, rows.map(r => r.id));
-            const servings = new Map(withServings.map(f => [f.id, f.serving_sizes]));
-            for (const r of rows) {
-                r.serving_sizes = servings.get(r.id) ?? [];
-                const list = related.get(r.target);
-                if (list) list.push(r);
-                else related.set(r.target, [r]);
-            }
-        }
-    }
-    return foods.map(f => {
-        const donors = related.get(f.fdc_id) ?? [];
-        const filled: Record<string, number> = {};
-        for (const key of RECIPE_NUTRIENTS) {
-            if ((f as unknown as Record<string, unknown>)[key] !== null) continue;
-            const donor = donors.find(d => nutrientValue(d, key) !== null);
-            if (donor) filled[key] = nutrientValue(donor, key)!;
-        }
-        return {
-            ...f,
-            ...filled,
-            portions: mergePortions(f.serving_sizes, donors.flatMap(d => d.serving_sizes ?? [])),
-            filledNutrients: Object.keys(filled),
-        };
-    });
+    return withFilledNutrientsIn(conn, foods).map(f => ({
+        ...f,
+        portions: mergePortions(f.serving_sizes, olderEntriesIn(conn, f.fdc_id).flatMap(d => d.serving_sizes ?? [])),
+    }));
 }
 
 /** One food by FDC id, with its conversion portions. */

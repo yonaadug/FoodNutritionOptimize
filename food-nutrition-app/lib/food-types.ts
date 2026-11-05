@@ -78,6 +78,28 @@ export interface Food {
     publication_date?: string | null;
     source_release?: string | null;
     serving_sizes?: ServingSize[];
+    /**
+     * Nutrients this food has no value for in its own record, filled by the server from
+     * USDA's older entry for the same food (see lib/nutrient-fill.ts): column -> that
+     * entry's fdc_id. Absent when nothing was filled.
+     */
+    filledFrom?: Record<string, number>;
+    /** Set when this "food" is a recipe from the analyzer rather than a USDA row. */
+    recipe?: RecipeInPlan;
+}
+
+/** What the planner keeps about a recipe, so a plan can link to it and carry its caveats. */
+export interface RecipeInPlan {
+    /** The recipe's record id: /recipes?id=<id> reopens it. */
+    id: string;
+    /** Grams in one serving, as the recipe stands now. */
+    servingGrams: number;
+    /** Ingredients left out of the totals (no amount or no matched food). */
+    uncounted: string[];
+    /** Nutrient columns whose total is only a lower bound, because an ingredient has no data. */
+    incomplete: string[];
+    /** Changes whenever the recipe's nutrition does, so a plan built on an older version reads as out of date. */
+    fingerprint: string;
 }
 
 /** Read a nutrient by column name; undefined/null/non-finite -> null. */

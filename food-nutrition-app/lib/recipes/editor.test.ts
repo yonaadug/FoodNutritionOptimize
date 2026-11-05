@@ -11,12 +11,10 @@ import type { AnalyzedIngredient, AnalyzedRecipe, ParseResponse, RecipeFood } fr
 const rice: RecipeFood = {
     ...makeFood({ id: 1, description: 'Rice, white, cooked', calories: 130, protein_g: 2.7 }),
     portions: [{ label: '1 cup', grams: 158, source: 'food' }],
-    filledNutrients: [],
 };
 const oil: RecipeFood = {
     ...makeFood({ id: 2, description: 'Oil, olive', calories: 884, total_fat_g: 100 }),
     portions: [{ label: '1 tbsp', grams: 13.5, source: 'food' }],
-    filledNutrients: [],
 };
 
 function row(o: Partial<AnalyzedIngredient> = {}): AnalyzedIngredient {

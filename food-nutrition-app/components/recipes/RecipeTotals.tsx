@@ -8,6 +8,7 @@ import { dailyValue, nutrientLabel, nutrientUnit } from '@/components/planner/nu
 import { plannerActions } from '@/hooks/usePlannerState';
 import { notify } from '@/hooks/useToasts';
 import { fmt } from '@/lib/food-page';
+import { filledKeys } from '@/lib/nutrient-fill';
 import { platedRange, type EditorState } from '@/lib/recipes/editor';
 import { recipeAsFood, recipeFoodId } from '@/lib/recipes/nutrition';
 import type { NutrientTotal, RecipeNutrition } from '@/lib/recipes/types';
@@ -54,7 +55,7 @@ export default function RecipeTotals({ state, nutrition }: { state: EditorState;
     const servingText = state.servings === 1
         ? `1 serving (${fmt(nutrition.servingGrams, 0)} g)`
         : `1 of ${fmt(state.servings)} servings (${fmt(nutrition.servingGrams, 0)} g)`;
-    const usesOlderData = state.rows.some(r => (r.food?.filledNutrients?.length ?? 0) > 0);
+    const usesOlderData = state.rows.some(r => filledKeys(r.food).length > 0);
 
     const addToPlan = () => {
         plannerActions.setFixed(food, Math.round(nutrition.servingGrams * 10) / 10);

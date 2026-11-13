@@ -28,13 +28,13 @@ export default function NutrientTable({ food, grams, servingLabel }: { food: Foo
                         <tr>
                             <th scope="col">Nutrient</th>
                             <th scope="col" className="num">Amount</th>
-                            <th scope="col" className="num">% DV</th>
+                            <th scope="col" className="num" colSpan={2}>% DV</th>
                             <th scope="col" className="num col-100g">Per 100 g</th>
                         </tr>
                     </thead>
                     {groups.map(g => (
                         <tbody key={g.id} data-group={g.id}>
-                            <tr className="group-row"><th colSpan={4} scope="rowgroup">{g.title}</th></tr>
+                            <tr className="group-row"><th colSpan={5} scope="rowgroup">{g.title}</th></tr>
                             {g.rows.map(r => (
                                 <tr key={r.key} data-missing={r.amount === null || undefined}>
                                     <th scope="row" data-indent={r.indent}>{r.label}</th>
@@ -42,13 +42,14 @@ export default function NutrientTable({ food, grams, servingLabel }: { food: Foo
                                         {r.amount === null ? <span className="muted">—</span> : `${fmt(r.amount)} ${r.unit}`}
                                         {isFilled(food, r.key) && <OlderEntryMark />}
                                     </td>
-                                    <td className="num tabular">
-                                        {r.dvPct === null ? <span className="muted">{r.amount === null ? '—' : ''}</span> : (
-                                            <span className="dv-cell">
-                                                <span className="dv-bar" aria-hidden="true"><span style={{ width: `${Math.min(100, r.dvPct)}%` }} /></span>
-                                                {fmt(r.dvPct, 0)}%
-                                            </span>
+                                    {/* Bar and number in their own columns, so every bar starts at the same x. */}
+                                    <td className="dv-bar-cell">
+                                        {r.dvPct !== null && (
+                                            <span className="dv-bar" aria-hidden="true"><span style={{ width: `${Math.min(100, r.dvPct)}%` }} /></span>
                                         )}
+                                    </td>
+                                    <td className="num tabular dv-num-cell">
+                                        {r.dvPct === null ? <span className="muted">{r.amount === null ? '—' : ''}</span> : `${fmt(r.dvPct, 0)}%`}
                                     </td>
                                     <td className="num tabular muted col-100g">{r.per100g === null ? '—' : `${fmt(r.per100g)} ${r.unit}`}</td>
                                 </tr>

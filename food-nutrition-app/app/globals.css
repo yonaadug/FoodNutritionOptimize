@@ -772,14 +772,16 @@ a.chip-btn { text-decoration: none; }
 .nutrient-table tbody:first-of-type .group-row th { padding-top: 10px; }
 .nutrient-table tbody th[data-indent='true'] { padding-left: 22px; color: var(--text-secondary); }
 .nutrient-table tr[data-missing='true'] th { color: var(--text-muted); }
-.dv-cell { display: inline-flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 88px; }
-.dv-bar { width: 44px; height: 6px; border-radius: 3px; background: var(--bg-sunken); overflow: hidden; flex: none; }
+/* % DV is two columns, the bar and then the number. Both shrink to fit, so the bars sit next
+   to the numbers and the table keeps every bar at the same x, whatever the number's width. */
+.nutrient-table .dv-bar-cell { width: 1%; padding-right: 0; text-align: right; }
+.nutrient-table .dv-num-cell { width: 1%; }
+.dv-bar { display: inline-block; vertical-align: middle; width: 44px; height: 6px; border-radius: 3px; background: var(--bg-sunken); overflow: hidden; }
 .dv-bar > span { display: block; height: 100%; background: var(--primary); border-radius: 3px; }
 @media (max-width: 480px) {
   .nutrient-table .col-100g { display: none; }
   .nutrient-table th, .nutrient-table td { padding-left: 4px; padding-right: 4px; }
   .dv-bar { width: 28px; }
-  .dv-cell { min-width: 64px; }
 }
 
 .provenance { display: flex; flex-direction: column; gap: var(--space-3); }

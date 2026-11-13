@@ -3,25 +3,25 @@
  * EXAMPLE (synth-tested, never deployed) — see docs/aws/AWS_HOSTING_DESIGN.md §3.11.
  * Usage (from this cdk/ folder, with credentials for the target account):
  *   npx cdk bootstrap aws://<ACCOUNT>/us-east-1
- *   npx cdk deploy -c stage=dev  MicronutrientDiary-dev
- *   npx cdk deploy -c stage=prod MicronutrientDiary-prod GithubOidc-prod   (prod account)
+ *   npx cdk deploy -c stage=dev  NanoNutrition-dev
+ *   npx cdk deploy -c stage=prod NanoNutrition-prod GithubOidc-prod   (prod account)
  */
 import { App, Stack, StackProps, Duration } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import { MicronutrientDiaryStack } from '../lib/micronutrient-diary-stack';
+import { NanoNutritionStack } from '../lib/nanonutrition-stack';
 
 const app = new App();
 const stage = (app.node.tryGetContext('stage') ?? 'dev') as 'dev' | 'prod';
 const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'us-east-1' };
 
-new MicronutrientDiaryStack(app, `MicronutrientDiary-${stage}`, {
+new NanoNutritionStack(app, `NanoNutrition-${stage}`, {
   env,
   stage,
-  siteUrl: stage === 'prod' ? 'https://micronutrientdiary.com' : 'https://REPLACE_WITH_DEV_CLOUDFRONT_DOMAIN',
+  siteUrl: stage === 'prod' ? 'https://nanonutrition.app' : 'https://REPLACE_WITH_DEV_CLOUDFRONT_DOMAIN',
   alertEmail: 'REPLACE_ME@example.com',
   monthlyBudgetUsd: stage === 'prod' ? 25 : 5,
-  sesDomain: stage === 'prod' ? 'micronutrientdiary.com' : undefined,
+  sesDomain: stage === 'prod' ? 'nanonutrition.app' : undefined,
 });
 
 /**

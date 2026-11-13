@@ -1,6 +1,24 @@
-# Micronutrient Diary: Domain Options and Costs
+# NanoNutrition: Domain Options and Costs
 
-## Current decision (2026-11-04): micronutrientdiary.com
+## Current status (2026-11-13): renamed to NanoNutrition, domain not chosen yet
+
+The product was renamed from Micronutrient Diary to **NanoNutrition** on 2026-11-13. The code and docs use **nanonutrition.app** as a working default. Change `SITE_URL` in `food-nutrition-app/lib/nav.ts` and `siteUrl`/`sesDomain` in `infra-example/cdk/bin/nanonutrition.ts` if you pick another one.
+
+**Availability (RDAP, 2026-11-13).** Registry RDAP is a strong signal, but the registrar's checkout is authoritative.
+
+| Domain | Status |
+|---|---|
+| nanonutrition.com | **Taken.** Registered 2001-03-05 at GoDaddy, expires 2027-03-05, with transfer and delete locks. It didn't answer HTTPS when checked |
+| nanonutrition.app | No record, so very likely available. `.app` is HTTPS-only, which suits CloudFront |
+| nanonutrition.io, nanonutrition.co, getnanonutrition.com | No record, so very likely available |
+
+Prices for these weren't checked. The figures below are for the old `.com` name. Note that `.co` is one letter from someone else's `.com`.
+
+**Name check (not legal advice, 2026-11-13).** Web searches found many supplement brands built on "nano" (NanoNutra, Nano Nutrients, Nano Nutrition in Sherman Oaks, CA, NanoNutrients L.C.). A third-party trademark database also lists a **pending US application for "NANONUTRITION LIVE"** (serial 99606776, filed 2026-01-21 by an individual in Easley, SC), in classes 41 and 42, covering nutrition and wellness education, research and publishing. That overlaps with a nutrition information website. The record couldn't be confirmed on USPTO's own site from here. Look up serial 99606776 at [tmsearch.uspto.gov](https://tmsearch.uspto.gov/) and talk to a trademark attorney before registering a domain or investing in branding.
+
+---
+
+## Earlier decision (2026-11-04, superseded by the rename): micronutrientdiary.com
 
 The product is now **Micronutrient Diary**, at **micronutrientdiary.com**. This replaces the "Vital Nutrition" names researched below.
 

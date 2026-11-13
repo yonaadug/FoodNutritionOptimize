@@ -40,7 +40,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 RAW = PROJECT_ROOT / "data" / "raw" / "contaminants"
 OUT = PROJECT_ROOT / "data" / "contaminants"
 
-UA = "Mozilla/5.0 (MicronutrientDiary contaminant pipeline)"
+UA = "Mozilla/5.0 (NanoNutrition contaminant pipeline)"
 PDP_BASE = "https://www.ams.usda.gov/sites/default/files/media/"
 
 # (relative path, url, sha256). sha256 None = the publisher serves a page that changes.

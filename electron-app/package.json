@@ -1,12 +1,12 @@
 {
-  "name": "micronutrient-diary-desktop",
-  "productName": "Micronutrient Diary",
+  "name": "nanonutrition-desktop",
+  "productName": "NanoNutrition",
   "version": "1.0.0",
-  "description": "Micronutrient Diary - Desktop nutrition optimization application",
+  "description": "NanoNutrition - Desktop nutrition optimization application",
   "main": "main.js",
   "scripts": {
     "start": "unset ELECTRON_RUN_AS_NODE && electron .",
-    "start:prod": "npm run stage && unset ELECTRON_RUN_AS_NODE && MICRONUTRIENT_DIARY_USE_STAGED=1 electron .",
+    "start:prod": "npm run stage && unset ELECTRON_RUN_AS_NODE && NANONUTRITION_USE_STAGED=1 electron .",
     "stage": "npm --prefix ../food-nutrition-app run build && node scripts/stage-web.js",
     "pack": "npm run stage && electron-builder --dir",
     "build": "npm run stage && electron-builder",
@@ -15,8 +15,8 @@
     "build:linux": "npm run stage && electron-builder --linux"
   },
   "build": {
-    "appId": "com.micronutrientdiary.app",
-    "productName": "Micronutrient Diary",
+    "appId": "app.nanonutrition.desktop",
+    "productName": "NanoNutrition",
     "directories": {
       "output": "dist"
     },

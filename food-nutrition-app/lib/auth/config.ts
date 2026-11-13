@@ -62,7 +62,7 @@ export function loadAuthConfig(env: NodeJS.ProcessEnv = process.env): AuthConfig
     if (transport !== 'console' && transport !== 'ses') throw new AuthConfigError('AUTH_EMAIL_TRANSPORT must be console or ses');
     // Printing sign-in links is a bearer credential in the logs: never on a deployed site.
     if (transport === 'console' && !isLocal) throw new AuthConfigError('AUTH_EMAIL_TRANSPORT=console is only allowed when AUTH_BASE_URL is localhost');
-    const emailFrom = env.AUTH_EMAIL_FROM || (transport === 'console' ? 'Micronutrient Diary <no-reply@localhost>' : '');
+    const emailFrom = env.AUTH_EMAIL_FROM || (transport === 'console' ? 'NanoNutrition <no-reply@localhost>' : '');
     if (!emailFrom) throw new AuthConfigError('AUTH_EMAIL_FROM is required when AUTH_EMAIL_TRANSPORT=ses');
 
     const google = env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET

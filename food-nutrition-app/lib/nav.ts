@@ -31,13 +31,13 @@ export function isNavActive(item: NavItem, pathname: string | null | undefined):
     return under(path, item.href) || (item.alsoActiveOn ?? []).some(p => under(path, p));
 }
 
-export const SITE_NAME = 'Micronutrient Diary';
+export const SITE_NAME = 'NanoNutrition';
 
 /** One line that says what the site is. */
 export const SITE_TAGLINE = 'Look up the nutrients and contaminants in any food, work out a recipe’s nutrition, and plan a day that meets your goals.';
 
 /** Canonical origin, without a trailing slash. Set NEXT_PUBLIC_SITE_URL per environment. */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://micronutrientdiary.com').replace(/\/+$/, '');
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://nanonutrition.app').replace(/\/+$/, '');
 
 /** Absolute URL for a site path. */
 export function absoluteUrl(path: string): string {

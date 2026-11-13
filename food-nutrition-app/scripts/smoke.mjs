@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Smoke test for any running Micronutrient Diary server (next dev/start, the
+// Smoke test for any running NanoNutrition server (next dev/start, the
 // standalone server, the Docker image or the Lambda-shaped container).
 //
 //   node scripts/smoke.mjs [baseUrl] [--wait <seconds>]

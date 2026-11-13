@@ -15,7 +15,7 @@ export const MAX_TEXT_BODY_BYTES = MAX_TEXT_CHARS * 4 + 1024;
 export const MAX_NUTRITION_BODY_BYTES = 64 * 1024;
 export const MAX_NUTRITION_INGREDIENTS = 200;
 
-const globalKey = Symbol.for('micronutrient-diary.recipes-db');
+const globalKey = Symbol.for('nanonutrition.recipes-db');
 type GlobalWithDb = typeof globalThis & { [globalKey]?: Connection };
 
 /** This module's read-only connection to nutrition.db (survives dev hot reloads). */

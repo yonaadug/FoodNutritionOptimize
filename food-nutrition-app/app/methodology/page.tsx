@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export const metadata: Metadata = {
     title: 'How we source and match our data',
-    description: 'How Micronutrient Diary reads contaminant testing, which health references it uses, how similar foods share data, and how gaps in USDA nutrition data are filled.',
+    description: 'How NanoNutrition reads contaminant testing, which health references it uses, how similar foods share data, and how gaps in USDA nutrition data are filled.',
     alternates: { canonical: '/methodology' },
 };
 
@@ -30,7 +30,7 @@ export default function MethodologyPage() {
             <article className="panel prose">
                 <h1 className="section-title">How we show contaminants in food</h1>
                 <p>
-                    Most foods contain traces of metals, and many have pesticide residues. On each food page, Micronutrient Diary shows how much one serving
+                    Most foods contain traces of metals, and many have pesticide residues. On each food page, NanoNutrition shows how much one serving
                     typically contains, using public testing data, so you can compare foods without reading raw numbers.
                 </p>
                 <p>

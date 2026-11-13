@@ -1,7 +1,7 @@
 {
-  "name": "micronutrient-diary-infra-example",
+  "name": "nanonutrition-infra-example",
   "private": true,
-  "description": "EXAMPLE (synth-tested, never deployed): AWS CDK app for Micronutrient Diary (see docs/aws/AWS_HOSTING_DESIGN.md and docs/LOCAL_TESTING.md).",
+  "description": "EXAMPLE (synth-tested, never deployed): AWS CDK app for NanoNutrition (see docs/aws/AWS_HOSTING_DESIGN.md and docs/LOCAL_TESTING.md).",
   "engines": {
     "node": ">=24"
   },

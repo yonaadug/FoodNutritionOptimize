@@ -168,9 +168,9 @@ Nothing here has been created. These are the steps, in order.
    ```
    USER_STORE=dynamodb                         # already the default on Lambda
    DYNAMODB_TABLE=<table name>
-   AUTH_BASE_URL=https://micronutrientdiary.com
+   AUTH_BASE_URL=https://nanonutrition.app
    AUTH_SECRET=<from SSM>
-   AUTH_EMAIL_FROM=Micronutrient Diary <no-reply@micronutrientdiary.com>
+   AUTH_EMAIL_FROM=NanoNutrition <no-reply@nanonutrition.app>
    AUTH_IP_HEADERS=cloudfront-viewer-address
    ```
    With no email settings a production build won't start sign-in, and pages say it's unavailable. The rest of the site is unaffected.

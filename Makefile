@@ -1,4 +1,4 @@
-# Micronutrient Diary: local test targets. See docs/LOCAL_TESTING.md for the full
+# NanoNutrition: local test targets. See docs/LOCAL_TESTING.md for the full
 # checklist and what each step should print.
 #
 #   make help          list targets
@@ -20,8 +20,8 @@ DESK  := electron-app
 CDK   := docs/aws/infra-example/cdk
 SMOKE := node $(WEB)/scripts/smoke.mjs
 
-IMAGE        ?= micronutrient-diary
-LAMBDA_IMAGE ?= micronutrient-diary-lambda
+IMAGE        ?= nanonutrition
+LAMBDA_IMAGE ?= nanonutrition-lambda
 # linux/arm64 = the Lambda architecture in the CDK example (native on Apple
 # silicon). Use LAMBDA_PLATFORM=linux/amd64 to test an x86_64 Lambda image.
 LAMBDA_PLATFORM ?= linux/arm64
@@ -52,31 +52,31 @@ smoke:
 
 docker:
 	docker build -t $(IMAGE) .
-	docker run --rm -it -p $(PORT):3000 --name micronutrient-diary-local $(IMAGE)
+	docker run --rm -it -p $(PORT):3000 --name nanonutrition-local $(IMAGE)
 
 docker-test:
 	docker build -t $(IMAGE) .
-	docker rm -f micronutrient-diary-test >/dev/null 2>&1 || true
-	docker run -d --name micronutrient-diary-test -p $(PORT):3000 --health-interval 2s $(IMAGE) >/dev/null
+	docker rm -f nanonutrition-test >/dev/null 2>&1 || true
+	docker run -d --name nanonutrition-test -p $(PORT):3000 --health-interval 2s $(IMAGE) >/dev/null
 	@for i in $$(seq 1 30); do \
-	  s=$$(docker inspect -f '{{.State.Health.Status}}' micronutrient-diary-test); \
+	  s=$$(docker inspect -f '{{.State.Health.Status}}' nanonutrition-test); \
 	  [ "$$s" = healthy ] && { echo "container health: $$s"; break; }; sleep 2; \
 	done; \
-	[ "$$(docker inspect -f '{{.State.Health.Status}}' micronutrient-diary-test)" = healthy ] \
-	  || { docker logs micronutrient-diary-test; docker rm -f micronutrient-diary-test >/dev/null; exit 1; }
-	$(SMOKE) http://127.0.0.1:$(PORT) --wait 30 || { docker rm -f micronutrient-diary-test >/dev/null; exit 1; }
-	docker rm -f micronutrient-diary-test >/dev/null
+	[ "$$(docker inspect -f '{{.State.Health.Status}}' nanonutrition-test)" = healthy ] \
+	  || { docker logs nanonutrition-test; docker rm -f nanonutrition-test >/dev/null; exit 1; }
+	$(SMOKE) http://127.0.0.1:$(PORT) --wait 30 || { docker rm -f nanonutrition-test >/dev/null; exit 1; }
+	docker rm -f nanonutrition-test >/dev/null
 
 # Run like Lambda does: read-only root filesystem with a writable /tmp, a
 # non-root user and Lambda-style memory. The adapter stays idle outside Lambda,
 # so the container answers HTTP directly on port 3000 (mapped to 9000 here).
 lambda-local:
 	docker build --platform $(LAMBDA_PLATFORM) -f docs/aws/infra-example/Dockerfile.lambda -t $(LAMBDA_IMAGE) .
-	docker rm -f micronutrient-diary-lambda >/dev/null 2>&1 || true
-	docker run -d --name micronutrient-diary-lambda --platform $(LAMBDA_PLATFORM) -p 9000:3000 \
+	docker rm -f nanonutrition-lambda >/dev/null 2>&1 || true
+	docker run -d --name nanonutrition-lambda --platform $(LAMBDA_PLATFORM) -p 9000:3000 \
 	  --read-only --tmpfs /tmp --memory 1024m --user 993:990 $(LAMBDA_IMAGE) >/dev/null
-	$(SMOKE) http://127.0.0.1:9000 --wait 60 || { docker logs micronutrient-diary-lambda; docker rm -f micronutrient-diary-lambda >/dev/null; exit 1; }
-	docker rm -f micronutrient-diary-lambda >/dev/null
+	$(SMOKE) http://127.0.0.1:9000 --wait 60 || { docker logs nanonutrition-lambda; docker rm -f nanonutrition-lambda >/dev/null; exit 1; }
+	docker rm -f nanonutrition-lambda >/dev/null
 
 cdk-synth:
 	cd $(CDK) && npm ci --no-audit --no-fund && npm run typecheck && npx cdk synth --quiet && npx cdk synth --quiet -c stage=prod

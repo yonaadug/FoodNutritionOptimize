@@ -23,9 +23,16 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 
 ## P0: owner actions
 
-- [ ] **Register micronutrientdiary.com.** It was unregistered as of 2026-11-04. Route 53 is $16/yr, Porkbun $11.81/yr
-      ([docs/aws/DOMAIN.md](docs/aws/DOMAIN.md)). Run a USPTO search for "Micronutrient Diary" first. The name is
-      descriptive, so conflict risk is low, but it may be hard to register as a trademark.
+- [ ] **Check the NanoNutrition name, then choose and register a domain.** nanonutrition.com is taken (since 2001).
+      The code uses nanonutrition.app as a working default; it, .io, .co and getnanonutrition.com showed no
+      registration on 2026-11-13. A pending US application for "NANONUTRITION LIVE" (serial 99606776, classes 41/42,
+      nutrition education and publishing) was found via a third-party database and isn't confirmed. Check it at
+      tmsearch.uspto.gov and with a trademark attorney first ([docs/aws/DOMAIN.md](docs/aws/DOMAIN.md)).
+- [ ] **Rename leftovers outside the code:** retake the walkthrough screenshots (headers still say Micronutrient
+      Diary), and rename any Stripe product, sandbox or branding already created under the old name. The local folder
+      `~/Library/Application Support/Micronutrient Diary` (old desktop app caches) can be deleted.
+- [ ] **Desktop app forgets saved plans on restart:** it serves the site on a random port each launch, and browser
+      storage is per port. Use a fixed port or a custom protocol.
 
 - [ ] **Rotate the USDA FoodData Central API key** that was committed in `ece4cbb8`
       (`scripts/check_portions.py`, since deleted). That commit is on GitHub, so treat the key as public.

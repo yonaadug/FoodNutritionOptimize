@@ -142,7 +142,7 @@ function bedrockSend(env: Env, region: string): ClaudeSend {
     };
 }
 
-const cacheKey = Symbol.for('micronutrient-diary.ai-provider');
+const cacheKey = Symbol.for('nanonutrition.ai-provider');
 type GlobalWithProvider = typeof globalThis & { [cacheKey]?: { provider: AiProvider; fallbackReason: string | null } };
 
 /** Build a provider from an explicit environment (no caching). */

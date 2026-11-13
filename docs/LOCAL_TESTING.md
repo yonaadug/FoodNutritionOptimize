@@ -1,6 +1,6 @@
 # Testing everything locally (before AWS)
 
-This is the checklist for testing every way Micronutrient Diary ships, on a Mac laptop,
+This is the checklist for testing every way NanoNutrition ships, on a Mac laptop,
 before anything goes to AWS. Work through it top to bottom. Each step lists the command
 (a `make` target from the repo root, with the plain npm/docker equivalent) and what you
 should see. If a step fails, see [Troubleshooting](#troubleshooting).
@@ -141,12 +141,12 @@ Start Docker Desktop and wait until `docker version` shows a `Server:` section. 
 make docker-test            # build, run detached, wait for HEALTHCHECK, smoke test, remove
 ```
 
-Expected: the build ends with `naming to docker.io/library/micronutrient-diary`, then
+Expected: the build ends with `naming to docker.io/library/nanonutrition`, then
 `container health: healthy` and the same `All 5 smoke checks passed.` as step 4. The
 container is removed afterwards.
 
-To click around in it instead: `make docker` (= `docker build -t micronutrient-diary . &&
-docker run --rm -it -p 3000:3000 micronutrient-diary`), open http://127.0.0.1:3000,
+To click around in it instead: `make docker` (= `docker build -t nanonutrition . &&
+docker run --rm -it -p 3000:3000 nanonutrition`), open http://127.0.0.1:3000,
 Ctrl+C to stop.
 
 The image builds for your Mac's architecture (arm64 on Apple silicon). For an x86_64
@@ -167,18 +167,18 @@ make lambda-local           # arm64, like the CDK example's function
 That target:
 
 ```bash
-docker build --platform linux/arm64 -f docs/aws/infra-example/Dockerfile.lambda -t micronutrient-diary-lambda .
-docker run -d --name micronutrient-diary-lambda --platform linux/arm64 -p 9000:3000 \
-  --read-only --tmpfs /tmp --memory 1024m --user 993:990 micronutrient-diary-lambda
+docker build --platform linux/arm64 -f docs/aws/infra-example/Dockerfile.lambda -t nanonutrition-lambda .
+docker run -d --name nanonutrition-lambda --platform linux/arm64 -p 9000:3000 \
+  --read-only --tmpfs /tmp --memory 1024m --user 993:990 nanonutrition-lambda
 node food-nutrition-app/scripts/smoke.mjs http://127.0.0.1:9000 --wait 60
-docker rm -f micronutrient-diary-lambda
+docker rm -f nanonutrition-lambda
 ```
 
 `--read-only --tmpfs /tmp` matches Lambda's read-only filesystem with a writable `/tmp`,
 `--user` runs it as a non-root uid (Lambda doesn't run as root), and `--memory` matches the
 function's 1024 MB. Expected: `All 5 smoke checks passed.` on port 9000.
 
-To check by hand while it runs (`docker run ... -p 9000:3000 micronutrient-diary-lambda`):
+To check by hand while it runs (`docker run ... -p 9000:3000 nanonutrition-lambda`):
 
 ```bash
 curl -s http://127.0.0.1:9000/api/meta                       # {"meta":{...},"searchMode":"fts","foodCount":9435}
@@ -198,7 +198,7 @@ Apple-silicon Mac `linux/arm64` runs natively. To test an x86_64 build, run
 "Use Rosetta for x86_64/amd64 emulation" is on in Settings > General, otherwise QEMU).
 Expect a slower build and startup: with Rosetta and a warm cache, the amd64 build plus
 smoke test took about 70 seconds on an M-series Mac.
-`docker image inspect -f '{{.Architecture}}' micronutrient-diary-lambda` shows which one you built. If you switch the function to x86_64, change both
+`docker image inspect -f '{{.Architecture}}' nanonutrition-lambda` shows which one you built. If you switch the function to x86_64, change both
 `ecrAssets.Platform.LINUX_AMD64` and `lambda.Architecture.X86_64` in the stack. Always build
 the image for the target platform: the better-sqlite3 binary in the bundle is the build
 stage's.
@@ -223,13 +223,13 @@ Successfully synthesized to .../docs/aws/infra-example/cdk/cdk.out
 
 The CLI also prints `85 feature flags are not configured` (informational) and may print
 "AI agent detected" (harmless). To read the generated CloudFormation:
-`cd docs/aws/infra-example/cdk && npx cdk synth MicronutrientDiary-dev | less`. The stacks
-are `MicronutrientDiary-{dev,prod}` and `GithubOidc-{dev,prod}`.
+`cd docs/aws/infra-example/cdk && npx cdk synth NanoNutrition-dev | less`. The stacks
+are `NanoNutrition-{dev,prod}` and `GithubOidc-{dev,prod}`.
 
 To check that the staged image context builds, as `cdk deploy` will build it:
 
 ```bash
-cd docs/aws/infra-example/cdk/cdk.out/asset.<hash>    # the dockerImages entry in MicronutrientDiary-dev.assets.json
+cd docs/aws/infra-example/cdk/cdk.out/asset.<hash>    # the dockerImages entry in NanoNutrition-dev.assets.json
 docker build --platform linux/arm64 -f docs/aws/infra-example/Dockerfile.lambda .
 ```
 
@@ -242,24 +242,24 @@ example bundles. They need real implementations before anything uses them.
 make desktop                # = cd electron-app && npm start
 ```
 
-A window titled "Micronutrient Diary" opens after a few seconds (it starts `next dev` on a
+A window titled "NanoNutrition" opens after a few seconds (it starts `next dev` on a
 random `127.0.0.1` port). Repeat the click-through from step 3. Closing the window leaves
 the app in the Dock (macOS behaviour); quit it with ⌘Q. The log is at
-`~/Library/Logs/Micronutrient Diary/main.log` and should contain `Server is ready` with no
+`~/Library/Logs/NanoNutrition/main.log` and should contain `Server is ready` with no
 `Blocked` or `FATAL` lines.
 
 ## 9. Desktop app (packaged)
 
 ```bash
 make desktop-pack           # = cd electron-app && npm run pack  (build + stage + electron-builder --dir)
-open "electron-app/dist/mac-arm64/Micronutrient Diary.app"
+open "electron-app/dist/mac-arm64/NanoNutrition.app"
 ```
 
 Expected from the pack step: `[stage-web] Staged Next.js standalone server into
 .../electron-app/staging/web`, then `packaging platform=darwin arch=arm64 electron=45.2.2`.
 If a Developer ID or Apple Development certificate is in your keychain, electron-builder
 signs with it automatically; notarization is skipped. The app opens without Node installed. Its log
-(`~/Library/Logs/Micronutrient Diary/main.log`) shows `packaged=true, dev=false` and
+(`~/Library/Logs/NanoNutrition/main.log`) shows `packaged=true, dev=false` and
 `Starting standalone server from .../Contents/Resources/web`. Try a sample day, then quit
 with ⌘Q.
 
@@ -284,7 +284,7 @@ than `localhost` unless they are listed in `allowedDevOrigins`. `next.config.js`
 plain Node. `unset ELECTRON_RUN_AS_NODE`. The npm scripts already do this.
 
 **macOS says the app "can't be opened"**: local builds aren't notarized. Right-click the
-app, choose Open, then Open again (or `xattr -dr com.apple.quarantine "Micronutrient Diary.app"`
+app, choose Open, then Open again (or `xattr -dr com.apple.quarantine "NanoNutrition.app"`
 on a copy you downloaded).
 
 **`better-sqlite3` fails to load** (`invalid ELF header`, `wrong architecture`): the bundle
@@ -334,12 +334,12 @@ and the root `.dockerignore` must keep the `!docs/aws/infra-example/Dockerfile.l
 
 1. Use a **separate AWS account** for dev (an AWS Organizations member account), with a
    $5 budget alert. The stack also creates one.
-2. `cd docs/aws/infra-example/cdk`, set `alertEmail` in `bin/micronutrient-diary.ts`, then:
-   `npx cdk bootstrap aws://<DEV_ACCOUNT_ID>/us-east-1` (once), `npx cdk diff -c stage=dev MicronutrientDiary-dev`,
-   `npx cdk deploy -c stage=dev MicronutrientDiary-dev`. Docker must be running: deploy builds the arm64 image.
+2. `cd docs/aws/infra-example/cdk`, set `alertEmail` in `bin/nanonutrition.ts`, then:
+   `npx cdk bootstrap aws://<DEV_ACCOUNT_ID>/us-east-1` (once), `npx cdk diff -c stage=dev NanoNutrition-dev`,
+   `npx cdk deploy -c stage=dev NanoNutrition-dev`. Docker must be running: deploy builds the arm64 image.
 3. Run `make smoke URL=<SiteUrl output>`. Through CloudFront the POST checks need the OAC
    hash header, so start with the GET checks: `curl $SiteUrl/api/meta`.
-4. When you're done, run `npx cdk destroy -c stage=dev MicronutrientDiary-dev` (dev resources use
+4. When you're done, run `npx cdk destroy -c stage=dev NanoNutrition-dev` (dev resources use
    `RemovalPolicy.DESTROY`). An idle dev stack costs close to $0. CloudFront, Lambda,
    DynamoDB on-demand and Cognito are all free or nearly free at test volumes.
 

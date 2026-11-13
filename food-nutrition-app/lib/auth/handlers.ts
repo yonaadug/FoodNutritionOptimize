@@ -195,7 +195,7 @@ export async function getAccountExport(request: Request, deps: AccountDeps): Pro
     const data = await deps.store.exportAccount(user.id);
     logEvent('account.exported', { user: pseudonym(user.id, deps.config.secret) });
     return jsonOk(data, {
-        headers: { 'Content-Disposition': 'attachment; filename="micronutrient-diary-account.json"' },
+        headers: { 'Content-Disposition': 'attachment; filename="nanonutrition-account.json"' },
     });
 }
 

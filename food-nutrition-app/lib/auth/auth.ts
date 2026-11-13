@@ -33,7 +33,7 @@ export function confirmationUrl(verifyUrl: string, baseUrl: string): string {
 export function createAuth(options: { table: SingleTable; config: AuthConfig; mailer: Mailer }) {
     const { table, config, mailer } = options;
     return betterAuth({
-        appName: 'Micronutrient Diary',
+        appName: 'NanoNutrition',
         baseURL: config.baseUrl,
         basePath: '/api/auth',
         secret: config.secret,

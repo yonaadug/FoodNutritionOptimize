@@ -8,8 +8,8 @@
 # .dockerignore keeps the context to food-nutrition-app/ only):
 #
 #   git lfs pull
-#   docker build --platform linux/arm64 -f docs/aws/infra-example/Dockerfile.lambda -t micronutrient-diary-lambda .
-#   docker run --rm -p 3000:3000 micronutrient-diary-lambda       # plain HTTP, adapter idle
+#   docker build --platform linux/arm64 -f docs/aws/infra-example/Dockerfile.lambda -t nanonutrition-lambda .
+#   docker run --rm -p 3000:3000 nanonutrition-lambda       # plain HTTP, adapter idle
 #
 # Lambda Web Adapter only activates inside the Lambda execution environment.
 # Run as a plain container it is inert and the Next.js server answers HTTP

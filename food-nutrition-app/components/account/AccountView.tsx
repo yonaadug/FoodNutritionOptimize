@@ -90,7 +90,7 @@ export default function AccountView({ user: initialUser }: { user: CurrentUser }
                     </button>
                 </form>
                 <div className={styles.actions}>
-                    <a className="btn btn-secondary" href="/api/account/export" download="micronutrient-diary-account.json">Export my data</a>
+                    <a className="btn btn-secondary" href="/api/account/export" download="nanonutrition-account.json">Export my data</a>
                     <button type="button" className="btn btn-ghost" onClick={doSignOut} disabled={signingOut}>
                         {signingOut ? 'Signing out…' : 'Sign out'}
                     </button>

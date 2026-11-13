@@ -1,8 +1,8 @@
 {
-    "name": "micronutrient-diary",
+    "name": "nanonutrition",
     "version": "0.1.0",
     "private": true,
-    "description": "Micronutrient Diary - Intelligent Nutrition Optimizer",
+    "description": "NanoNutrition - Intelligent Nutrition Optimizer",
     "author": "Yonathan Kebede <primeyonathan@gmail.com>",
     "license": "MIT",
     "repository": {

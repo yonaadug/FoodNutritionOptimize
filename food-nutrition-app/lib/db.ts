@@ -93,7 +93,7 @@ interface Connection {
     schema: SchemaInfo;
 }
 
-const globalKey = Symbol.for('micronutrient-diary.db');
+const globalKey = Symbol.for('nanonutrition.db');
 type GlobalWithDb = typeof globalThis & { [globalKey]?: Connection };
 
 export function openDatabase(file: string): Connection {

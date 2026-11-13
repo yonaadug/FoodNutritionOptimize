@@ -237,7 +237,7 @@ for (const backend of backends) {
             assert.match(String(res.headers.get('content-disposition')), /attachment/);
             const text = await res.clone().text();
             const data = JSON.parse(text);
-            assert.equal(data.format, 'micronutrient-diary-account-export');
+            assert.equal(data.format, 'nanonutrition-account-export');
             assert.equal(data.profile.email, email);
             assert.deepEqual(data.history.map((i: { kind: string }) => i.kind).sort(), ['food', 'plan']);
             for (const internal of ['PK', 'SK', 'GSI1PK', '_v', '_ptrs']) assert.ok(!text.includes(`"${internal}"`), internal);

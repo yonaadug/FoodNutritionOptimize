@@ -71,11 +71,11 @@ jobs:
         working-directory: docs/aws/infra-example/cdk   # move to infra/ when adopting
         run: |
           npm ci --no-audit --no-fund
-          npx cdk deploy "MicronutrientDiary-${STAGE}" -c stage="${STAGE}" --require-approval never
+          npx cdk deploy "NanoNutrition-${STAGE}" -c stage="${STAGE}" --require-approval never
 
       - name: Smoke test
         run: |
-          URL="$(aws cloudformation describe-stacks --stack-name "MicronutrientDiary-${STAGE}" \
+          URL="$(aws cloudformation describe-stacks --stack-name "NanoNutrition-${STAGE}" \
                  --query "Stacks[0].Outputs[?OutputKey=='SiteUrl'].OutputValue" --output text)"
           # GET-only checks: through CloudFront OAC, POST /api/optimize needs the
           # x-amz-content-sha256 header (see the stack's Function URL notes).

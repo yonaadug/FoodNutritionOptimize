@@ -537,7 +537,7 @@ export function ShowTheMath({ result }: { result: PlanResult }) {
             <summary>Show the math <span className="tiny muted" style={{ fontWeight: 400 }}>(advanced)</span></summary>
             <div className="disclosure-body stack">
                 <p className="small secondary">
-                    Micronutrient Diary uses linear programming: it finds the amounts of your foods with the fewest calories that satisfy every goal.
+                    NanoNutrition uses linear programming: it finds the amounts of your foods with the fewest calories that satisfy every goal.
                     Numbers are per 100 g of each food.
                 </p>
                 {result.debugEquations?.length ? (

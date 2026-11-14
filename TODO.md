@@ -114,11 +114,16 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Plan balance:** the sample day is about 49% fat (nuts and seeds), and the FDA preset leans on greens
       (255 g spinach, 2,270 mcg vitamin K), because the planner picks the fewest calories that meet every goal. Consider
       a macro-range goal for total fat in the presets, or a realistic-mix objective.
+  - **The sample day reads High for cadmium in "Contaminants in this plan": about 581% of FDA's daily reference**
+    (16.8 mcg for an 80 kg adult), mostly from 255 g of spinach (about 22 mcg per 100 g, FDA TDS mean of 27 samples)
+    and 85 g of sunflower seeds. The numbers are real, so trial users who try the sample day see a High warning
+    straight away. Fix it with the fat limit above or the "keep contaminants low" option below, or change the sample
+    day's foods; then check that the sample day reads Low or Moderate.
 - [x] **Plans don't warn about contaminants:** a plan now has "Contaminants in this plan" (day and week), which
       flags the foods that push a total into elevated, with reduce, swap and leave-out
       ([walkthrough 6.5](docs/WEBSITE_WALKTHROUGH.md#65-contaminants-in-a-plan)).
 - [ ] **Week planner and plan contaminants, follow-ups:**
-  - Plus gating: wrap the entry points marked `PLUS-GATE: weekPlanner` and `PLUS-GATE: planContaminants`.
+  - ~~Plus gating~~: done 2026-11-14. Both routes use `plusRoute` and the UI uses `PlusGate`; `lib/billing/gate-wiring.test.ts` guards it.
   - The account page has no tab for history kind `week-plan` (weeks reopen from `/plan/week`).
   - "Keep contaminants low" in Set goals: add per-food contaminant amounts as optimizer rows (unknowns count as 0
     there, so the UI must say so).

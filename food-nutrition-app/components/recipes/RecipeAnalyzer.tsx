@@ -51,6 +51,15 @@ const SAVE_DEBOUNCE_MS = 800;
 
 type Phase = 'start' | 'reading' | 'editing';
 
+/**
+ * The editor as it was when the page was left, so Back to /recipes?id=… shows it at once,
+ * scrolled where it was, instead of reopening it from storage.
+ */
+let leftEditor: { id: string; editor: EditorState; savedKey: string } | null = null;
+const subscribeNothing = () => () => {};
+// Signed out (here or in another tab): the recipe goes with the rest of this browser's data.
+if (typeof window !== 'undefined') window.addEventListener(LOCAL_DATA_CLEARED_EVENT, () => { leftEditor = null; });
+
 /** Put a recipe in the address, so Back, a reload and sign-in can all return to it. */
 function showInAddress(id: string | null) {
     const url = id === null ? '/recipes' : recipeHref(id);
@@ -65,20 +74,35 @@ interface RecipeAnalyzerProps {
 
 export default function RecipeAnalyzer({ onRecipeAnalyzed, urlId }: RecipeAnalyzerProps) {
     const { user } = useCurrentUser();
-    const [phase, setPhase] = useState<Phase>('start');
+    // A client-side visit (Back, a link) can pick up the editor that was left; hydrating server HTML can't.
+    const clientVisit = useSyncExternalStore(subscribeNothing, () => true, () => false);
+    const [resumed] = useState(() => {
+        if (!clientVisit || !leftEditor) return null;
+        return new URLSearchParams(window.location.search).get('id') === leftEditor.id ? leftEditor : null;
+    });
+    const [phase, setPhase] = useState<Phase>(resumed ? 'editing' : 'start');
     // What's in the paste box. Lives here so a failed or cancelled read doesn't lose it.
     const [draft, setDraft] = useState('');
     const [readingPhoto, setReadingPhoto] = useState(false);
     const [openingSaved, setOpeningSaved] = useState(false);
-    const [editor, setEditor] = useState<EditorState | null>(null);
+    const [editor, setEditor] = useState<EditorState | null>(resumed?.editor ?? null);
     const [error, setError] = useState<string | null>(null);
     const [photoUrl, setPhotoUrl] = useState<string | null>(null);
     const abort = useRef<AbortController | null>(null);
     const heading = useRef<HTMLHeadingElement>(null);
-    const lastSaved = useRef<string>('');
+    const lastSaved = useRef<string>(resumed?.savedKey ?? '');
     const pendingSave = useRef<{ editor: EditorState; nutrition: RecipeNutrition } | null>(null);
     // The recipe on screen or on its way, to tell our own address changes from Back and links.
-    const shownId = useRef<string | null>(null);
+    const shownId = useRef<string | null>(resumed?.id ?? null);
+    // A resumed editor keeps the scroll position and focus that Back restores.
+    const skipHeadingFocus = useRef(!!resumed);
+    const latestEditor = useRef(editor);
+    useEffect(() => { latestEditor.current = editor; }, [editor]);
+    useEffect(() => () => {
+        leftEditor = shownId.current && latestEditor.current
+            ? { id: shownId.current, editor: latestEditor.current, savedKey: lastSaved.current }
+            : null;
+    }, []);
 
     const rawRecents = useSyncExternalStore(subscribeRecents, recentsSnapshot, () => null);
     const recents = useMemo(() => (rawRecents ? loadRecents(browserStorage()) : []), [rawRecents]);
@@ -87,7 +111,9 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed, urlId }: RecipeAnalyz
 
     // Move focus to the editor when it appears, so keyboard and screen reader users land on the result.
     useEffect(() => {
-        if (phase === 'editing') heading.current?.focus();
+        if (phase !== 'editing') return;
+        if (skipHeadingFocus.current) skipHeadingFocus.current = false;
+        else heading.current?.focus();
     }, [phase]);
 
     useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl); }, [photoUrl]);

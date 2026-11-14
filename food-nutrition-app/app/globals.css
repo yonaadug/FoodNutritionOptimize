@@ -582,7 +582,7 @@ html { scroll-padding-top: 76px; scroll-padding-bottom: 96px; }
 }
 
 /* ---------------- compare ---------------- */
-.label-scroller { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(280px, 320px); gap: var(--space-4); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: var(--space-3); }
+.label-scroller { position: relative; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(280px, 320px); gap: var(--space-4); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: var(--space-3); }
 .label-scroller > * { scroll-snap-align: start; }
 @media (max-width: 560px) { .label-scroller { grid-auto-columns: 86%; } }
 
@@ -594,7 +594,8 @@ html { scroll-padding-top: 76px; scroll-padding-bottom: 96px; }
 .compare-same { display: flex; align-items: center; gap: 6px; color: var(--success, var(--text-secondary)); }
 .compare-mismatch, .compare-hint { padding: var(--space-3); }
 .compare-hint { margin: 0 0 var(--space-3); }
-.custom-amount { flex: 1 1 200px; max-width: 260px; }
+.custom-amount { max-width: 260px; }
+.compare-basis .custom-amount { flex: 1 1 200px; }
 .custom-amount-row { display: flex; gap: 8px; }
 .custom-amount-row .input { flex: 1; min-width: 0; }
 .custom-amount-row .select { width: auto; flex: none; }

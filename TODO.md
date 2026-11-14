@@ -157,6 +157,14 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
   - Google sign-in tokens are stored without app-level encryption (DynamoDB still encrypts at rest). Turn on Better
     Auth's OAuth token encryption, or don't keep tokens, since sign-in needs only the identity.
   - The recipe reader's in-memory rate limiter keeps raw IPs for up to 24 hours; hash those too.
+- [ ] **Plus follow-ups:**
+  - No real Stripe round trip has run. Test Checkout, the portal and the webhook in Stripe test mode
+    ([docs/STRIPE_PLAN.md](docs/STRIPE_PLAN.md) §7) before taking money.
+  - The privacy policy and terms should say that deleting an account cancels the subscription without a refund and that
+    Stripe keeps the customer record and invoices (add to the lawyer's list in docs/LEGAL.md).
+  - EU/UK VAT approach is undecided (Stripe Tax threshold monitoring, or Managed Payments).
+  - "Unlimited" history is capped at 500 items per kind by the existing abuse limit; say so or raise it.
+- [ ] **Flaky test:** `lib/auth/account-api.test.ts` "rate-limits per user" failed 1 run in 4 under load (dynalite).
 - [ ] Legal and compliance ([docs/LEGAL.md](docs/LEGAL.md)):
   - Privacy policy, terms and medical disclaimer: drafted, awaiting legal review
   - Washington MHMDA consent and a consumer health data policy: drafted and recorded at sign-in, awaiting review

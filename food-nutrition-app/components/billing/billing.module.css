@@ -57,12 +57,12 @@
 .ctaRow { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
 .columns { display: grid; grid-template-columns: 3fr 2fr; gap: var(--space-4); align-items: start; }
 @media (max-width: 720px) { .columns { grid-template-columns: 1fr; } }
-.list { list-style: none; display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-3); }
+.list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-3); }
 .listItem { display: flex; gap: var(--space-3); align-items: flex-start; }
 .listItem > svg { flex: none; margin-top: 3px; color: var(--primary); }
 .listName { font-weight: 650; }
 .listWhat { color: var(--text-secondary); font-size: 14px; margin-top: 2px; }
-.freeList { list-style: none; display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); font-size: 14px; color: var(--text-secondary); }
+.freeList { list-style: none; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); font-size: 14px; color: var(--text-secondary); }
 .freeList li { display: flex; gap: var(--space-2); align-items: flex-start; }
 .freeList svg { flex: none; margin-top: 2px; color: var(--success); }
 .faq { display: flex; flex-direction: column; gap: var(--space-3); font-size: 14px; color: var(--text-secondary); }

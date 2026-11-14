@@ -20,7 +20,7 @@ export default function PlusActions({ initial, signedIn: signedInOnServer, billi
     const live = usePlus();
     const plan = live.plan ?? initial;
     const signedIn = live.loading ? signedInOnServer : live.signedIn;
-    const [interval, setPeriod] = useState<Interval>('year');
+    const [interval, setPeriod] = useState<Interval>(plan?.subscription?.interval ?? 'year');
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState('');
     const price = PRICES[interval];

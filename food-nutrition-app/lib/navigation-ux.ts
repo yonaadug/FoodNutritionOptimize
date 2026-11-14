@@ -118,7 +118,7 @@ export class ScrollMemory extends RecentCache<number> {
 
 /**
  * Where a page should be scrolled to once it is on screen.
- * - Back or Forward: where it was when it was left, if known.
+ * - Back or Forward: where it was when it was left (the top, if it was never scrolled).
  * - A new page: the element the #hash names, else the top.
  * Returns null when nothing should change.
  */
@@ -128,7 +128,8 @@ export function scrollTargetFor(opts: {
     pathChanged: boolean;
     hashTargetExists: boolean;
 }): number | 'hash' | null {
-    if (opts.traversal) return opts.remembered ?? null;
+    // A page never scrolled has nothing remembered: it was at the top.
+    if (opts.traversal) return opts.remembered ?? 0;
     if (!opts.pathChanged) return null;
     return opts.hashTargetExists ? 'hash' : 0;
 }

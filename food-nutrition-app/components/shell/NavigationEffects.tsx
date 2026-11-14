@@ -1,15 +1,14 @@
 'use client';
 
-import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {
     clientNavigationTarget, locationKey, RecentCache, ScrollMemory, scrollTargetFor, shouldMoveFocus, skeletonFor, type SkeletonKind,
 } from '@/lib/navigation-ux';
 
 // The skeletons load on their own, once the page is idle, so they add nothing to the first load.
-let skeletonsReady = false;
-const loadSkeletons = () => import('./PageSkeletons').then(m => { skeletonsReady = true; return m; });
-const PageSkeleton = lazy(loadSkeletons);
+let PageSkeleton: typeof import('./PageSkeletons').default | null = null;
+const loadSkeletons = () => import('./PageSkeletons').then(m => { PageSkeleton = m.default; });
 
 /** How long after a popstate a route change still counts as Back/Forward. */
 const TRAVERSAL_WINDOW_MS = 1500;
@@ -131,6 +130,7 @@ export default function NavigationEffects() {
         // Capture phase: before the page reacts, note the click and the link followed.
         const onClickCapture = (e: MouseEvent) => {
             onAction();
+            if (!restoring) scrolls.save(locationKey(window.location), window.scrollY);
             const link = (e.target as Element | null)?.closest?.('a[href]');
             const href = link?.getAttribute('href');
             if (href?.startsWith('/')) followedLinks.set(locationKey(window.location), href);
@@ -149,7 +149,7 @@ export default function NavigationEffects() {
             }, new URL(window.location.href));
             const kind = to && skeletonFor(to.pathname);
             // Until the skeletons have loaded, the old page simply stays up (better than a blank cover).
-            if (!kind || !skeletonsReady) return;
+            if (!kind || !PageSkeleton) return;
             const id = ++pendingSeq;
             setPending({ id, from: currentRoute.current, kind, visible: false, top: 0 });
             window.setTimeout(() => {
@@ -267,10 +267,10 @@ export default function NavigationEffects() {
         return () => cancelAnimationFrame(frame);
     }, [route, pathname]);
 
-    if (!showSkeleton || !pending) return null;
+    if (!showSkeleton || !pending || !PageSkeleton) return null;
     return (
         <div className="nav-pending" style={{ top: pending.top }} aria-hidden="true">
-            <Suspense><PageSkeleton kind={pending.kind} /></Suspense>
+            <PageSkeleton kind={pending.kind} />
         </div>
     );
 }

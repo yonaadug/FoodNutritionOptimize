@@ -73,7 +73,7 @@ describe('shouldMoveFocus', () => {
 describe('scrollTargetFor', () => {
     it('puts Back and Forward where the page was left', () => {
         assert.equal(scrollTargetFor({ traversal: true, remembered: 640, pathChanged: true, hashTargetExists: false }), 640);
-        assert.equal(scrollTargetFor({ traversal: true, remembered: undefined, pathChanged: true, hashTargetExists: false }), null);
+        assert.equal(scrollTargetFor({ traversal: true, remembered: undefined, pathChanged: true, hashTargetExists: false }), 0, 'never scrolled: the top');
     });
     it('starts a new page at the top, or at the element its #hash names', () => {
         assert.equal(scrollTargetFor({ traversal: false, remembered: 640, pathChanged: true, hashTargetExists: false }), 0);

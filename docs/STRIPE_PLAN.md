@@ -1,11 +1,11 @@
 # NutritionDictionary: Stripe Integration Plan
 
-*Generated 2026-11-04 with Stripe's `stripe_implementation_planner` (guide `iguide_61VhbzFAc0bobNT3c41BJBe1RKB2N`, account `acct_1UYAsNBJBe1RKB2N`, live), then adapted to this codebase. Stripe products: **Payments, Billing, Invoicing**. Status: **plan only**. Nothing has been created in Stripe, and no Stripe code exists in the app yet.*
+*Generated 2026-11-04 with Stripe's `stripe_implementation_planner` (guide `iguide_61VhbzFAc0bobNT3c41BJBe1RKB2N`, account `acct_1UYAsNBJBe1RKB2N`, live), then adapted to this codebase. Stripe products: **Payments, Billing, Invoicing**. Status: **built 2026-11-14 and tested against a fake Stripe client only** (§5, §7). Nothing has been created in Stripe and the app has never called it.*
 
 ## 1. What we're building
 
 - **Free** (today's app): planning with no account and no card.
-- **NutritionDictionary Plus**: a subscription at **$5.99/month or $39.99/year** that unlocks premium features. Which features is still open; see §9.
+- **NutritionDictionary Plus**: a subscription at **$5.99/month or $39.99/year** that unlocks the week planner with a grocery list, a whole-plan contaminant check, 50 AI photo reads a month, and all saved plans and recipes on every device ([DECISIONS.md](DECISIONS.md)). Every new account gets 14 days of Plus with no card.
 - People subscribe on a **Stripe-hosted Checkout page**. They manage their subscription in the **Stripe Customer Portal**: switch monthly ↔ annual, cancel, update their card, download invoices and receipts.
 - **Webhooks** keep our database in sync, and the app turns Plus features on or off from that data.
 - Stripe sends receipts and invoices automatically. We sell no physical goods and give no medical advice.
@@ -41,9 +41,9 @@ sequenceDiagram
     A->>A: Require sign-in (§8)
     A->>S: POST /v1/checkout/sessions (mode=subscription, price, customer or customer_email, client_reference_id=userId)
     S-->>A: session.url
-    A-->>U: 303 redirect to Stripe Checkout
+    A-->>U: { url } (the page redirects to Stripe Checkout)
     U->>S: Pays on the Stripe-hosted page
-    S-->>U: Redirect to /billing/success?session_id=...
+    S-->>U: Redirect to /plus/welcome?session_id=...
     S->>A: webhook checkout.session.completed / customer.subscription.created
     A->>DB: Save stripeCustomerId, subscriptionId, status, period end, plan
     U->>A: Uses Plus features (gated on DB status)
@@ -51,7 +51,7 @@ sequenceDiagram
     A->>S: POST /v1/billing_portal/sessions (customer, return_url)
     S-->>U: Customer Portal (switch plan, cancel, update card, invoices)
     S->>A: webhook customer.subscription.updated/deleted, invoice.paid, invoice.payment_failed
-    A->>DB: Update status. Access follows status
+    A->>DB: Update status (re-read from Stripe). Access follows status
 ```
 
 ## 4. Stripe Dashboard setup (sandbox first, then live)
@@ -76,20 +76,59 @@ Do each step in the **sandbox** ("NutritionDictionary sandbox", the `STRIPE_TEST
    - optional: `entitlements.active_entitlement_summary.updated`, if you use Stripe Entitlements to gate features
 8. **API keys:** use a **restricted key** in production. Grant write access only to Checkout Sessions, Customers, Subscriptions and Customer portal sessions, and read access to Prices, Products, Invoices and Events.
 
-## 5. Code plan for this repo
+## 5. What's built
 
-Server code lives in `food-nutrition-app/`. Add the official **`stripe`** Node SDK (latest). Never import it in client components.
+Server code is in `food-nutrition-app/`. The `stripe` Node SDK is pinned at **23.1.0** (API `2026-10-28.endive`, flexible billing mode by default). It's loaded only on the server, and only when billing runs.
 
-| File | Purpose |
+| Where | What |
 |---|---|
-| `lib/stripe.ts` | Builds the Stripe client from `STRIPE_MODE`: `live` reads `STRIPE_*`, `test` reads `STRIPE_TEST_*`. Fails loudly when a key is missing or the mode doesn't match the key prefix (e.g. `STRIPE_MODE=test` with an `sk_live_` key). Exposes `getPlusPrice(interval)` via lookup key, with the env price ID as fallback |
-| `app/api/billing/checkout/route.ts` | `POST {interval: 'month' \| 'year'}` from a signed-in user. Creates a Checkout Session: `mode: 'subscription'`; `line_items: [{price, quantity: 1}]`; the existing `customer` or `customer_email` plus `client_reference_id: userId`; `metadata.userId`; `allow_promotion_codes: true`; `subscription_data.trial_period_days` if `STRIPE_TRIAL_DAYS` is set; `success_url: {SITE}/billing/success?session_id={CHECKOUT_SESSION_ID}`; `cancel_url: {SITE}/pricing`. Returns a 303 to `session.url` |
-| `app/api/billing/portal/route.ts` | `POST` from a signed-in user who has a `stripeCustomerId`. Creates a `billingPortal.sessions` session with a `return_url` and redirects to it |
-| `app/api/stripe/webhook/route.ts` | Reads the **raw body**, verifies the signature with `STRIPE_WEBHOOK_SECRET` (`stripe.webhooks.constructEvent`), and records `event.id` so retried deliveries aren't processed twice. Handles: `checkout.session.completed` (link `customer` ↔ `client_reference_id`, store `subscription`); `customer.subscription.*` (store status, price/interval, `current_period_end`, `cancel_at_period_end`); `invoice.paid` (keep access); `invoice.payment_failed` (flag the account, show "update your card" with a portal link). Returns 2xx fast |
-| `lib/entitlements.ts` | One rule: **Plus is on when the subscription status is `active` or `trialing`**. Allow a `past_due` grace period while Smart Retries run. `unpaid`, `canceled` and `incomplete_expired` mean Free. Webhooks are the source of truth; the success page only says "Welcome to Plus, finishing setup…" |
-| `app/pricing/page.tsx`, `app/billing/success/page.tsx`, `app/account/page.tsx` | Pricing (Free vs Plus, monthly/annual toggle); the post-checkout confirmation; account page with plan, renewal date and a "Manage subscription" button |
-| `lib/user-store.ts` | Interface for users and subscriptions. Local dev uses a **writable** SQLite file (`data/users.db`, gitignored), never the read-only `nutrition.db`. AWS uses DynamoDB (`docs/aws/AWS_HOSTING_DESIGN.md` §3.4) |
-| Tests | Webhook handler with Stripe-signed fixture events (`stripe.webhooks.generateTestHeaderString`), entitlement rules, mode/key mismatch guard, Checkout request shape |
+| `lib/billing/entitlements.ts` | **The one source of truth.** `entitlementsFor(record, now)` gives `free`, `trial` or `plus` and its features; `has(entitlements, feature)` checks `photoQuota`, `unlimitedHistory`, `weekPlanner` or `planContaminants`. Plus means the subscription is `active` or `trialing`, or `past_due` for at most 3 days while Smart Retries run. The trial is 14 days from the first time the app sees the account: a new account's creation, or an older account's first visit after this shipped |
+| `lib/user-store/entitlements.ts` | Storage in the existing single table, on SQLite and DynamoDB: `USER#<id>/ENT`, photo counters, a `STRIPECUS#` pointer for webhooks, and processed `STRIPEEVT#` ids. Tests run on both backends |
+| `lib/billing/stripe-config.ts` | Reads `STRIPE_MODE` and the matching keys, and enforces the **live-key guard** (below) |
+| `lib/billing/checkout.ts` | `POST /api/stripe/checkout { interval: 'month' \| 'year' }` → `{ url }`. Creates the Customer once (Customers v1, with an idempotency key per user and mode), then a subscription Checkout Session. The session sets `customer` and `client_reference_id`, puts `metadata.userId` on the session and the subscription, allows promotion codes, and sends people to `/plus/welcome` on success or back to `/plus` on cancel. A second subscription is refused (409). `POST /api/stripe/portal` → `{ url }` of a Customer Portal session that returns to `/account` |
+| `lib/billing/webhook.ts` | `POST /api/stripe/webhook`. Verifies `Stripe-Signature` on the raw body with the SDK, skips event ids it has already processed, and re-reads the subscription from Stripe on every event, so out-of-order delivery can't leave stale state. Handles `checkout.session.completed`, `customer.subscription.created/updated/deleted`, `invoice.paid` and `invoice.payment_failed` (which flags "update your card"). A failure returns 500 and isn't marked processed, so Stripe's retry applies it. If the account behind a paid Checkout was deleted meanwhile, the subscription is cancelled |
+| `lib/billing/cancel.ts` | **Account deletion cancels an active subscription first** (`DELETE /api/account`). If Stripe can't be reached, or billing is off, nothing is deleted and the person sees "We couldn't cancel your Plus subscription, so your account hasn't been deleted…". No refund is issued automatically. Stripe keeps the Customer and its invoices for tax records |
+| `lib/billing/quota.ts`, `photo-gate.ts`, `history-limits.ts`, `gate.ts`, `server.ts` | The limits below, plus `requireFeature` / `plusRoute` for Plus-only API routes |
+| `GET /api/me` | `user.plan`: the plan, trial days left, subscription status, renewal date, cancel state, photo reads used, the history limit, and whether billing is set up. No Stripe ids reach the browser |
+| `app/plus`, `app/plus/welcome`, `components/billing/*` | The `/plus` page, linked from the account menu and every gate. The post-Checkout page that waits for the webhook. The plan panel on `/account` with **Manage subscription**, `PlusGate`, and the photo and history notes |
+
+**Live-key guard.** A live key (`sk_live_`, `rk_live_`) is refused unless `NODE_ENV=production` **and** `STRIPE_ALLOW_LIVE=1`. `npm run dev`, `npm test` and `npm run preview` (a production build, but without the flag) never build a Stripe client with a live key. Checkout, the portal and webhooks answer "billing isn't set up", and the server log says why. A key that doesn't match `STRIPE_MODE` is refused the same way. With no Stripe settings at all, the site works and the upgrade buttons say billing isn't set up.
+
+**Gating a Plus feature.** The week planner and the plan contaminant check are marked `// PLUS-GATE: weekPlanner` and `// PLUS-GATE: planContaminants`. Wrap each one like this:
+
+```tsx
+// UI: one line
+import PlusGate from '@/components/billing/PlusGate';
+<PlusGate feature="weekPlanner"><WeekPlanner /></PlusGate>
+
+// API: 401 when signed out, 403 { code: 'plus_required' } on free
+import { plusRoute } from '@/lib/billing/server';
+export const POST = plusRoute('weekPlanner', async (request, { userId }) => Response.json({}));
+```
+
+A server component can call `pageHasFeature('weekPlanner')`, and client code can use `usePlus().has('weekPlanner')`.
+
+### Limits, and why
+
+| | Free | Trial (14 days) | Plus |
+|---|---|---|---|
+| AI photo reads | **3 a month** | **10 in total** | **50 a month** |
+| Saved plans and recipes shown | newest **5** of each | all | all |
+| Week planner, plan contaminant check | – | ✓ | ✓ |
+| Pasted-text recipes, food pages, meters, one-day planner, export | ✓ | ✓ | ✓ |
+
+- **Photo reads are the only per-account AI quota.** §3.7 of the AWS design puts a photo at about $0.0013 on Haiku and $0.027 when it escalates to Sonnet (plated food goes straight to Sonnet). In the worst case, all on Sonnet:
+  - free costs at most $0.08 per active account a month
+  - a trial costs at most $0.27, once
+  - Plus costs at most $1.35 a month, against at least $3.17 net revenue per payer (about $0.37 at the blended $0.0074)
+
+  That's looser than §3.7's "5 lifetime imports" for free accounts. That figure predates the free built-in text reader: text rarely needs AI now, so the AI budget can go to photos. The $5/day global cap ([DECISIONS.md](DECISIONS.md)) and the per-IP limits stay as backstops.
+- **Pasted text costs nothing and is never counted.** The built-in reader handles most of it at $0. When it's unsure and AI reads the text (Haiku, about $0.0017), that read isn't counted either, because pasted recipes are always free. Those reads are bounded by the per-IP limits (10 a minute, 50 a day) and the daily AI budget instead.
+- **How reads are counted.** A read reserves one unit with an atomic increment before the model is called, so parallel uploads can't overshoot, and gives it back if the read fails.
+  - Months are **UTC calendar months** for everyone, resetting at 00:00 UTC on the 1st. A counter then means the same thing on every server, and the reset date is one fact the UI can show.
+  - Each plan has its own counter, so an upgrade, or the end of the trial, starts fresh.
+  - Photo reads need a free account. Signed-out visitors are asked to sign in.
+- **History.** Free accounts list and reopen only their newest 5 plans and 5 recipes. Older rows are **kept, not deleted**: they come back with Plus and are always in the export. Viewed foods are never limited. The existing 500-per-kind abuse cap still applies to everyone.
 
 ## 6. Fees (what a subscriber nets you)
 
@@ -105,21 +144,47 @@ International cards add 1.5% and currency conversion adds 1%. Disputes cost $15 
 
 ## 7. Testing locally (no real money)
 
-1. Set `STRIPE_MODE=test` in `food-nutrition-app/.env.local`. The `STRIPE_TEST_*` keys are already filled in and point at the sandbox.
-2. Install the Stripe CLI (`brew install stripe/stripe-cli/stripe`), run `stripe login`, then `stripe listen --forward-to localhost:3000/api/stripe/webhook`. Copy the `whsec_…` it prints into `STRIPE_TEST_WEBHOOK_SECRET`.
-3. `make dev`, then subscribe with test cards:
+**Without Stripe at all.** `npm test` covers:
+- the entitlement rules and trial dates
+- quota counting, including month rollover in UTC
+- history limits and account deletion
+- the live-key guard
+- Checkout and portal requests, against an in-memory fake client
+- the webhook, with fixture events signed using Stripe's documented scheme (`t=<time>,v1=<HMAC-SHA256 of "<time>.<body>">`) and verified by the real SDK
 
-   | Card | Behaviour |
+To see an upgrade in a running app without Stripe, deliver a signed fixture to `postWebhook` against your local database, as `lib/billing/webhook.test.ts` does.
+
+**In the Stripe sandbox** (never with live keys):
+
+1. In the sandbox, do §4 steps 1–2: the product with both prices, and the Customer Portal settings.
+2. In `food-nutrition-app/.env.local`:
+   - set `STRIPE_MODE=test`
+   - fill in `STRIPE_TEST_SECRET_KEY` (`sk_test_…` or `rk_test_…`), `STRIPE_TEST_PRICE_PLUS_MONTHLY` and `STRIPE_TEST_PRICE_PLUS_ANNUAL`
+   - leave `STRIPE_ALLOW_LIVE` unset
+
+   The live `STRIPE_*` values can stay: test mode ignores them, and they'd be refused anyway.
+3. Install the Stripe CLI (`brew install stripe/stripe-cli/stripe`), run `stripe login`, then:
+   ```bash
+   stripe listen --forward-to localhost:3000/api/stripe/webhook \
+     --events checkout.session.completed,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed
+   ```
+   Copy the `whsec_…` it prints into `STRIPE_TEST_WEBHOOK_SECRET`. Then start the app on port 3000 (`npm run dev`) in another terminal.
+4. Sign in at <http://localhost:3000/account/sign-in>. The sign-in link prints in the app's terminal. `/account` shows the 14-day trial.
+5. Open `/plus`, pick monthly or yearly, and press **Get Plus**. Pay on Stripe's page with a test card, using any future expiry date, any CVC and any postcode:
+
+   | Card | What happens |
    |---|---|
    | `4242 4242 4242 4242` | Succeeds |
-   | `4000 0025 0000 3155` | Asks for 3D Secure |
-   | `4000 0000 0000 0341` | Attaches, then fails at renewal (tests dunning) |
+   | `4000 0025 0000 3155` | Asks for 3D Secure; complete it to succeed |
+   | `4000 0000 0000 9995` | Declined at Checkout (insufficient funds) |
+   | `4000 0000 0000 0341` | Attaches, then fails on the next charge. Use it with a test clock to see `past_due`, the card warning and the 3-day grace |
 
-   Any future date, any CVC.
-4. Use **test clocks** (Dashboard → Billing → Test clocks) to fast-forward renewals, trial ends and failed-payment retries.
-5. Use `stripe trigger customer.subscription.deleted` and similar commands to exercise the webhook handlers.
+6. You land on `/plus/welcome`, which changes to "Welcome to Plus" when the webhook arrives (watch the `stripe listen` output). `/account` then shows Plus, the renewal date and **Manage subscription**.
+7. **Manage subscription** opens the portal. Switch between monthly and yearly, cancel (the account page then says when Plus ends), or update the card. Each change comes back through `customer.subscription.updated`.
+8. **Deletion.** Delete the account on `/account`. The subscription is cancelled in the sandbox first; check Dashboard → Subscriptions. To see deletion refuse with a clear message, repeat with a subscribed account after changing `STRIPE_TEST_SECRET_KEY` to an invalid test key.
+9. **Time travel.** Create a subscription on a **test clock** (Dashboard → Billing → Test clocks) to fast-forward renewals and failed-payment retries. `stripe trigger customer.subscription.deleted` and similar commands send synthetic events. Those belong to new test customers, so the app acknowledges and ignores them unless the customer is one of yours.
 
-> **Live keys are currently active locally** (`STRIPE_MODE=live`). In live mode, completing Checkout charges a **real card** and creates real customers, subscriptions and invoices. Before trying the subscription flow, switch to `STRIPE_MODE=test`. If you must test live, use a 100%-off promotion code or refund straight away.
+> **Live keys stay safe on a laptop.** Even with `STRIPE_MODE=live` and live keys in `.env.local`, the app refuses them unless `NODE_ENV=production` and `STRIPE_ALLOW_LIVE=1`. So `npm run dev` and `npm run preview` can't charge a real card. Set `STRIPE_ALLOW_LIVE=1` only on the production server, from the secret store.
 
 ## 8. Prerequisite: sign-in
 
@@ -128,7 +193,7 @@ A subscription has to belong to a person, and today the app has no accounts (eve
 - a user record holding `stripeCustomerId` and subscription state
 - server-side checks on Plus-only API routes
 
-**Update: decided and built.** Accounts use **Better Auth with passwordless email links** (see [ACCOUNTS.md](ACCOUNTS.md)), and users live in `lib/user-store` (SQLite locally, DynamoDB on AWS). Stripe should add `stripeCustomerId` and subscription state there, and account deletion must cancel the subscription first. The rest of this section is the original reasoning.
+**Update: decided and built.** Accounts use **Better Auth with passwordless email links** (see [ACCOUNTS.md](ACCOUNTS.md)), and users live in `lib/user-store` (SQLite locally, DynamoDB on AWS). The plan record with `stripeCustomerId` and subscription state lives there too (§5), and account deletion cancels the subscription first. The rest of this section is the original reasoning.
 
 The AWS design proposes **Amazon Cognito** for production. For a laptop-testable first version, an email-link sign-in behind an interface that Cognito can replace later is the simplest path. **Decision pending.**
 
@@ -138,12 +203,13 @@ The AWS design proposes **Amazon Cognito** for production. For a laptop-testable
 2. ~~**Trial.**~~ Decided 2026-11-14: a 14-day no-card "reverse trial" with capped AI.
 3. ~~**Sign-in method** (§8).~~ Decided: Better Auth email links.
 4. **Managed Payments** later, if you'd rather Stripe handle global tax as merchant of record.
+5. **EU/UK VAT** before selling there (AWS design §3.6): restrict Checkout to US/CA, register for VAT OSS, or use Managed Payments.
 
 ## 10. Go-live checklist
 
 Follow Stripe's [go-live checklist](https://docs.stripe.com/get-started/checklist/go-live). In particular:
 - Recreate the product, prices, portal settings and webhook endpoint in **live**.
-- Store live keys in the production secret store (AWS SSM Parameter Store SecureString), never in the repo or on a laptop.
+- Store live keys in the production secret store (AWS SSM Parameter Store SecureString), never in the repo or on a laptop. Set `STRIPE_MODE=live` and `STRIPE_ALLOW_LIVE=1` there only.
 - Use a restricted key.
 - Verify the webhook signature secret for the production endpoint.
 - Do one real $5.99 purchase and refund it.

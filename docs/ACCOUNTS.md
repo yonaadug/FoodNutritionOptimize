@@ -1,6 +1,6 @@
 # Accounts
 
-Optional sign-in, so people can come back to the foods, recipes and plans they've looked at. The whole site works without an account. Accounts are also the base for a paid plan later ([STRIPE_PLAN.md](STRIPE_PLAN.md) §8), which is not built here.
+Optional sign-in, so people can come back to the foods, recipes and plans they've looked at. The whole site works without an account. Accounts also carry the plan: free, a 14-day Plus trial for every new account, or Plus ([Plans](#plans), [STRIPE_PLAN.md](STRIPE_PLAN.md)).
 
 **Status:** tested on a laptop against SQLite and a DynamoDB emulator. Nothing has run on AWS yet, and real email has not been sent. See [What hasn't been tested](#what-hasnt-been-tested).
 
@@ -99,15 +99,18 @@ All responses are `private, no-store`. Errors are `{ error, code, details? }`, t
 
 | Route | Purpose | Limit |
 |---|---|---|
-| `GET /api/me` | `{ user }`, or `{ user: null }` when signed out | 600/min per IP |
+| `GET /api/me` | `{ user }` with `user.plan` ([Plans](#plans)), or `{ user: null }` when signed out | 600/min per IP |
 | `PATCH /api/me` | Update `{ displayName?, preferences? }` | writes |
-| `GET /api/history?kind=&limit=&cursor=` | `{ items, nextCursor }`, newest first | 240/min per user |
-| `GET /api/history?kind=&itemId=` | `{ item }`, or 404. Reopens a saved recipe or plan | 240/min per user |
+| `GET /api/history?kind=&limit=&cursor=` | `{ items, nextCursor, limited? }`, newest first. On free, plans and recipes come as one page of the newest 5, with `limited: { limit, hidden }` | 240/min per user |
+| `GET /api/history?kind=&itemId=` | `{ item }`, or 404. Reopens a saved recipe or plan. 403 `plus_required` for one kept back on free | 240/min per user |
 | `POST /api/history` | Upsert `{ kind, itemId, title, href, data? }` | writes |
 | `DELETE /api/history?kind=&itemId=` | Remove one item | writes |
 | `DELETE /api/history?all=1[&kind=]` | Clear everything, or one kind | writes |
-| `GET /api/account/export` | Download everything held, as JSON | 5/hour per user |
-| `DELETE /api/account` | Delete permanently. Body: `{ confirmEmail }` | 5/hour per user |
+| `GET /api/account/export` | Download everything held, as JSON, including all history, the plan record and photo-read counts | 5/hour per user |
+| `DELETE /api/account` | Delete permanently. Body: `{ confirmEmail }`. Cancels an active subscription first; if that fails it stops with 502/503 `subscription_cancel_failed` and deletes nothing | 5/hour per user |
+| `POST /api/stripe/checkout` | `{ interval: 'month' \| 'year' }` → `{ url }` of Stripe Checkout. 409 if already subscribed, 503 when billing isn't set up | 10 per 10 min per user |
+| `POST /api/stripe/portal` | `{ url }` of the Stripe Customer Portal. 409 with no customer yet | 10 per 10 min per user |
+| `POST /api/stripe/webhook` | Stripe only: signature-checked, idempotent ([STRIPE_PLAN.md §5](STRIPE_PLAN.md#5-whats-built)) | |
 | `/api/auth/*` | Better Auth, limited to the endpoints the site uses | 10 links per 5 min per IP; 5 emails per hour per address |
 
 "Writes" means 120/min per user and 300/min per IP. Limits: 200-character titles, 8 KB of `data`, 16 KB bodies, and 500 items per kind, after which the oldest are removed.
@@ -139,14 +142,30 @@ Everything sits behind one `SingleTable` interface (`lib/user-store/table.ts`) w
 | `USER#<id>` | `ACCOUNT#<id>` | sign-in method such as Google | |
 | `USER#<id>` | `HIST#<kind>#<itemId>` | history item | |
 | `USER#<id>` | `HISTCOUNT#<kind>` | item count, enforces the cap | |
+| `USER#<id>` | `ENT` | the plan record: trial start, Stripe customer, subscription id, status, price, interval, period end, cancel state, past-due and failed-payment times | |
+| `USER#<id>` | `USAGE#photo#<counter>` | AI photo reads: `free#yyyy-mm`, `plus#yyyy-mm` (UTC months) or `trial` | 400 days |
+| `STRIPECUS#<cus_id>` | `STRIPECUS` | points a Stripe customer to its user, for webhooks. Listed in the `ENT` item's `_ptrs`, so deletion removes it | |
+| `STRIPEEVT#<evt_id>` | `STRIPEEVT` | a processed webhook event (idempotency). Not personal data | 30 days |
 | `EMAIL#<email>` | `EMAIL` | points to the profile, guarantees one user per email | |
 | `ACCOUNTID#<id>`, `ACCTKEY#<provider>#<id>` | same as PK prefix | point to a sign-in method | |
 | `KV#<key>` | `KV` | sessions, sign-in tokens, sign-in rate limits | yes |
 | `RL#<scope>#<hash>` | `W#<window>` | rate-limit counters (hashed, no raw IPs) | yes |
 
-Indexes: `GSI1` is all history by recency (`USER#<id>#HIST`) and stays free for the design's `STRIPECUS#` lookup. `GSI2` is **new compared with the AWS design**: history per kind (`USER#<id>#HIST#<kind>`).
+Indexes: `GSI1` is all history by recency (`USER#<id>#HIST`). The design's `STRIPECUS#` lookup is a pointer item instead of a GSI1 entry, because an index is eventually consistent and a webhook arriving a moment after Checkout must find its user. `GSI2` is **new compared with the AWS design**: history per kind (`USER#<id>#HIST#<kind>`).
 
 Lookups by email use small pointer items, not an index. An index can't enforce uniqueness and is only eventually consistent, and neither is acceptable for "does this person already have an account?". Anonymous visitors never touch the table: no cookie means no read.
+
+## Plans
+
+Every account has a plan, worked out in `lib/billing/entitlements.ts` from the `ENT` item:
+
+| Plan | When | Photo reads | Plans and recipes shown |
+|---|---|---|---|
+| `trial` | the first 14 days, from the first time the app sees the account (a new account: its creation; an older one: its first visit after plans shipped) | 10 in total | all |
+| `plus` | the Stripe subscription is `active` or `trialing`, or `past_due` for up to 3 days | 50 a month | all |
+| `free` | otherwise | 3 a month (UTC months) | the newest 5 of each; older ones are kept and exported |
+
+The `ENT` item is created on first sight, by `/api/me` or any check, which is what starts the trial. Only the Stripe webhook writes subscription fields. `GET /api/me` returns the plan as `user.plan` (no Stripe ids); in the browser, `usePlus()` in `components/billing/usePlus.ts` reads it. Photo reads need an account; pasted text never does and is never counted. Details and reasons: [STRIPE_PLAN.md §5](STRIPE_PLAN.md#5-whats-built).
 
 ## Going to production on AWS
 
@@ -173,7 +192,7 @@ Still to test on the deployed site: sign in with a real inbox, a corporate mailb
 
 **Passkeys (optional, not added):** `@better-auth/passkey`, plus a `passkey` entry in `MODELS` in `lib/auth/adapter.ts`, which rejects unmapped models on purpose.
 
-**Stripe later:** the `ENT` item from the design fits under `USER#<id>`, and account deletion will remove it. `deleteAccount` in `lib/auth/handlers.ts` **must then cancel the subscription first**.
+**Stripe:** the `ENT` item and the photo counters sit under `USER#<id>`, so deletion removes them with everything else. Before anything is removed, `deleteAccount` in `lib/auth/handlers.ts` cancels an active subscription (`lib/billing/cancel.ts`). If Stripe can't be reached, or billing isn't configured on that server, deletion stops and says why. Stripe itself keeps the Customer and its invoices for tax records, which the privacy policy should say.
 
 ## Threat model
 
@@ -200,7 +219,7 @@ Still to test on the deployed site: sign in with a real inbox, a corporate mailb
 **Accepted risks:**
 
 - **Anyone with access to someone's inbox can sign in as them.** That's inherent to email links.
-- **Login CSRF:** someone could send you *their* link, and you'd be signed in as them. You'd see their email on the account page. Low harm, since there's no payment data yet. Revisit before Stripe.
+- **Login CSRF:** someone could send you *their* link, and you'd be signed in as them. You'd see their email on the account page. Card details never reach this site (Stripe holds them), but someone signed into another person's account could pay for Plus on it. Still low harm; Checkout shows the account's email.
 - **Deletion race:** a history write already past its session check when an account is deleted could recreate one orphaned item. The window is milliseconds.
 - **Backups:** deleted data stays in DynamoDB point-in-time recovery for up to 35 days. The privacy policy must say so ([§6](aws/AWS_HOSTING_DESIGN.md#6-security--compliance)).
 - **A leaked `AUTH_SECRET` plus table access** allows forging sessions. Rotate it, which signs everyone out.

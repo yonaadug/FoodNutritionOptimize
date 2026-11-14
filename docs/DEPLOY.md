@@ -12,8 +12,8 @@ A step-by-step runbook, from no AWS setup to a live site at **https://nutritiond
 
 | Item | Effect until it's fixed | Owner |
 |---|---|---|
-| **Browser POSTs need an `x-amz-content-sha256` header.** CloudFront's origin access control won't pass a POST or PUT to the Lambda function without the body's SHA-256 (AWS: "Lambda doesn't support unsigned payloads"). Account requests already send it (`apiFetch` in `lib/auth/client.ts`). The planner (`hooks/usePlan.ts`, `POST /api/optimize`) and the recipe reader (`components/recipes/api.ts`, multipart `POST /api/recipes/parse`) don't | The planner and recipe reading fail on the deployed site, and so does the smoke test's last check | App code |
-| **Privacy policy and terms** at `/privacy` and `/terms` | Google's consent screen and SES production access both want them | Being built |
+| ~~**Browser POSTs need an `x-amz-content-sha256` header.**~~ Fixed on 2026-11-14: every browser request body goes through `sameOriginFetch` (`lib/same-origin-fetch.ts`), photos go up as raw bytes so they can be hashed, and a test fails the build if any browser code sends a body with plain `fetch()`. The smoke test sends the header too | None | Done |
+| **Privacy policy and terms** at `/privacy`, `/health-data-privacy` and `/terms` | Drafted, with consent recorded at sign-in. Fill the placeholders in `lib/legal.ts` and get a lawyer's review ([LEGAL.md](LEGAL.md)) before turning off `LEGAL_DRAFT` | You |
 | **Stripe webhook route** `app/api/stripe/webhook` | Plus can't be bought yet. The infrastructure for it is ready | Being built |
 
 **Conventions in this guide**

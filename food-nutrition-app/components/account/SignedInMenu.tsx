@@ -6,7 +6,7 @@ import { signOut, type CurrentUser } from '@/lib/auth/client';
 import { userInitial } from './AccountMenu';
 import styles from './AccountMenu.module.css';
 
-/** The signed-in person's initial, with a menu: Account, History, Sign out. Loaded by AccountMenu. */
+/** The signed-in person's initial, with a menu: Account, History, Plus, Sign out. Loaded by AccountMenu. */
 export default function SignedInMenu({ user, current, pathname }: { user: CurrentUser; current: boolean; pathname: string }) {
     const [open, setOpen] = useState(false);
     const root = useRef<HTMLDivElement>(null);
@@ -79,6 +79,8 @@ export default function SignedInMenu({ user, current, pathname }: { user: Curren
                         aria-current={pathname === '/account' ? 'page' : undefined}>Account</Link>
                     <Link role="menuitem" href="/account/history" className={styles.item} onClick={() => setOpen(false)}
                         aria-current={pathname === '/account/history' ? 'page' : undefined}>History</Link>
+                    <Link role="menuitem" href="/plus" className={styles.item} onClick={() => setOpen(false)}
+                        aria-current={pathname === '/plus' ? 'page' : undefined}>{user.plan?.plan === 'plus' ? 'Your Plus plan' : 'Plus'}</Link>
                     <button role="menuitem" type="button" className={styles.item} onClick={onSignOut}>Sign out</button>
                 </div>
             )}

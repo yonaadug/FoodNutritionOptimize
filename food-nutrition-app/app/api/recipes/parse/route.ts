@@ -5,6 +5,9 @@ import { logAiCall } from '@/lib/ai/cost';
 import { DEFAULT_MAX_UPLOAD_BYTES, prepareImage } from '@/lib/ai/image';
 import { clientIp, getRateLimiter, overDailyBudget } from '@/lib/ai/rate-limit';
 import { AiError, type RecipeInput } from '@/lib/ai/types';
+import { hasSessionCookie } from '@/lib/auth/handlers';
+import { getAccountDeps } from '@/lib/auth/server';
+import { openPhotoRead, type PhotoGate } from '@/lib/billing/photo-gate';
 import { analyzeRecipeIn } from '@/lib/recipes/analyze';
 import { readTextBuiltin } from '@/lib/recipes/builtin';
 import { MAX_TEXT_BODY_BYTES, parseTextBody, recipesDb, RequestError } from '@/lib/recipes/request';
@@ -63,12 +66,16 @@ async function readImage(request: Request): Promise<RecipeInput> {
  * sends, so CloudFront can hash it) or as multipart/form-data with an `image` file.
  * 200: ParseResponse (lib/recipes/types.ts): ingredients with USDA matches and gram conversions.
  * Pasted text is read by the free built-in reader first, and goes to AI only when that
- * read is unsure (lib/recipes/confidence.ts); `provider` is then "builtin". Photos go to
- * AI, which picks its model in lib/ai/router.ts.
- * Errors: { error, code }. 400, 413, 415, 422 (not a recipe, or refused), 429 (rate limited,
- * with Retry-After), 502/503/504 (provider).
+ * read is unsure (lib/recipes/confidence.ts); `provider` is then "builtin". Pasted text is
+ * free for everyone and never counted. Photos go to AI, which picks its model in
+ * lib/ai/router.ts, and need an account: each one uses a photo read from the plan's quota
+ * (lib/billing/photo-gate.ts), given back if the read fails.
+ * Errors: { error, code }. 400, 401 sign_in_required, 403 photo_quota (with details.usage),
+ * 413, 415, 422 (not a recipe, or refused), 429 (rate limited, with Retry-After), 502/503/504 (provider).
  */
 export async function POST(request: Request) {
+    let photo: PhotoGate | null = null;
+    let done = false;
     try {
         const type = request.headers.get('content-type') ?? '';
         const isImage = /^multipart\/form-data\b/i.test(type) || RAW_IMAGE_TYPE.test(type);
@@ -82,6 +89,12 @@ export async function POST(request: Request) {
             return errorResponse(429, 'rate_limited', 'That\'s a lot of recipes in a short time. Please try again soon.', {
                 'Retry-After': String(limit.retryAfterSeconds),
             });
+        }
+        if (isImage) {
+            // Photos (raw bytes or multipart) need an account and use the plan's quota.
+            // No session cookie answers without loading the account stack.
+            photo = await openPhotoRead(request, hasSessionCookie(request) ? await getAccountDeps().catch(() => null) : null);
+            if (!photo.ok) return errorResponse(photo.status, photo.code, photo.message, {}, photo.usage ? { usage: photo.usage } : undefined);
         }
         const input: RecipeInput = isImage
             ? await readImage(request)
@@ -114,8 +127,12 @@ export async function POST(request: Request) {
             model: read.model ?? provider.model,
             rerank: provider.rerank ?? null,
         });
+        done = true;
         return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
     } catch (error) {
         return handleRecipeError(error, 'recipes/parse');
+    } finally {
+        // A photo read that didn't produce a recipe doesn't count.
+        if (photo?.ok && !done) await photo.release().catch(() => { /* best effort */ });
     }
 }

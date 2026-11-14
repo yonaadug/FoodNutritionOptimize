@@ -1,9 +1,11 @@
+import { createStripeProvider } from '@/lib/billing/stripe-client';
 import { getTable } from '@/lib/user-store';
 import { UserStore } from '@/lib/user-store/user-store';
 import { createAuth } from './auth';
 import { loadAuthConfig } from './config';
 import type { AccountDeps } from './handlers';
 import { toErrorResponse } from './http';
+import { logError } from './log';
 import { createMailer } from './mailer';
 
 /**
@@ -17,11 +19,15 @@ const globals = globalThis as unknown as { __mdAccountDeps?: Promise<AccountDeps
 async function createDeps(): Promise<AccountDeps> {
     const config = loadAuthConfig();
     const table = await getTable();
+    const stripe = createStripeProvider();
+    // Say once why billing is off, unless it simply isn't set up.
+    if (!stripe.config.ok && stripe.config.reason !== 'not_configured') logError('billing-config', new Error(stripe.config.ownerMessage));
     return {
         config,
         table,
         store: new UserStore(table),
         auth: createAuth({ table, config, mailer: createMailer(config) }),
+        stripe,
     };
 }
 

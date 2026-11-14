@@ -39,7 +39,7 @@ Decisions the owner made, newest first. Agents and docs follow these; change the
 - **Cognito:** remove it from the AWS example.
 
 **Data**
-- **Retention:** uploaded photos deleted after 1 day, logs kept 14 days, DynamoDB backups (point-in-time recovery) 35 days. The privacy policy must say a deleted account leaves backups within 35 days.
+- **Retention:** uploaded photos deleted after 1 day, logs kept 14 days, DynamoDB backups (point-in-time recovery) 35 days. The privacy policy must say a deleted account leaves backups within 35 days. *(Today photos aren't stored at all: they go straight to Bedrock. The 1-day S3 rule covers the planned import queue.)*
 - **Access:** worldwide, so the privacy policy covers EU/UK users (GDPR) too.
 
 **Launch**

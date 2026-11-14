@@ -67,6 +67,13 @@ function webpInfo(b: Uint8Array): { width: number; height: number } | null {
     return null;
 }
 
+/** HEIC/HEIF (iPhone default): an ISO-BMFF "ftyp" box with a HEIF brand. No model API accepts it. */
+export function isHeif(b: Uint8Array): boolean {
+    if (b.length < 12) return false;
+    const box = String.fromCharCode(...b.subarray(4, 12));
+    return box.startsWith('ftyp') && ['heic', 'heix', 'heim', 'heis', 'hevc', 'hevx', 'mif1', 'msf1'].includes(box.slice(4));
+}
+
 /** Identify an image from its bytes. Null when it isn't a supported, readable image. */
 export function sniffImage(b: Uint8Array): ImageInfo | null {
     if (b.length < 16) return null;
@@ -162,6 +169,9 @@ export async function prepareImage(bytes: Uint8Array, maxUploadBytes: number = D
         throw new ImageError(413, `That photo is too large. The limit is ${Math.floor(maxUploadBytes / (1024 * 1024))} MB.`);
     }
     const info = sniffImage(bytes);
+    if (!info && isHeif(bytes)) {
+        throw new ImageError(415, 'That\'s an HEIC photo, which we can\'t read yet. Please send it as a JPEG: on an iPhone, share or export it as JPEG, or set Camera > Formats to Most Compatible.');
+    }
     if (!info) throw new ImageError(415, 'We can read JPEG, PNG, WebP or GIF photos. Please try one of those.');
     const { mediaType, width, height } = info;
     if (!(width > 0 && height > 0) || width > MAX_DIMENSION_PX || height > MAX_DIMENSION_PX || (width * height) / 1e6 > MAX_DECODE_MEGAPIXELS) {

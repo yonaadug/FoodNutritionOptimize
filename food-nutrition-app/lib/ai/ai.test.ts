@@ -436,6 +436,14 @@ describe('images', () => {
         assert.equal(sniffImage(new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"></svg>')), null);
         assert.equal(sniffImage(new Uint8Array(4)), null);
     });
+    it('names HEIC photos in the error, with what to do instead', async () => {
+        const heic = new Uint8Array(32);
+        heic.set(new TextEncoder().encode('\0\0\0\x18ftypheic'));
+        await assert.rejects(prepareImage(heic), (e: ImageError) => e.status === 415 && /HEIC/.test(e.message) && /JPEG/.test(e.message));
+        const avif = new Uint8Array(32);
+        avif.set(new TextEncoder().encode('\0\0\0\x18ftypmif1'));
+        await assert.rejects(prepareImage(avif), (e: ImageError) => e.status === 415 && /HEIC/.test(e.message));
+    });
     it('removes EXIF from a JPEG and keeps it decodable', () => {
         const j = withExif(makeJpeg(32, 32));
         assert.match(Buffer.from(j).toString('latin1'), /GPS-LOCATION-SECRET/);

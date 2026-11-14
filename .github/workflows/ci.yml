@@ -108,5 +108,9 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run typecheck
       # Synth only stages the Docker build context; it doesn't need Docker,
-      # credentials or the LFS database.
-      - run: npx cdk synth --quiet && npx cdk synth --quiet -c stage=prod
+      # credentials or the LFS database. synthOnly: there is no alert email in CI
+      # (the real one is a deploy-time secret, docs/DEPLOY.md).
+      - run: npx cdk synth --quiet -c synthOnly=true && npx cdk synth --quiet -c stage=prod -c synthOnly=true
+      - name: Lambda start script (SSM secrets loader) tests
+        working-directory: docs/aws/infra-example/lambda-secrets
+        run: npm ci --no-audit --no-fund --ignore-scripts && npm test

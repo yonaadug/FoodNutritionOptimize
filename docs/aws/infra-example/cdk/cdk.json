@@ -1,7 +1,9 @@
 {
-  "//": "EXAMPLE (synth-tested, never deployed) — see docs/aws/AWS_HOSTING_DESIGN.md and docs/LOCAL_TESTING.md",
+  "//": "EXAMPLE (synth-tested, never deployed). Runbook: docs/DEPLOY.md. Never put the alert email here: pass -c alertEmail=... or set ALERT_EMAIL.",
   "app": "npx tsx bin/nutrition-dictionary.ts",
   "context": {
-    "@aws-cdk/core:stackRelativeExports": true
+    "@aws-cdk/core:stackRelativeExports": true,
+    "@aws-cdk/core:defaultCrossStackReferences": "strong",
+    "devNameServers": []
   }
 }

@@ -1,0 +1,15 @@
+{
+  "name": "nutrition-dictionary-lambda-secrets",
+  "private": true,
+  "description": "Start script for the Lambda image: copies SSM SecureString parameters into the environment, then starts the Next.js server. See start.mjs.",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test start.test.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-ssm": "3.1162.0"
+  }
+}

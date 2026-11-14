@@ -11,6 +11,7 @@
 // foods. Exits non-zero on failure.
 // Zero dependencies (Node >= 22: global fetch).
 
+import { createHash } from 'node:crypto';
 const args = process.argv.slice(2);
 const waitIdx = args.indexOf('--wait');
 const waitSeconds = waitIdx >= 0 ? Number(args.splice(waitIdx, 2)[1]) : 0;
@@ -134,7 +135,8 @@ async function optimize(extra) {
     const body = JSON.stringify({ foods: picked.map((f) => ({ id: f.id })), ...extra });
     const { res, json } = await request('/api/optimize', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        // Behind CloudFront the origin only accepts a body sent with its SHA-256 (lib/same-origin-fetch.ts).
+        headers: { 'content-type': 'application/json', 'x-amz-content-sha256': createHash('sha256').update(body).digest('hex') },
         body,
     });
     if (res.status !== 200 || typeof json?.success !== 'boolean') {

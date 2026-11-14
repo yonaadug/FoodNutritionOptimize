@@ -2,7 +2,7 @@
 
 ## Current decision (2026-11-14): NutritionDictionary at nutritiondictionary.com
 
-The owner renamed the product to **NutritionDictionary**, because nanonutrition.com is taken (below). The code and docs use **nutritiondictionary.com**: `SITE_URL` in `food-nutrition-app/lib/nav.ts`, plus `siteUrl`/`sesDomain` in `infra-example/cdk/bin/nutrition-dictionary.ts`.
+The owner renamed the product to **NutritionDictionary**, because nanonutrition.com is taken (below). The code and docs use **nutritiondictionary.com**: `SITE_URL` in `food-nutrition-app/lib/nav.ts`, plus `APEX_DOMAIN` in `infra-example/cdk/bin/nutrition-dictionary.ts` (prod at the apex with `www` redirecting to it, dev at `dev.nutritiondictionary.com`). Setup steps: [DEPLOY.md](../DEPLOY.md), steps 5, 7 and 8.
 
 **Availability and prices (checked 2026-11-14).** Registry RDAP and whois, Route 53's `CheckDomainAvailability` and `ListPrices` (read-only), and Porkbun's public price list. Not registered yet; registrar checkout is authoritative.
 

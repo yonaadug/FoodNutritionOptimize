@@ -4,6 +4,10 @@
 !food-nutrition-app/
 # The CDK example stages this context as an asset and must keep the Lambda Dockerfile.
 !docs/aws/infra-example/Dockerfile.lambda
+# ...and the Lambda image's start script (reads SSM secrets, then starts Next).
+!docs/aws/infra-example/lambda-secrets/package.json
+!docs/aws/infra-example/lambda-secrets/package-lock.json
+!docs/aws/infra-example/lambda-secrets/start.mjs
 
 # ...minus local build output, deps, secrets and dev-only files
 food-nutrition-app/node_modules

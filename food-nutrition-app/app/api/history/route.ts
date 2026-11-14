@@ -1,5 +1,6 @@
 import { deleteHistory, getHistory, postHistory } from '@/lib/auth/handlers';
 import { accountRoute } from '@/lib/auth/server';
+import { requireHealthDataConsent } from '@/lib/consent-http';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,8 +11,11 @@ export const dynamic = 'force-dynamic';
  */
 export const GET = accountRoute('history', getHistory);
 
-/** POST /api/history { kind, itemId, title, href, data? }  200: { item } (upsert) */
-export const POST = accountRoute('history', postHistory);
+/**
+ * POST /api/history { kind, itemId, title, href, data? }  200: { item } (upsert)
+ * 403 (details.reason consent_required) for an account with no health-data consent on record.
+ */
+export const POST = accountRoute('history', requireHealthDataConsent(postHistory));
 
 /** DELETE /api/history?kind=food&itemId=1, or ?all=1[&kind=food]  200: { removed } */
 export const DELETE = accountRoute('history', deleteHistory);

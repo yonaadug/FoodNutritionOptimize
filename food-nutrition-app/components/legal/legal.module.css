@@ -1,0 +1,61 @@
+/* Legal pages (/privacy, /health-data-privacy, /terms) and the draft note. Prose styles come from .prose in globals.css. */
+
+.meta { font-size: 14px; color: var(--text-secondary); margin: 0 0 var(--space-3); }
+
+.draft {
+    display: flex;
+    gap: var(--space-3);
+    align-items: flex-start;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid color-mix(in srgb, var(--warning) 40%, var(--border));
+    background: var(--warning-bg);
+    color: var(--text-primary);
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0 0 var(--space-4);
+}
+.draft > svg { flex: none; margin-top: 2px; color: var(--warning); }
+.draft strong { color: var(--warning); }
+.draft p { margin: 0; }
+.draft p + p { margin-top: 4px; }
+
+.toc { font-size: 14px; margin: 0 0 var(--space-4); }
+.toc ol { margin: 6px 0 0; padding-left: 20px; columns: 2 220px; column-gap: var(--space-5); }
+.toc li { margin: 0 0 4px; break-inside: avoid; }
+
+.summary {
+    border-left: 3px solid var(--primary);
+    padding: var(--space-2) var(--space-4);
+    background: var(--primary-soft);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin: 0 0 var(--space-4);
+}
+.summary ul { margin: 0; padding-left: 18px; }
+.summary li { margin: 4px 0; line-height: 1.5; }
+
+/* Notes for the reviewing lawyer: shown only while LEGAL_DRAFT is true. */
+.lawyer {
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4);
+    margin: var(--space-3) 0 var(--space-4);
+    font-size: 14px;
+}
+.lawyer > p:first-child { font-weight: 700; margin-bottom: 6px; }
+.lawyer ul { margin: 0; padding-left: 18px; }
+.lawyer li { margin: 4px 0; line-height: 1.5; }
+
+.placeholder {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.92em;
+    background: var(--bg-sunken);
+    border-radius: 4px;
+    padding: 0 4px;
+    overflow-wrap: anywhere;
+}
+
+.page :global(code) { overflow-wrap: anywhere; }
+.page :global(h2) { scroll-margin-top: 80px; }
+
+.related { font-size: 14px; color: var(--text-secondary); margin-top: var(--space-6); border-top: 1px solid var(--border); padding-top: var(--space-4); }

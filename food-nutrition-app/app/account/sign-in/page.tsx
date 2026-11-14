@@ -7,6 +7,7 @@ import styles from '@/components/account/account.module.css';
 import Icon from '@/components/ui/Icon';
 import { DEFAULT_AFTER_SIGN_IN, safeNextPath } from '@/lib/auth/next-path';
 import { getPageUser, getSignInOptions } from '@/lib/auth/pages';
+import { LEGAL_PATHS } from '@/lib/legal';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Sign in' };
@@ -56,7 +57,8 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
                         </div>
                     )}
                 <p className={styles.note}>
-                    We store your email and what you choose to keep here, and you can export or delete it at any time.
+                    We store your email and what you choose to keep here, and you can export or delete it at any time
+                    (<Link href={LEGAL_PATHS.privacy}>Privacy Policy</Link>).
                     The whole site works without an account. <Link href={next === DEFAULT_AFTER_SIGN_IN ? '/' : next}>Continue without signing in</Link>
                 </p>
             </section>

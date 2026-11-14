@@ -25,6 +25,8 @@ export interface AiResult {
     recipe: ParsedRecipe;
     /** Null for the mock provider. */
     usage: AiUsage | null;
+    /** The model that produced this read, when a router chose among several (lib/ai/router.ts). */
+    model?: string | null;
 }
 
 export interface AiProvider {
@@ -53,14 +55,36 @@ const HTTP_STATUS: Record<AiErrorCode, number> = {
     ai_not_food: 422,
 };
 
+/**
+ * Why a model can't be used right now, which decides whether another model may
+ * take over (lib/ai/router.ts):
+ *   access    the account or role can't use it: access denied, model or profile not found
+ *   capacity  quota or throttling, or the service is down
+ */
+export type Unavailability = 'access' | 'capacity';
+
 /** A provider failure with a message that is safe to show to the user. */
 export class AiError extends Error {
     code: AiErrorCode;
     status: number;
-    constructor(code: AiErrorCode, message: string) {
+    /** Set when the model itself is unavailable, so a fallback model may be tried. */
+    unavailable: Unavailability | null;
+    constructor(code: AiErrorCode, message: string, unavailable: Unavailability | null = null) {
         super(message);
         this.name = 'AiError';
         this.code = code;
         this.status = HTTP_STATUS[code];
+        this.unavailable = unavailable;
+    }
+}
+
+/**
+ * The model replied, but not with a usable recipe (no tool call, or a reply that
+ * fails validation). A stronger model may do better (lib/ai/router.ts).
+ */
+export class InvalidReplyError extends AiError {
+    constructor(message: string) {
+        super('ai_bad_output', message);
+        this.name = 'InvalidReplyError';
     }
 }

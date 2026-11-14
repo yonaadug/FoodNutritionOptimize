@@ -311,8 +311,16 @@ describe('cost', () => {
     it('uses list prices', () => {
         const usage = { inputTokens: 1_000_000, outputTokens: 1_000_000 };
         assert.equal(estimateCostUsd('claude-opus-5-5', usage), 24);
-        assert.equal(estimateCostUsd('anthropic.claude-sonnet-5-5', usage), 12);
         assert.equal(estimateCostUsd('claude-haiku-5-5', usage), 0.6);
+        assert.equal(estimateCostUsd('global.anthropic.claude-sonnet-5-5', usage), 12);
+    });
+    it('adds the 10% Bedrock premium for regional and US-only routing', () => {
+        // AWS Marketplace offer for Haiku 5.5, 2026-11-13: global $0.10/$0.50, "Standard" (non-global) $0.11/$0.55.
+        const usage = { inputTokens: 1_000_000, outputTokens: 1_000_000 };
+        assert.equal(Number(estimateCostUsd('us.anthropic.claude-haiku-5-5', usage).toFixed(6)), 0.66);
+        assert.equal(Number(estimateCostUsd('anthropic.claude-sonnet-5-5', usage).toFixed(6)), 13.2);
+        assert.equal(Number(estimateCostUsd('arn:aws:bedrock:us-east-1:1:inference-profile/us.anthropic.claude-haiku-5-5', usage).toFixed(6)), 0.66);
+        assert.equal(baseModelId('arn:aws:bedrock:us-east-1:1:inference-profile/global.anthropic.claude-haiku-5-5'), 'claude-haiku-5-5');
     });
     it('is zero for mock, and an unknown model never looks free', () => {
         assert.equal(estimateCostUsd(null, { inputTokens: 1, outputTokens: 1 }), 0);

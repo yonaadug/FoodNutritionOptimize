@@ -6,6 +6,7 @@ import type { Food } from '@/lib/food-types';
 import { categorySlug, datasetInfo, fdcUrl, fmt, foodPath, formatPublicationDate, nutrientName, parseFoodParam, resultNutrients } from '@/lib/food-page';
 import { filledKeys } from '@/lib/nutrient-fill';
 import { typicalServing } from '@/lib/servings';
+import { scaleAmount } from '@/lib/serving-scale';
 import { dataSourceLabel, displayFoodName, hasCoreData, nv, splitFoodName } from '@/components/planner/nutrients';
 import { DatasetBadge } from '@/components/explore/FoodResultRow';
 import FoodCard from '@/components/explore/FoodCard';
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: PageProps<'/food/[id]'>): Pro
     const serving = typicalServing(food.serving_sizes, food);
     const kcal = nv(food, 'calories');
     const amounts = resultNutrients(food, serving.grams, 3).map(n => `${fmt(n.amount)} ${n.unit} ${n.label.replace(/ \(.*\)$/, '').toLowerCase()}`);
-    const description = `${food.description}, per ${serving.label}: ${kcal === null ? '' : `${fmt(kcal * serving.grams / 100, 0)} calories, `}${amounts.join(', ')}. Full vitamins and minerals with % Daily Value, from USDA FoodData Central.`;
+    const description = `${food.description}, per ${serving.label}: ${kcal === null ? '' : `${fmt(scaleAmount(kcal, serving.grams), 0)} calories, `}${amounts.join(', ')}. Full vitamins and minerals with % Daily Value, from USDA FoodData Central.`;
     // A superseded record's page is a pointer: the replacement is the page to index.
     const replacement = food.superseded_by_fdc_id ? await getFoodByFdcId(food.superseded_by_fdc_id) : undefined;
     const canonical = foodPath(replacement ?? food);

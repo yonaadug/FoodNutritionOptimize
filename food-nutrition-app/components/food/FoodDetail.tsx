@@ -7,19 +7,19 @@ import type { Food } from '@/lib/food-types';
 import { fmt, foodPath, keyNutrients, servingOptions } from '@/lib/food-page';
 import { isFilled } from '@/lib/nutrient-fill';
 import { typicalServing } from '@/lib/servings';
+import { FALLBACK_GRAMS, amountLabel, parseServingAmount, scaleAmount, type MassUnit } from '@/lib/serving-scale';
 import NutritionLabel from '@/components/NutritionLabel';
 import Icon from '@/components/ui/Icon';
 import { plannerActions, usePlannerState } from '@/hooks/usePlannerState';
 import { notify } from '@/hooks/useToasts';
 import { displayFoodName, nv, shortFoodName } from '@/components/planner/nutrients';
 import ComparePanel from './ComparePanel';
+import CustomAmount from './CustomAmount';
+import ServingSelect, { CUSTOM_SERVING } from './ServingSelect';
 import { OlderEntryMark } from './FoodLink';
 import NutrientTable from './NutrientTable';
 import SafetySlot from './SafetySlot';
 import { onFoodViewed } from './onFoodViewed';
-
-const CUSTOM = 'custom';
-const MAX_GRAMS = 5000;
 
 /**
  * The interactive heart of a food page, rendered on the server for the default
@@ -29,10 +29,9 @@ const MAX_GRAMS = 5000;
 export default function FoodDetail({ food, compareSuggestions }: { food: Food; compareSuggestions: Food[] }) {
     const { options, defaultId } = useMemo(() => servingOptions(food), [food]);
     const [servingId, setServingId] = useState(defaultId);
-    const [customText, setCustomText] = useState('150');
+    const [custom, setCustom] = useState<{ text: string; unit: MassUnit }>({ text: '150', unit: 'g' });
     const [comparing, setComparing] = useState(false);
     const selectId = useId();
-    const customId = useId();
 
     const fdcId = food.fdc_id;
     const description = food.description;
@@ -42,7 +41,7 @@ export default function FoodDetail({ food, compareSuggestions }: { food: Food; c
         const kcal = nv(food, 'calories');
         const richIn = keyNutrients(food, serving.grams, 3, 20).map(k => k.label.replace(/ \(.*\)$/, ''));
         return [
-            ...(kcal === null ? [] : [{ label: 'Calories', value: `${fmt(kcal * serving.grams / 100, 0)} kcal per ${serving.label}` }]),
+            ...(kcal === null ? [] : [{ label: 'Calories', value: `${fmt(scaleAmount(kcal, serving.grams), 0)} kcal per ${serving.label}` }]),
             ...(richIn.length ? [{ label: 'Rich in', value: richIn.join(', ') }] : []),
         ];
     }, [food]);
@@ -50,13 +49,13 @@ export default function FoodDetail({ food, compareSuggestions }: { food: Food; c
         onFoodViewed({ fdcId, description, title: displayFoodName(description), path: foodPath({ fdc_id: fdcId, description }), summary: viewSummary });
     }, [fdcId, description, viewSummary]);
 
-    const customGrams = Number.parseFloat(customText);
-    const customValid = Number.isFinite(customGrams) && customGrams > 0 && customGrams <= MAX_GRAMS;
+    const parsedCustom = parseServingAmount(custom.text, custom.unit);
+    const customValid = parsedCustom.ok;
     const chosen = options.find(o => o.id === servingId) ?? options[0];
-    const isCustom = servingId === CUSTOM;
-    // While the custom amount is being typed (empty or out of range), keep the last shown numbers sensible.
-    const grams = isCustom ? (customValid ? customGrams : 100) : chosen.grams;
-    const servingLabel = isCustom ? `${fmt(grams)} g` : chosen.label;
+    const isCustom = servingId === CUSTOM_SERVING;
+    // While the custom amount is being typed (empty or out of range), show 100 g.
+    const grams = isCustom ? (parsedCustom.ok ? parsedCustom.grams : FALLBACK_GRAMS) : chosen.grams;
+    const servingLabel = isCustom ? amountLabel(grams, parsedCustom.ok ? custom.unit : 'g') : chosen.label;
     const rich = useMemo(() => keyNutrients(food, grams, 5, 20), [food, grams]);
 
     return (
@@ -71,19 +70,11 @@ export default function FoodDetail({ food, compareSuggestions }: { food: Food; c
                     <div className="serving-picker">
                         <div className="field">
                             <label className="field-label" htmlFor={selectId}>Serving size</label>
-                            <select id={selectId} className="select" value={servingId} onChange={e => setServingId(e.target.value)}>
-                                {options.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-                                <option value={CUSTOM}>Custom amount…</option>
-                            </select>
+                            <ServingSelect id={selectId} value={servingId} options={options} onChange={setServingId} />
                         </div>
                         {isCustom && (
-                            <div className="field serving-custom">
-                                <label className="field-label" htmlFor={customId}>Amount in grams</label>
-                                <input id={customId} className="input" type="number" inputMode="decimal" min={1} max={MAX_GRAMS} step="any"
-                                    value={customText} onChange={e => setCustomText(e.target.value)}
-                                    aria-invalid={!customValid} aria-describedby={customValid ? undefined : `${customId}-err`} />
-                                {!customValid && <p className="tiny" id={`${customId}-err`} style={{ color: 'var(--danger)' }}>Enter 1 to {MAX_GRAMS.toLocaleString('en-US')} grams. Showing 100 g for now.</p>}
-                            </div>
+                            <CustomAmount text={custom.text} unit={custom.unit} onChange={(text, unit) => setCustom({ text, unit })}
+                                fallbackNote={`Showing ${FALLBACK_GRAMS} g for now.`} />
                         )}
                     </div>
                     <NutritionLabel food={food} grams={grams} servingLabel={servingLabel} titleAs="h2" micros="fda" />
@@ -104,7 +95,8 @@ export default function FoodDetail({ food, compareSuggestions }: { food: Food; c
                 </div>
             </div>
 
-            {comparing && <ComparePanel food={food} suggestions={compareSuggestions} onClose={() => setComparing(false)} />}
+            {comparing && <ComparePanel food={food} suggestions={compareSuggestions} onClose={() => setComparing(false)}
+                anchor={{ foodId: food.id, grams, label: servingLabel }} />}
         </>
     );
 }

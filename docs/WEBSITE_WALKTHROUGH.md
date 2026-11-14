@@ -76,7 +76,7 @@ Further down:
 - **Add to my plan** puts the food on your planner list, and the planner chooses how much. **Add exactly 216 g** does the same but keeps the serving you picked as a fixed amount, and plans the rest of the day around it. A short line under the buttons says which is which. The button then becomes **In your plan · Open plan**, with the amount if it's fixed.
 - **Compare** opens the [comparison panel](#4-compare).
 - **Share** copies the link, or opens the share sheet on a phone.
-- **Serving size:** household measures from USDA, "1 standard serving", 100 g, or **Custom amount…** (1 to 5,000 g; anything else shows a warning and uses 100 g for now). This one menu drives everything else on the page.
+- **Serving size:** household measures from USDA ("1 cup, chopped (91 g)", "1 standard serving"), then **By weight**: 1 oz (28.35 g), 3 oz (85.05 g) and 100 g for every food, then **Custom amount (g or oz)…** (1 to 5,000 g either way; anything else shows a warning and uses 100 g for now). Ounces show their exact grams underneath ("= 127.57 g"). Every household measure shows its grams. This one menu drives everything else on the page, including the contaminant meters, and Compare uses the same menu.
 - **Nutrition Facts:** the FDA-style label for that serving.
 - **Rich in:** up to five nutrients at 20% of the Daily Value or more for that serving.
 - **All nutrients:** every nutrient, with the amount, a % Daily Value bar and the value per 100 g. "—" means USDA has no measurement. **†** marks a value from USDA's older entry for the same food, used because the newest entry has none. A note under the table links to that entry, and the label and "Where this data comes from" say so too. Measured values are never replaced.
@@ -85,6 +85,10 @@ Further down:
 ![Values from USDA's older entry, marked †](walkthrough/67-food-older-entry.png)
 
 ![Add to my plan, or add exactly this serving](walkthrough/68-food-add-exactly.png)
+
+![A custom amount in ounces](walkthrough/71-food-custom-ounces.png)
+
+**How the numbers scale.** USDA stores every nutrient per 100 g, and that is all the database holds. A serving's amount is that value × grams ÷ 100, from the unrounded value, and only the shown number is rounded (0 decimals from 10, 1 from 1, 2 below 1). % Daily Value comes from the unrounded amount. Ounces are exact: 1 oz = 28.349523125 g, so 3 oz = 85.05 g. Where USDA lists "3 oz" as 85 g, or "1 oz" as 28 or 28.35 g, it is the same menu entry as the standard weight, at the exact grams. The difference is 0.06%, which only moves a number sitting right on a rounding edge, by one in its last digit. "—" stays "—" at every weight, † stays on values from the older entry, and a recipe's lower bounds keep their "≥". All of this is in `lib/serving-scale.ts`, with tests.
 
 ![Related foods and the data source](walkthrough/05-food-related-and-source.png)
 
@@ -148,16 +152,18 @@ At the bottom of a full panel, **How we work this out** repeats the bands and li
 
 ## 4. Compare
 
-![Comparing salmon with two other foods](walkthrough/11-compare.png)
+![Salmon and two kinds of lingcod, all at 3 oz](walkthrough/11-compare.png)
 
 **Compare** on a food page opens a panel below the page.
 
 - **Suggestion chips** offer other forms and similar foods. Click to add or remove one.
 - **Or search for another food** finds anything else. You can add up to three foods, and the rest grey out once you have.
-- **The labels** sit side by side. Each has its own **Serving size** menu, and you scroll sideways if they don't fit.
+- **Compare at** puts every label on the same weight: **1 oz**, **3 oz** or **100 g**, one food's serving ("Broccoli (this page): 1 cup, chopped (91 g)", so the others are shown at 91 g), **Each food's usual serving**, or **Custom amount…** in grams or ounces. It starts at the weight the food page is showing, so the page's food doesn't jump and every food is comparable straight away. A line under it says "All 3 labels show 3 oz (85.05 g), so you can compare them directly."
+- **The labels** sit side by side, and you scroll sideways if they don't fit. Each has its own **Serving size** menu, the same one as on its food page, so a food that USDA only lists at 100 g still has 1 oz and 3 oz. Changing one label's menu overrides **Compare at** for that label only: it gets a **Different weight** tag, and a warning names each food's weight with a **Put every food at 3 oz (85.05 g)** button. Changing **Compare at** puts every label back on it.
+- When raw and cooked foods are side by side (raw salmon and cooked lingcod), a note says that cooking removes water, so equal weights aren't like for like.
 - **Close** hides the panel. The comparison isn't saved and is gone after a reload.
 
-The planner has a similar view, **Compare nutrition labels**, for the foods on your list. Each label starts at the food's typical serving, as its page does, and its name links to that page. Neither shows contaminants.
+The planner has the same view, **Compare nutrition labels**, for the foods on your list, with the same **Compare at** menu. It starts at 100 g, the weight USDA measures every food at, which suits any mix of foods. **Each food's usual serving** shows each at its typical serving instead. Each name links to the food's page. Neither view shows contaminants.
 
 ## 5. Browse by category or nutrient
 

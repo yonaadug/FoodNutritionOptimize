@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Food } from '@/lib/food-types';
 import { datasetInfo, fmt, foodPath, resultNutrients } from '@/lib/food-page';
 import { typicalServing } from '@/lib/servings';
+import { scaleAmount } from '@/lib/serving-scale';
 import { hasCoreData, nv, splitFoodName } from '@/components/planner/nutrients';
 import Icon from '@/components/ui/Icon';
 
@@ -59,7 +60,7 @@ export default function FoodResultRow({ food, highlight, onOpen }: FoodResultRow
                     </div>
                 ) : ok && (
                     <div className="result-stat tabular">
-                        <span className="result-stat-value">{kcal === null ? '—' : fmt(kcal * serving.grams / 100, 0)} <small>kcal</small></span>
+                        <span className="result-stat-value">{kcal === null ? '—' : fmt(scaleAmount(kcal, serving.grams), 0)} <small>kcal</small></span>
                         <span className="result-stat-sub">per {serving.label}</span>
                     </div>
                 )}

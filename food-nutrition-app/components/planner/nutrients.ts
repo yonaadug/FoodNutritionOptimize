@@ -1,6 +1,7 @@
 import type { Food, ServingSize } from '@/lib/food-types';
 import { ALL_NUTRIENT_CONFIG, NUTRIENT_CONFIG } from '@/lib/nutrient-defaults';
 import { friendlyServingLabel } from '@/lib/servings';
+import { formatNumber, scaleAmount } from '@/lib/serving-scale';
 
 /**
  * UI-side nutrient helpers.
@@ -117,11 +118,7 @@ export function hasCoreData(food: Food): boolean {
 
 /** Format a number for humans: 0-1 decimals depending on size. */
 export function fmtNumber(v: number | null | undefined, opts: { decimals?: number } = {}): string {
-    if (v === null || v === undefined || !Number.isFinite(v)) return '—';
-    const abs = Math.abs(v);
-    const decimals = opts.decimals ?? (abs >= 100 ? 0 : abs >= 10 ? 0 : abs >= 1 ? 1 : abs === 0 ? 0 : 2);
-    // Fixed locale: labels are also server-rendered, and the server's locale may differ from the browser's.
-    return v.toLocaleString('en-US', { maximumFractionDigits: decimals, minimumFractionDigits: 0 });
+    return formatNumber(v, opts.decimals);
 }
 
 /** "12 g", "1.3 mg", or "—" when unknown. */
@@ -247,8 +244,9 @@ export function householdAmount(food: Food, grams: number): string | null {
 
 /** Calories etc. for an amount of food in grams; null if the per-100 g value is unknown. */
 export function amountFor(food: Food, key: NutrientKey, grams: number): number | null {
-    const per100 = nv(food, key);
-    return per100 === null ? null : per100 * grams / 100;
+    // Planner amounts come from the solver: treat a non-finite weight as unknown and float noise below 0 as 0.
+    if (!Number.isFinite(grams)) return null;
+    return scaleAmount(nv(food, key), Math.max(0, grams));
 }
 
 /** Short, human label for the USDA data source. */

@@ -95,31 +95,59 @@ describe('datasetInfo', () => {
 
 describe('servingOptions', () => {
     const food = (rows: ServingSize[], over = {}) => makeFood({ id: 1, description: 'Broccoli, raw', food_category: 'Vegetables and Vegetable Products', calories: 34, serving_sizes: rows, ...over });
+    const THREE_OZ = 85.048569375;
+    const labels = (rows: ServingSize[], over = {}) => servingOptions(food(rows, over)).options.map(o => o.label);
 
-    it('starts with the realistic serving, ends with 100 g, and hides generic gram rows', () => {
-        const { options, defaultId } = servingOptions(food([serving(1, '100 g', 100), serving(2, '1 cup, chopped', 91), serving(3, '1 RACC', 85)]));
+    it('starts with the realistic serving, then household measures, then 1 oz, 3 oz and 100 g', () => {
+        const { options, defaultId } = servingOptions(food([serving(1, '100 g', 100), serving(2, '1 cup, chopped', 91), serving(4, '1 stalk', 151)]));
         assert.equal(defaultId, 'typical');
         assert.equal(options[0].id, 'typical');
-        assert.equal(options[0].label, '1 cup, chopped (91 g)');
-        assert.equal(options[options.length - 1].label, '100 g');
+        assert.deepEqual(options.map(o => o.label), ['1 cup, chopped (91 g)', '1 stalk (151 g)', '1 oz (28.35 g)', '3 oz (85.05 g)', '100 g']);
+        assert.deepEqual(options.map(o => o.group), ['household', 'household', 'weight', 'weight', 'weight']);
         assert.equal(options.filter(o => o.grams === 100).length, 1);
-        assert.ok(options.some(o => o.label === '1 standard serving (85 g)'));
     });
     it('does not repeat the typical serving', () => {
         const { options } = servingOptions(food([serving(2, '1 cup, chopped', 91)]));
         assert.equal(options.filter(o => o.label === '1 cup, chopped (91 g)').length, 1);
     });
-    it('still offers 3 oz and 100 g for a meat with no rows', () => {
-        const { options } = servingOptions(food([], { description: 'Beef, ground', food_category: 'Beef Products' }));
-        assert.deepEqual(options.map(o => o.label), ['3 oz (85 g)', '100 g']);
+    it('merges USDA’s "3 oz" (85 g) and "1 oz" (28.35 g) into the standard weights, at the exact grams', () => {
+        const { options, defaultId } = servingOptions(food([serving(2, '3 oz', 85), serving(3, '1 oz', 28.35), serving(4, '0.5 fillet', 151)],
+            { description: 'Fish, lingcod, raw', food_category: 'Finfish and Shellfish Products' }));
+        assert.deepEqual(options.map(o => [o.id, o.label]), [
+            ['s4', '0.5 fillet (151 g)'], ['w-1oz', '1 oz (28.35 g)'], ['w-3oz', '3 oz (85.05 g)'], ['w-100g', '100 g'],
+        ]);
+        assert.equal(defaultId, 'w-3oz', 'the typical 3 oz is the standard 3 oz');
+        assert.equal(options.find(o => o.id === 'w-3oz')!.grams, THREE_OZ);
+    });
+    it('keeps what a USDA row at a standard weight says, once', () => {
+        assert.deepEqual(labels([serving(3, '1 RACC', 85), serving(5, '1 oz (22 whole kernels)', 28.35), serving(6, '3 oz (3 oz)', 85)]).slice(-3),
+            ['1 oz (22 whole kernels) (28.35 g)', '3 oz · 1 standard serving (85.05 g)', '100 g']);
+    });
+    it('treats a label that says 3 oz at 84 g (28 g per ounce) as 3 oz, but keeps "1 oz, dry, yields" rows apart', () => {
+        const l = labels([serving(2, '3 oz', 84), serving(3, '1 oz, dry, yields', 177)]);
+        assert.equal(l.filter(x => x.startsWith('3 oz')).length, 1);
+        assert.ok(l.includes('1 oz, dry, yields (177 g)'));
+        assert.ok(l.includes('1 oz (28.35 g)'));
+    });
+    it('still offers 1 oz, 3 oz and 100 g for a meat with no rows, starting at 3 oz', () => {
+        const { options, defaultId } = servingOptions(food([], { description: 'Beef, ground', food_category: 'Beef Products' }));
+        assert.deepEqual(options.map(o => o.label), ['1 oz (28.35 g)', '3 oz (85.05 g)', '100 g']);
+        assert.equal(defaultId, 'w-3oz');
     });
     it('drops measurement artifacts and bad weights', () => {
-        const { options } = servingOptions(food([serving(2, '1 surface inch', 6), serving(3, '1 cube', 0), serving(4, '1 piece', 119)]));
-        assert.deepEqual(options.map(o => o.label), ['1 piece (119 g)', '100 g']);
+        assert.deepEqual(labels([serving(2, '1 surface inch', 6), serving(3, '1 cube', 0), serving(4, '1 piece', 119)]),
+            ['1 piece (119 g)', '1 oz (28.35 g)', '3 oz (85.05 g)', '100 g']);
     });
     it('offers only 100 g once when that is also the typical serving', () => {
-        const { options } = servingOptions(food([]));
-        assert.deepEqual(options.map(o => o.label), ['100 g']);
+        const { options, defaultId } = servingOptions(food([]));
+        assert.deepEqual(options.map(o => o.label), ['1 oz (28.35 g)', '3 oz (85.05 g)', '100 g']);
+        assert.equal(defaultId, 'w-100g');
+    });
+    it('never lists two entries within half a gram of each other with the standard weights', () => {
+        const { options } = servingOptions(food([serving(2, '1 slice', 28), serving(3, '1 RACC', 85.4), serving(4, '1 piece', 99.6), serving(5, '2 tbsp', 32)]));
+        const weights = options.filter(o => o.group === 'weight');
+        for (const o of options) for (const w of weights) if (o !== w) assert.ok(Math.abs(o.grams - w.grams) > 0.5, `${o.label} vs ${w.label}`);
+        assert.deepEqual(weights.map(w => w.label), ['1 oz · 1 slice (28.35 g)', '3 oz · 1 standard serving (85.05 g)', '100 g · 1 piece']);
     });
 });
 

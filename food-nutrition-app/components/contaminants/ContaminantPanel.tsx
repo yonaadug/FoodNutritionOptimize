@@ -6,6 +6,7 @@ import {
     LEVELS, formatAmount, formatPercent, levelLabel,
     type BasedOn, type ContaminantGroup, type ContaminantItem, type ContaminantReport, type Meter as MeterData,
 } from '@/lib/contaminants-meter';
+import { formatGrams } from '@/lib/serving-scale';
 import styles from './ContaminantPanel.module.css';
 
 const FETCH_DELAY_MS = 200;
@@ -349,7 +350,7 @@ export default function ContaminantPanel({ fdcId, servingGrams }: { fdcId: numbe
         <section className={`panel ${styles.panel}`} aria-labelledby={titleId} aria-busy={loading}>
             <h2 className={styles.title} id={titleId}>Contaminants</h2>
             <p className={styles.intro}>
-                Heavy metals, pesticide residues and microplastics in one {formatAmount(report.serving.grams)} g serving, from government testing and published studies.
+                Heavy metals, pesticide residues and microplastics in one {formatGrams(report.serving.grams)} g serving, from government testing and published studies.
                 Most foods contain traces of these. The meters show typical levels, so you can compare foods without reading raw numbers.
             </p>
             {report.groups.map(g => <Group key={g.id} group={g} />)}

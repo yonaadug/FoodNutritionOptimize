@@ -3,7 +3,8 @@
 import { OlderEntryMark } from '@/components/food/FoodLink';
 import { isFilled } from '@/lib/nutrient-fill';
 import type { Food } from '@/lib/food-types';
-import { amountFor, dailyValue, fmtNumber, hasCoreData, nutrientLabel, nutrientUnit } from '@/components/planner/nutrients';
+import { dailyValue, hasCoreData, nutrientLabel, nutrientUnit } from '@/components/planner/nutrients';
+import { formatGrams, labelNutrient } from '@/lib/serving-scale';
 
 interface NutritionLabelProps {
     food: Food;
@@ -44,16 +45,15 @@ function unitOf(key: string) {
 }
 
 /**
- * FDA-style Nutrition Facts label. Missing values show "—" (no data), never 0.
+ * FDA-style Nutrition Facts label. Every number is scaled from the food's unrounded
+ * per-100 g value and rounded only for display (lib/serving-scale.ts); % Daily Value
+ * comes from the unrounded amount. Missing values show "—" (no data), never 0.
  */
 export default function NutritionLabel({ food, grams = 100, servingLabel, titleAs: Title = 'h4', micros = 'all' }: NutritionLabelProps) {
-    const val = (key: string) => amountFor(food, key, grams);
-    const dvPct = (key: string, v: number | null) => {
-        const dv = dailyValue(key);
-        if (v === null || !dv) return null;
-        return Math.round((v / dv) * 100);
-    };
-    const kcal = val('calories');
+    const show = (key: string, withDv: boolean) => labelNutrient(food, key, grams, unitOf(key), withDv ? dailyValue(key) : null);
+    const kcal = labelNutrient(food, 'calories', grams, '', null, 0);
+    const shownKeys = [...MAIN.map(r => r.key), ...(micros === 'fda' ? FDA_MICROS : MICROS)];
+    const lowerBound = !!food.recipe?.incomplete?.some(k => k === 'calories' || shownKeys.includes(k));
     const usesOlderEntry = [...MAIN.map(r => r.key), ...(micros === 'fda' ? FDA_MICROS : MICROS)].some(k => isFilled(food, k));
 
     return (
@@ -65,7 +65,7 @@ export default function NutritionLabel({ food, grams = 100, servingLabel, titleA
                 <Title style={{ fontSize: 26, fontWeight: 900, margin: 0, letterSpacing: '-0.01em' }}>Nutrition Facts</Title>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontWeight: 700, fontSize: 14, marginTop: 4 }}>
                     <span>Serving size</span>
-                    <span style={{ textAlign: 'right' }}>{servingLabel ?? `${fmtNumber(grams)} g`}</span>
+                    <span style={{ textAlign: 'right' }} data-testid="label-serving">{servingLabel ?? `${formatGrams(grams)} g`}</span>
                 </div>
             </div>
 
@@ -80,22 +80,21 @@ export default function NutritionLabel({ food, grams = 100, servingLabel, titleA
                     <div style={{ fontSize: 12, fontWeight: 700 }}>Amount per serving</div>
                     <div style={{ fontSize: 22, fontWeight: 900 }}>Calories</div>
                 </div>
-                <span style={{ fontSize: 34, fontWeight: 900, lineHeight: 1 }}>{fmtNumber(kcal, { decimals: 0 })}</span>
+                <span style={{ fontSize: 34, fontWeight: 900, lineHeight: 1 }} data-nutrient="calories">{kcal.amount}</span>
             </div>
 
             <div style={{ fontWeight: 700, textAlign: 'right', borderBottom: '1px solid var(--text-primary)', padding: '2px 0' }}>% Daily Value*</div>
 
             {MAIN.map(row => {
-                const v = val(row.key);
-                const pct = row.dv ? dvPct(row.key, v) : null;
+                const v = show(row.key, !!row.dv);
                 return (
-                    <div key={row.key} style={{
+                    <div key={row.key} data-nutrient={row.key} style={{
                         display: 'flex', justifyContent: 'space-between', padding: '3px 0',
                         borderBottom: row.key === 'protein_g' ? 'none' : '1px solid var(--border-strong)',
                         paddingLeft: row.indent ? 14 : 0, fontWeight: row.bold ? 700 : 400,
                     }}>
-                        <span>{row.label ?? nutrientLabel(row.key)} <span style={{ fontWeight: 400 }}>{v === null ? '—' : `${fmtNumber(v)} ${unitOf(row.key)}`}{isFilled(food, row.key) && <OlderEntryMark />}</span></span>
-                        {pct !== null && <span style={{ fontWeight: 700 }}>{pct}%</span>}
+                        <span>{row.label ?? nutrientLabel(row.key)} <span style={{ fontWeight: 400 }} data-amount>{v.amount}{v.olderEntry && <OlderEntryMark />}</span></span>
+                        {v.dv !== null && <span style={{ fontWeight: 700 }} data-dv>{v.dv}</span>}
                     </div>
                 );
             })}
@@ -106,18 +105,18 @@ export default function NutritionLabel({ food, grams = 100, servingLabel, titleA
                 {(micros === 'fda' ? FDA_MICROS : MICROS).map(key => {
                     const raw = (food as unknown as Record<string, unknown>)[key];
                     if (raw === undefined) return null; // column not in this DB
-                    const v = val(key);
-                    const pct = dvPct(key, v);
+                    const v = show(key, true);
                     return (
-                        <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
-                            <span>{nutrientLabel(key)} <span style={{ color: 'var(--text-secondary)' }}>{v === null ? '—' : `${fmtNumber(v)} ${unitOf(key)}`}{isFilled(food, key) && <OlderEntryMark />}</span></span>
-                            {pct !== null && <span style={{ fontWeight: 700 }}>{pct}%</span>}
+                        <div key={key} data-nutrient={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0', borderBottom: '1px solid var(--border)' }}>
+                            <span>{nutrientLabel(key)} <span style={{ color: 'var(--text-secondary)' }} data-amount>{v.amount}{v.olderEntry && <OlderEntryMark />}</span></span>
+                            {v.dv !== null && <span style={{ fontWeight: 700 }} data-dv>{v.dv}</span>}
                         </div>
                     );
                 })}
             </div>
 
             <div style={{ borderTop: '4px solid var(--text-primary)', marginTop: 6, paddingTop: 4, fontSize: 10, lineHeight: 1.35 }}>
+                {lowerBound && <>≥ means at least this much: an ingredient has no data for that nutrient. </>}
                 {usesOlderEntry && <>† From USDA&apos;s older entry for {food.recipe ? 'that ingredient' : 'this food'}, which has a value where the newest entry doesn&apos;t. </>}
                 * The % Daily Value tells you how much a nutrient in a serving contributes to a daily diet. 2,000 calories a day is used for general nutrition advice. &ldquo;—&rdquo; = no data.
             </div>

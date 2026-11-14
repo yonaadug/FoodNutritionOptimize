@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from 'react';
 import type { Food } from '@/lib/food-types';
+import type { Anchor } from '@/lib/compare-weights';
 import ComparisonView from '@/components/ComparisonView';
 import Icon from '@/components/ui/Icon';
 import { fetchSearch } from '@/hooks/useFoodSearch';
@@ -15,7 +16,7 @@ function foodShort(f: Food): string {
 }
 
 /** Compare this food with up to three others: suggested forms, or anything found by search. */
-export default function ComparePanel({ food, suggestions, onClose }: { food: Food; suggestions: Food[]; onClose: () => void }) {
+export default function ComparePanel({ food, suggestions, onClose, anchor }: { food: Food; suggestions: Food[]; onClose: () => void; anchor?: Anchor }) {
     const [others, setOthers] = useState<Food[]>([]);
     const [query, setQuery] = useState('');
     const [found, setFound] = useState<{ q: string; foods: Food[] }>({ q: '', foods: [] });
@@ -95,7 +96,7 @@ export default function ComparePanel({ food, suggestions, onClose }: { food: Foo
                     </ul>
                 )}
             </section>
-            <ComparisonView foods={[food, ...others]} onClose={onClose} />
+            <ComparisonView foods={[food, ...others]} onClose={onClose} anchor={anchor} />
         </div>
     );
 }

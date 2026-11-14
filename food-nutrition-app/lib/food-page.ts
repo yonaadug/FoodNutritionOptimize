@@ -1,6 +1,10 @@
 import type { Food, ServingSize } from './food-types';
 import { ALL_NUTRIENT_CONFIG } from './nutrient-defaults';
 import { friendlyServingLabel, typicalServing } from './servings';
+import {
+    STANDARD_WEIGHTS, formatGrams, formatNumber, isPlainWeightLabel, matchStandardWeight, percentOfDailyValue, scaleAmount, weightLabel,
+    type StandardWeightId,
+} from './serving-scale';
 
 /**
  * Pure helpers behind the food lookup pages (/, /food/[id], /nutrients/[key]).
@@ -15,10 +19,7 @@ import { friendlyServingLabel, typicalServing } from './servings';
 
 /** 0–2 decimals depending on size; "—" for unknown. */
 export function fmt(v: number | null | undefined, decimals?: number): string {
-    if (v === null || v === undefined || !Number.isFinite(v)) return '—';
-    const abs = Math.abs(v);
-    const d = decimals ?? (abs >= 10 ? 0 : abs >= 1 ? 1 : abs === 0 ? 0 : 2);
-    return v.toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: 0 });
+    return formatNumber(v, decimals);
 }
 
 // ---------------------------------------------------------------------------
@@ -143,43 +144,58 @@ export function datasetInfo(dataType: string | null | undefined): DatasetInfo {
 
 export interface ServingOption {
     id: string;
-    /** "1 cup, chopped (91 g)" */
+    /** "1 cup, chopped (91 g)", "3 oz (85.05 g)" */
     label: string;
     grams: number;
+    /** 'household': a USDA measure; 'weight': 1 oz, 3 oz or 100 g, offered for every food. */
+    group: 'household' | 'weight';
 }
 
 const GENERIC_GRAMS = /^\s*\d+(\.\d+)?\s*(g|gram|grams)\s*$/i;
 
 function withGrams(label: string, grams: number): string {
-    return `${label} (${fmt(grams, grams >= 10 ? 0 : 1)} g)`;
+    return `${label} (${formatGrams(grams)} g)`;
 }
 
 /**
- * Serving choices for a food page: the realistic default serving, every
- * household portion USDA lists, and 100 g. Duplicates (same label and weight)
- * are dropped; the default comes first.
+ * Serving choices for a food, the same on its page and in Compare: the realistic
+ * default serving and every household portion USDA lists, then 1 oz, 3 oz and 100 g
+ * for every food (lib/serving-scale.ts).
+ *
+ * No weight appears twice. A USDA row within half a gram of a standard weight (its
+ * "3 oz" is 85 g, its "1 oz" 28.35 g), or whose label is just that many ounces, is
+ * merged into the standard weight: one entry, at the exact grams (85.048569375 g for
+ * 3 oz), keeping the row's words when they add something ("3 oz · 1 standard serving").
+ * Other rows with the same label and weight are listed once.
  */
 export function servingOptions(food: Pick<Food, 'description' | 'food_category' | 'calories' | 'serving_sizes'>): { options: ServingOption[]; defaultId: string } {
     const typical = typicalServing(food.serving_sizes, food);
-    const options: ServingOption[] = [];
+    const household: ServingOption[] = [];
+    const aliases = new Map<StandardWeightId, string>();
     const seen = new Set<string>();
-    const add = (id: string, label: string, grams: number) => {
+    let defaultId = 'typical';
+    const add = (id: string, label: string, grams: number): string => {
+        const std = matchStandardWeight(label, grams);
+        if (std) {
+            if (!aliases.has(std.id) && !isPlainWeightLabel(label, std) && !GENERIC_GRAMS.test(label)) aliases.set(std.id, label);
+            return std.id;
+        }
         const key = `${label.toLowerCase()}|${Math.round(grams * 10)}`;
-        const gramsOnly = `|${Math.round(grams * 10)}`;
-        if (seen.has(key) || (GENERIC_GRAMS.test(label) && seen.has(gramsOnly))) return;
-        seen.add(key);
-        if (GENERIC_GRAMS.test(label)) seen.add(gramsOnly);
-        options.push({ id, label: GENERIC_GRAMS.test(label) ? `${fmt(grams)} g` : withGrams(label, grams), grams });
+        if (!seen.has(key)) {
+            seen.add(key);
+            household.push({ id, label: GENERIC_GRAMS.test(label) ? `${formatGrams(grams)} g` : withGrams(label, grams), grams, group: 'household' });
+        }
+        return id;
     };
-    add('typical', typical.label, typical.grams);
+    defaultId = add('typical', typical.label, typical.grams);
     const rows = (food.serving_sizes ?? [])
         .filter((s): s is ServingSize => typeof s?.weight_g === 'number' && s.weight_g > 0 && typeof s.label === 'string')
         .filter(s => !GENERIC_GRAMS.test(s.label) && !/\b(surface|cubic) inch\b/i.test(s.label))
         .slice()
         .sort((a, b) => a.weight_g - b.weight_g);
     for (const s of rows) add(`s${s.id}`, friendlyServingLabel(s.label), s.weight_g);
-    add('100g', '100 g', 100);
-    return { options, defaultId: 'typical' };
+    const weights = STANDARD_WEIGHTS.map((w): ServingOption => ({ id: w.id, label: weightLabel(w, aliases.get(w.id)), grams: w.grams, group: 'weight' }));
+    return { options: [...household, ...weights], defaultId };
 }
 
 // ---------------------------------------------------------------------------
@@ -281,11 +297,10 @@ export function nutrientTable(food: Food, grams: number): NutrientGroupRows[] {
         rows: g.keys.flatMap(key => {
             const v = per100(food, key);
             if (v === undefined) return [];
-            const amount = v === null ? null : v * grams / 100;
-            const dv = dailyValueOf(key);
+            const amount = scaleAmount(v, grams);
             return [{
                 key, label: nutrientName(key), unit: nutrientUnitOf(key), amount, per100g: v,
-                dvPct: amount === null || dv === null ? null : (amount / dv) * 100,
+                dvPct: percentOfDailyValue(amount, dailyValueOf(key)),
                 indent: INDENTED.has(key) || undefined,
             }];
         }),
@@ -311,8 +326,8 @@ export function keyNutrients(food: Food, grams: number, count = 3, minPct = 10):
         const v = per100(food, key);
         const dv = dailyValueOf(key);
         if (v === null || v === undefined || dv === null) continue;
-        const amount = v * grams / 100;
-        const dvPct = (amount / dv) * 100;
+        const amount = scaleAmount(v, grams)!;
+        const dvPct = percentOfDailyValue(amount, dv)!;
         if (dvPct >= minPct) out.push({ key, label: nutrientName(key), amount, unit: nutrientUnitOf(key), dvPct });
     }
     return out.sort((a, b) => b.dvPct - a.dvPct || a.key.localeCompare(b.key)).slice(0, count);
@@ -327,7 +342,7 @@ export function resultNutrients(food: Food, grams: number, count = 3): { key: st
     const add = (key: string) => {
         const v = per100(food, key);
         if (v === null || v === undefined || picked.size >= count) return;
-        picked.set(key, { key, label: nutrientName(key), amount: v * grams / 100, unit: nutrientUnitOf(key) });
+        picked.set(key, { key, label: nutrientName(key), amount: scaleAmount(v, grams)!, unit: nutrientUnitOf(key) });
     };
     add('protein_g');
     for (const k of keyNutrients(food, grams, count)) add(k.key);

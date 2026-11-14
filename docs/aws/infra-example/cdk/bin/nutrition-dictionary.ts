@@ -22,7 +22,7 @@
  *                   prod zone delegates dev.nutritiondictionary.com to the dev account. Not secret.
  *   synthOnly       true lets CI synthesize without an alert email. Never deploy a synthOnly template.
  */
-import { App, Stack, StackProps, Duration, Annotations } from 'aws-cdk-lib';
+import { App, Stack, StackProps, Duration, Annotations, CfnOutput } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { NutritionDictionaryStack } from '../lib/nutrition-dictionary-stack';
@@ -125,6 +125,10 @@ class GithubOidcStack extends Stack {
       actions: ['sts:AssumeRole'],
       resources: [`arn:aws:iam::${this.account}:role/cdk-*`],
     }));
+    new CfnOutput(this, 'DeployRoleArn', {
+      description: `GitHub: Settings -> Environments -> ${props.environment} -> variable AWS_DEPLOY_ROLE_ARN`,
+      value: role.roleArn,
+    });
   }
 }
 new GithubOidcStack(app, `GithubOidc-${stage}`, {

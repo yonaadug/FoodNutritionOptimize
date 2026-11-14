@@ -192,6 +192,7 @@ export class NutritionDictionaryStack extends Stack {
       file: 'docs/aws/infra-example/Dockerfile.lambda',
       platform: ecrAssets.Platform.LINUX_ARM64,
     });
+    const webLogs = logGroup('WebLogs');
     const webSecrets = [secret.authSecret, secret.googleClientId, secret.googleClientSecret, secret.stripeSecretKey];
     const web = new lambda.DockerImageFunction(this, 'Web', {
       code: image(),
@@ -201,7 +202,7 @@ export class NutritionDictionaryStack extends Stack {
       // CloudFront's origin response timeout (30 s by default).
       timeout: Duration.seconds(28),
       // Caps how fast money can be spent. A new account's concurrency quota (often 10) is
-      // too low for any reservation: request 1,000 first (docs/DEPLOY.md, step 5).
+      // too low for any reservation: request 1,000 first (docs/DEPLOY.md, step 4).
       reservedConcurrentExecutions: isProd ? 25 : 5,
       environment: {
         STAGE: props.stage,
@@ -239,7 +240,7 @@ export class NutritionDictionaryStack extends Stack {
         UPLOADS_BUCKET: uploads.bucketName,
         IMPORTS_QUEUE_URL: imports.queueUrl,
       },
-      logGroup: logGroup('WebLogs'),
+      logGroup: webLogs,
     });
     table.grantReadWriteData(web);
     uploads.grantPut(web); // presigned POST is signed with the function's role
@@ -578,6 +579,7 @@ export class NutritionDictionaryStack extends Stack {
     });
     new CfnOutput(this, 'TableName', { value: table.tableName });
     new CfnOutput(this, 'WebFunctionName', { value: web.functionName });
+    new CfnOutput(this, 'WebLogGroup', { value: webLogs.logGroupName });
     new CfnOutput(this, 'WebRoleName', { value: web.role!.roleName });
     new CfnOutput(this, 'AiWorkerName', { value: aiWorker.functionName });
     new CfnOutput(this, 'AiEnabledParam', { value: aiEnabledParam.parameterName });

@@ -221,10 +221,12 @@ Successfully synthesized to .../docs/aws/infra-example/cdk/cdk.out
 Successfully synthesized to .../docs/aws/infra-example/cdk/cdk.out
 ```
 
-The CLI also prints `85 feature flags are not configured` (informational) and may print
-"AI agent detected" (harmless). To read the generated CloudFormation:
-`cd docs/aws/infra-example/cdk && npx cdk synth NutritionDictionary-dev | less`. The stacks
-are `NutritionDictionary-{dev,prod}` and `GithubOidc-{dev,prod}`.
+The CLI also prints `85 feature flags are not configured` (informational), a warning that
+`synthOnly` subscribes no alert email (expected: a real deploy passes `ALERT_EMAIL`, see
+[DEPLOY.md](DEPLOY.md)), and may print "AI agent detected" (harmless). To read the generated
+CloudFormation: `cd docs/aws/infra-example/cdk && npx cdk synth NutritionDictionary-dev -c synthOnly=true | less`.
+The stacks are `NutritionDictionaryDns-{dev,prod}`, `NutritionDictionary-{dev,prod}` and
+`GithubOidc-{dev,prod}`.
 
 To check that the staged image context builds, as `cdk deploy` will build it:
 
@@ -233,8 +235,9 @@ cd docs/aws/infra-example/cdk/cdk.out/asset.<hash>    # the dockerImages entry i
 docker build --platform linux/arm64 -f docs/aws/infra-example/Dockerfile.lambda .
 ```
 
-The AI-worker and Stripe-webhook handlers in `cdk/workers/` are **placeholders** so the
-example bundles. They need real implementations before anything uses them.
+The AI-worker handler in `cdk/workers/` is a **placeholder** so the example bundles. The
+Stripe webhook runs the app's own route in the same image. The image's start script, which
+reads SSM secrets, has its own tests: `cd docs/aws/infra-example/lambda-secrets && npm ci && npm test`.
 
 ## 8. Desktop app (dev)
 

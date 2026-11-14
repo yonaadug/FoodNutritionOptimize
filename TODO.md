@@ -35,6 +35,7 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Register nutritiondictionary.com.** Available on 2026-11-14 (Route 53 confirmed): $16/yr at Route 53, $11.81 at
       Porkbun. The name is NutritionDictionary. No exact-match app, site or US trademark was found, but the name is
       descriptive, so it may be hard to register as your own trademark. Details in [docs/aws/DOMAIN.md](docs/aws/DOMAIN.md).
+      Then follow [docs/DEPLOY.md](docs/DEPLOY.md), the AWS runbook (accounts, DNS, SES, Google, first deploys).
 - [ ] **Rename leftovers outside the code:** retake the walkthrough screenshots (headers still say Micronutrient
       Diary), and rename any Stripe product, sandbox or branding already created under the old name. The local folder
       `~/Library/Application Support/Micronutrient Diary` (old desktop app caches) can be deleted.
@@ -125,18 +126,23 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] Verify the design's unverified assumptions before building:
   - Lambda arm64 price
   - OpenNext support for Next 16
-  - CloudFront flat-rate plan eligibility for a CDK-created distribution
+  - CloudFront flat-rate plan eligibility for a CDK-created distribution (the stack now subscribes it with
+    `AWS::PricingPlanManager::Subscription`; confirm on the first dev deploy, fallback `-c flatRatePlan=false`)
   - IAM and spend limits for Claude Platform on AWS
   - Competitor prices (mostly third-party sources)
 - [ ] Build better-sqlite3 for the deploy target. Prebuilt binaries match the build OS and CPU, so use a Linux
       arm64 container image for Lambda. The example is `docs/aws/infra-example/Dockerfile.lambda` (untested).
 - [ ] App changes from the design:
-  - Auth middleware (Cognito)
+  - ~~Auth middleware (Cognito)~~ Done with Better Auth; Cognito is removed from the CDK example
   - A local-first store with a sync API, replacing localStorage-only state
   - Stripe Checkout, Customer Portal and a webhook worker → entitlements
   - AI import job API and worker with per-user quotas and a global spend breaker
   - Account export and delete
-  - Origin access control: `x-amz-content-sha256` on POST bodies, auth token in `X-Auth-Token`
+  - **Blocks launch:** origin access control needs `x-amz-content-sha256` on every browser POST. Account requests
+    send it (`apiFetch`); the planner (`hooks/usePlan.ts`) and the recipe reader's multipart upload
+    (`components/recipes/api.ts`) don't, so both fail behind CloudFront ([docs/DEPLOY.md](docs/DEPLOY.md#before-you-start))
+  - Emit the `NutritionDictionary/AiSpendMicroUsd` metric (Embedded Metric Format) so the `AiSpendDaily` alarm
+    works. Today the app only logs `[ai] ... cost_usd=` lines, and the AWS Budget is the only AI spend alarm
 - [ ] Legal and compliance:
   - Privacy policy, terms and medical disclaimer
   - Washington MHMDA consent and a consumer health data policy
@@ -155,8 +161,8 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] Compare **AWS Lambda Web Functions** (launched Oct 2026; the Lambda Web Adapter README now recommends them for
       new Node apps) against the current Lambda + Web Adapter design before deploying.
 - [ ] Test the real Lambda invoke path in a dev AWS account. The local Runtime Interface Emulator run was blocked,
-      but the container itself was tested with `make lambda-local`. The AI-worker and Stripe-webhook handlers in
-      `docs/aws/infra-example/cdk/workers/` are placeholders.
+      but the container itself was tested with `make lambda-local`. The AI-worker handler in
+      `docs/aws/infra-example/cdk/workers/` is a placeholder; the Stripe webhook runs the app's own route.
 
 ## P2
 

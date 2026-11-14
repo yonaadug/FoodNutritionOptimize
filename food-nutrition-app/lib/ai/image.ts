@@ -18,8 +18,16 @@ export const MAX_EDGE_PX = 1568;
 /** Refuse to decode beyond this (a 12 MP phone photo is well under it). */
 const MAX_DECODE_MEGAPIXELS = 40;
 const MAX_DIMENSION_PX = 8000;
-/** Bedrock's per-image limit for base64 images, applied to every provider. */
+/**
+ * Claude on Bedrock's per-image limit, which counts the base64-encoded string (so
+ * about 3.75 MB of image). Applied to every provider.
+ */
 export const MAX_MODEL_IMAGE_BYTES = 5 * 1024 * 1024;
+
+/** Length of the base64 encoding of n bytes. */
+function base64Length(n: number): number {
+    return 4 * Math.ceil(n / 3);
+}
 export const DEFAULT_MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 export interface ImageInfo { mediaType: ImageMediaType; width: number; height: number }
@@ -65,6 +73,13 @@ function webpInfo(b: Uint8Array): { width: number; height: number } | null {
         return { width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 };
     }
     return null;
+}
+
+/** HEIC/HEIF (iPhone default): an ISO-BMFF "ftyp" box with a HEIF brand. No model API accepts it. */
+export function isHeif(b: Uint8Array): boolean {
+    if (b.length < 12) return false;
+    const box = String.fromCharCode(...b.subarray(4, 12));
+    return box.startsWith('ftyp') && ['heic', 'heix', 'heim', 'heis', 'hevc', 'hevx', 'mif1', 'msf1'].includes(box.slice(4));
 }
 
 /** Identify an image from its bytes. Null when it isn't a supported, readable image. */
@@ -162,6 +177,9 @@ export async function prepareImage(bytes: Uint8Array, maxUploadBytes: number = D
         throw new ImageError(413, `That photo is too large. The limit is ${Math.floor(maxUploadBytes / (1024 * 1024))} MB.`);
     }
     const info = sniffImage(bytes);
+    if (!info && isHeif(bytes)) {
+        throw new ImageError(415, 'That\'s an HEIC photo, which we can\'t read yet. Please send it as a JPEG: on an iPhone, share or export it as JPEG, or set Camera > Formats to Most Compatible.');
+    }
     if (!info) throw new ImageError(415, 'We can read JPEG, PNG, WebP or GIF photos. Please try one of those.');
     const { mediaType, width, height } = info;
     if (!(width > 0 && height > 0) || width > MAX_DIMENSION_PX || height > MAX_DIMENSION_PX || (width * height) / 1e6 > MAX_DECODE_MEGAPIXELS) {
@@ -191,7 +209,7 @@ export async function prepareImage(bytes: Uint8Array, maxUploadBytes: number = D
             out = stripJpegMetadata(bytes);
         }
     }
-    if (out.length > MAX_MODEL_IMAGE_BYTES) {
+    if (base64Length(out.length) > MAX_MODEL_IMAGE_BYTES) {
         throw new ImageError(413, 'That photo is too large to read. Please save it as a JPEG or use a smaller one.');
     }
     return { base64: Buffer.from(out).toString('base64'), mediaType, width: w, height: h, downscaled };

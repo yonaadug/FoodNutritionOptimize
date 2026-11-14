@@ -2,9 +2,10 @@
  * Per-request cost estimate for logs and the spend guard.
  *
  * Prices are Anthropic list prices (USD per million tokens, checked 2026-11-04;
- * see docs/research/RECIPE_ANALYSIS.md). Amazon Bedrock prices are set by AWS and
- * were not verified, so on Bedrock treat these as an estimate; its regional
- * endpoints carry a 10% premium. AWS billing is the source of truth.
+ * see docs/research/RECIPE_ANALYSIS.md). On Bedrock, global inference profiles
+ * ("global.") bill at these prices, and everything else (a "us." profile or the
+ * in-region Mantle endpoint) at 10% more, per the models' AWS Marketplace offers
+ * read on 2026-11-13 (docs/BEDROCK_SETUP.md). AWS billing is the source of truth.
  */
 import type { AiUsage } from './types';
 
@@ -22,15 +23,25 @@ const PRICES: Record<string, Price> = {
 /** Priced as the most expensive listed tier when a model isn't in the table, so an unknown model can't look free. */
 const UNKNOWN_MODEL: Price = { input: 10, output: 50, cacheRead: 1, cacheWrite: 12.5 };
 
+/** Bedrock's premium over global pricing for regional and geographic (e.g. US-only) routing. */
+const BEDROCK_REGIONAL_PREMIUM = 1.1;
+
+/** Drop an inference-profile ARN's path: "arn:...:inference-profile/us.anthropic.x" -> "us.anthropic.x". */
+function bedrockId(model: string): string {
+    return model.startsWith('arn:') ? model.slice(model.lastIndexOf('/') + 1) : model;
+}
+
 /** "us.anthropic.claude-opus-5-5" -> "claude-opus-5-5" */
 export function baseModelId(model: string): string {
-    return model.replace(/^(?:[a-z]{2,6}\.)?anthropic\./, '');
+    return bedrockId(model).replace(/^(?:[a-z]{2,6}(?:-[a-z]+)?\.)?anthropic\./, '');
 }
 
 export function estimateCostUsd(model: string | null, usage: AiUsage | null): number {
     if (!model || !usage) return 0;
     const p = PRICES[baseModelId(model)] ?? UNKNOWN_MODEL;
-    return (
+    const id = bedrockId(model);
+    const premium = id.includes('anthropic.') && !id.startsWith('global.') ? BEDROCK_REGIONAL_PREMIUM : 1;
+    return premium * (
         usage.inputTokens * p.input +
         usage.outputTokens * p.output +
         (usage.cacheReadTokens ?? 0) * p.cacheRead +

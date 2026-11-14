@@ -2,7 +2,9 @@
  * Picks the AI provider from the environment.
  *
  *   AI_PROVIDER=mock       deterministic and offline (the default)
- *   AI_PROVIDER=bedrock    Claude on Amazon Bedrock (AWS credentials + region)
+ *   AI_PROVIDER=bedrock    Claude on Amazon Bedrock (AWS credentials + region). An inference
+ *                          profile id (us./global./...) or ARN goes through bedrock-runtime
+ *                          InvokeModel; a bare id goes to the bedrock-mantle Messages endpoint.
  *   AI_PROVIDER=anthropic  Claude API (ANTHROPIC_API_KEY)
  *
  * Using a paid provider is always an explicit choice: leaving AI_PROVIDER unset
@@ -37,10 +39,50 @@ export function bedrockModelId(model: string): string {
     return model.includes('anthropic.') || model.startsWith('arn:') ? model : `anthropic.${model}`;
 }
 
+export type BedrockEndpoint = 'mantle' | 'runtime';
+
+/** A cross-region inference profile id: "us.", "eu.", "apac.", "global." and so on before "anthropic.". */
+const PROFILE_PREFIX = /^[a-z]{2,6}(?:-[a-z]+)?\.anthropic\./;
+
+/**
+ * Which Bedrock endpoint serves this id. The bedrock-mantle endpoint takes plain
+ * "anthropic.<model>" ids, and only for the models it lists (in us-east-1 on
+ * 2026-11-13 that excluded Haiku 5.5 and Sonnet 5.5). Inference profiles and ARNs
+ * are bedrock-runtime ids, called with InvokeModel.
+ */
+export function bedrockEndpoint(modelId: string): BedrockEndpoint {
+    return modelId.startsWith('arn:') || PROFILE_PREFIX.test(modelId) ? 'runtime' : 'mantle';
+}
+
+const SETUP_DOC = 'docs/BEDROCK_SETUP.md';
+
+/** What the owner should check for a Bedrock configuration error. Goes to the server log only. */
+export function bedrockConfigHint(status: number | undefined, modelId: string, endpoint: BedrockEndpoint): string {
+    const base = modelId.replace(/^arn:.*\//, '').replace(PROFILE_PREFIX, 'anthropic.');
+    if (status === 401) {
+        return `Bedrock rejected the AWS credentials. Check the role or ~/.aws/credentials (aws sts get-caller-identity). See ${SETUP_DOC}.`;
+    }
+    if (status === 403) {
+        return `Bedrock says this account can't use ${modelId}. Usually: the Anthropic use-case form isn't submitted, the model's Marketplace agreement doesn't exist yet, `
+            + `the account's tokens-per-minute quota for the model is 0, or IAM doesn't allow ${endpoint === 'runtime' ? 'bedrock:InvokeModel on the profile and model ARNs' : 'bedrock-mantle:CreateInference'}. `
+            + `Check with: aws bedrock get-foundation-model-availability --model-id ${base}. See ${SETUP_DOC}.`;
+    }
+    if (status === 404) {
+        if (endpoint === 'mantle') {
+            const profile = base.replace(/^anthropic\./, 'us.anthropic.');
+            return `The bedrock-mantle endpoint doesn't serve ${modelId} in this region. Use the inference profile instead: AI_MODEL=${profile} (or global.${base}). See ${SETUP_DOC}.`;
+        }
+        return `Bedrock has no model or inference profile ${modelId} in this region. List them with: aws bedrock list-inference-profiles --region <region>. See ${SETUP_DOC}.`;
+    }
+    return `See ${SETUP_DOC}.`;
+}
+
 export interface ProviderChoice {
     provider: 'mock' | 'bedrock' | 'anthropic';
     model: string | null;
     region: string | null;
+    /** Bedrock only: which endpoint the model id is sent to. */
+    endpoint: BedrockEndpoint | null;
     /** Why a paid provider was not used, when one was asked for. */
     fallbackReason: string | null;
 }
@@ -48,23 +90,27 @@ export interface ProviderChoice {
 /** Pure decision, separated out for tests. */
 export function chooseProvider(env: Env = process.env): ProviderChoice {
     const asked = (env.AI_PROVIDER ?? '').trim().toLowerCase();
-    const mock = (fallbackReason: string | null): ProviderChoice => ({ provider: 'mock', model: null, region: null, fallbackReason });
+    const mock = (fallbackReason: string | null): ProviderChoice => ({ provider: 'mock', model: null, region: null, endpoint: null, fallbackReason });
     const model = env.AI_MODEL?.trim() || DEFAULT_MODEL;
     if (asked === '' || asked === 'mock') return mock(null);
     if (asked === 'bedrock') {
         const region = env.AI_BEDROCK_REGION?.trim() || env.AWS_REGION?.trim() || env.AWS_DEFAULT_REGION?.trim() || null;
         if (!region) return mock('AI_PROVIDER=bedrock needs AI_BEDROCK_REGION or AWS_REGION');
-        return { provider: 'bedrock', model: bedrockModelId(model), region, fallbackReason: null };
+        const id = bedrockModelId(model);
+        return { provider: 'bedrock', model: id, region, endpoint: bedrockEndpoint(id), fallbackReason: null };
     }
     if (asked === 'anthropic') {
         if (!env.ANTHROPIC_API_KEY?.trim()) return mock('AI_PROVIDER=anthropic needs ANTHROPIC_API_KEY');
-        return { provider: 'anthropic', model, region: null, fallbackReason: null };
+        return { provider: 'anthropic', model, region: null, endpoint: null, fallbackReason: null };
     }
     return mock(`Unknown AI_PROVIDER "${asked}"`);
 }
 
-/** Translate SDK errors into messages safe to show. SDK error text can echo request details, so it stays out. */
-async function mapSdkError(e: unknown): Promise<AiError> {
+/**
+ * Translate SDK errors into messages safe to show. SDK error text can echo request
+ * details, so it stays out. On Bedrock, configuration errors also log what to fix.
+ */
+export async function mapSdkError(e: unknown, bedrock: { model: string; endpoint: BedrockEndpoint } | null = null): Promise<AiError> {
     if (e instanceof AiError) return e;
     const Anthropic = (await import('@anthropic-ai/sdk')).default;
     if (e instanceof Anthropic.APIConnectionTimeoutError) {
@@ -77,7 +123,8 @@ async function mapSdkError(e: unknown): Promise<AiError> {
         return new AiError('ai_rate_limited', 'The recipe reader is busy right now. Please try again in a minute.');
     }
     if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError || e instanceof Anthropic.NotFoundError) {
-        console.error(`[ai] provider configuration error: ${e.constructor.name} ${e.status}`);
+        const hint = bedrock ? ` ${bedrockConfigHint(e.status, bedrock.model, bedrock.endpoint)}` : '';
+        console.error(`[ai] provider configuration error: ${e.constructor.name} ${e.status}.${hint}`);
         return new AiError('ai_unavailable', 'The recipe reader isn\'t available right now. You can add the ingredients by hand.');
     }
     if (e instanceof Anthropic.BadRequestError) {
@@ -124,11 +171,19 @@ function anthropicSend(env: Env, model: string): ClaudeSend {
     };
 }
 
-/** Send through Amazon Bedrock's Messages API endpoint. Credentials come from the standard AWS chain. */
-function bedrockSend(env: Env, region: string): ClaudeSend {
-    let client: Promise<import('@anthropic-ai/bedrock-sdk').AnthropicBedrockMantle> | null = null;
-    const getClient = () => (client ??= import('@anthropic-ai/bedrock-sdk').then(({ AnthropicBedrockMantle }) =>
-        new AnthropicBedrockMantle({ awsRegion: region, ...clientOptions(env) })));
+type BedrockClient = import('@anthropic-ai/bedrock-sdk').AnthropicBedrockMantle | import('@anthropic-ai/bedrock-sdk').AnthropicBedrock;
+
+/**
+ * Send through Amazon Bedrock. Inference profiles go to bedrock-runtime (InvokeModel),
+ * bare ids to the bedrock-mantle Messages endpoint. Both take the same Messages
+ * request. Credentials come from the standard AWS chain.
+ */
+function bedrockSend(env: Env, region: string, model: string, endpoint: BedrockEndpoint): ClaudeSend {
+    let client: Promise<BedrockClient> | null = null;
+    const getClient = () => (client ??= import('@anthropic-ai/bedrock-sdk').then(({ AnthropicBedrock, AnthropicBedrockMantle }) =>
+        endpoint === 'runtime'
+            ? new AnthropicBedrock({ awsRegion: region, ...clientOptions(env) })
+            : new AnthropicBedrockMantle({ awsRegion: region, ...clientOptions(env) })));
     return async (request: ClaudeRequest, { signal }) => {
         const bedrock = await getClient();
         try {
@@ -137,7 +192,7 @@ function bedrockSend(env: Env, region: string): ClaudeSend {
                 { signal },
             ) as unknown as ClaudeMessage;
         } catch (e) {
-            throw await mapSdkError(e);
+            throw await mapSdkError(e, { model, endpoint });
         }
     };
 }
@@ -158,7 +213,7 @@ export function createProvider(env: Env = process.env): { provider: AiProvider; 
     }
     if (choice.provider === 'bedrock') {
         return {
-            provider: createClaudeProvider({ name: 'bedrock', model: choice.model!, send: bedrockSend(env, choice.region!), rerank, onSpend: recordSpend }),
+            provider: createClaudeProvider({ name: 'bedrock', model: choice.model!, send: bedrockSend(env, choice.region!, choice.model!, choice.endpoint!), rerank, onSpend: recordSpend }),
             fallbackReason: null,
         };
     }

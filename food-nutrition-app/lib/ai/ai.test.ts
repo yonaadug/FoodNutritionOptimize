@@ -1,13 +1,14 @@
 import { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import jpeg from 'jpeg-js';
-import { bedrockModelId, chooseProvider, createProvider, DEFAULT_MODEL } from './index';
+import Anthropic from '@anthropic-ai/sdk';
+import { bedrockConfigHint, bedrockEndpoint, bedrockModelId, chooseProvider, createProvider, DEFAULT_MODEL, mapSdkError } from './index';
 import { createClaudeProvider, type ClaudeMessage, type ClaudeRequest } from './claude';
 import { createMockProvider } from './mock';
 import { baseModelId, estimateCostUsd } from './cost';
 import { PLATED_MEAL_MAX_CONFIDENCE, RECORD_RECIPE_TOOL, RECORD_RECIPE_TOOL_DEF, validateChoices, validateRecipeOutput } from './schema';
 import { clientIp, overDailyBudget, RateLimiter, recordSpend, resetLimits } from './rate-limit';
-import { boxDownscale, fitWithin, imageTokenEstimate, ImageError, MAX_EDGE_PX, prepareImage, sniffImage, stripJpegMetadata } from './image';
+import { boxDownscale, fitWithin, imageTokenEstimate, ImageError, MAX_EDGE_PX, MAX_MODEL_IMAGE_BYTES, prepareImage, sniffImage, stripJpegMetadata } from './image';
 import { AiError } from './types';
 
 const record = (input: unknown): ClaudeMessage => ({
@@ -45,6 +46,47 @@ describe('chooseProvider', () => {
     it('keeps full Bedrock ids and profiles as written', () => {
         assert.equal(bedrockModelId('us.anthropic.claude-haiku-5-5'), 'us.anthropic.claude-haiku-5-5');
         assert.equal(bedrockModelId('arn:aws:bedrock:us-east-1:1:inference-profile/x'), 'arn:aws:bedrock:us-east-1:1:inference-profile/x');
+    });
+    it('sends inference profiles and ARNs to bedrock-runtime, bare ids to the Mantle endpoint', () => {
+        // Mantle serves "anthropic.<model>" ids only, and not every model (Haiku 5.5 and Sonnet 5.5
+        // were missing from its us-east-1 model list on 2026-11-13). Profiles go through InvokeModel.
+        assert.equal(bedrockEndpoint('anthropic.claude-opus-5-5'), 'mantle');
+        assert.equal(bedrockEndpoint('us.anthropic.claude-haiku-5-5'), 'runtime');
+        assert.equal(bedrockEndpoint('global.anthropic.claude-haiku-5-5'), 'runtime');
+        assert.equal(bedrockEndpoint('eu.anthropic.claude-sonnet-5-5'), 'runtime');
+        assert.equal(bedrockEndpoint('apac.anthropic.claude-sonnet-5-5'), 'runtime');
+        assert.equal(bedrockEndpoint('arn:aws:bedrock:us-east-1:1:inference-profile/us.anthropic.claude-haiku-5-5'), 'runtime');
+        const c = chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'us.anthropic.claude-haiku-5-5' });
+        assert.deepEqual([c.model, c.endpoint], ['us.anthropic.claude-haiku-5-5', 'runtime']);
+        assert.equal(chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1' }).endpoint, 'mantle');
+        assert.equal(chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' }).endpoint, null);
+        assert.equal(createProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'global.anthropic.claude-haiku-5-5' }).provider.model, 'global.anthropic.claude-haiku-5-5');
+    });
+    it('tells the owner what to do about Bedrock 403 and 404', () => {
+        const denied = bedrockConfigHint(403, 'us.anthropic.claude-haiku-5-5', 'runtime');
+        assert.match(denied, /use-case form/);
+        assert.match(denied, /quota/);
+        assert.match(denied, /BEDROCK_SETUP\.md/);
+        const missing = bedrockConfigHint(404, 'anthropic.claude-haiku-5-5', 'mantle');
+        assert.match(missing, /us\.anthropic\.claude-haiku-5-5/);
+        assert.match(missing, /AI_MODEL/);
+        assert.match(bedrockConfigHint(404, 'us.anthropic.claude-nope', 'runtime'), /list-inference-profiles/);
+        assert.match(bedrockConfigHint(401, 'anthropic.claude-opus-5-5', 'mantle'), /credentials/);
+    });
+    it('logs the hint for Bedrock configuration errors but keeps the user message generic', async () => {
+        const logged: string[] = [];
+        const err = mock.method(console, 'error', (m: string) => { logged.push(m); });
+        try {
+            const e = new Anthropic.PermissionDeniedError(403, { message: 'not available for this account' }, 'not available for this account', new Headers());
+            const mapped = await mapSdkError(e, { model: 'us.anthropic.claude-haiku-5-5', endpoint: 'runtime' });
+            assert.equal(mapped.code, 'ai_unavailable');
+            assert.doesNotMatch(mapped.message, /form|quota|AI_MODEL/);
+            assert.match(logged.join('\n'), /use-case form/);
+            const plain = await mapSdkError(new Anthropic.NotFoundError(404, {}, 'x', new Headers()), null);
+            assert.equal(plain.code, 'ai_unavailable');
+        } finally {
+            err.mock.restore();
+        }
     });
     it('uses the bare model id on the Claude API', () => {
         assert.equal(chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' }).model, DEFAULT_MODEL);
@@ -269,8 +311,16 @@ describe('cost', () => {
     it('uses list prices', () => {
         const usage = { inputTokens: 1_000_000, outputTokens: 1_000_000 };
         assert.equal(estimateCostUsd('claude-opus-5-5', usage), 24);
-        assert.equal(estimateCostUsd('anthropic.claude-sonnet-5-5', usage), 12);
         assert.equal(estimateCostUsd('claude-haiku-5-5', usage), 0.6);
+        assert.equal(estimateCostUsd('global.anthropic.claude-sonnet-5-5', usage), 12);
+    });
+    it('adds the 10% Bedrock premium for regional and US-only routing', () => {
+        // AWS Marketplace offer for Haiku 5.5, 2026-11-13: global $0.10/$0.50, "Standard" (non-global) $0.11/$0.55.
+        const usage = { inputTokens: 1_000_000, outputTokens: 1_000_000 };
+        assert.equal(Number(estimateCostUsd('us.anthropic.claude-haiku-5-5', usage).toFixed(6)), 0.66);
+        assert.equal(Number(estimateCostUsd('anthropic.claude-sonnet-5-5', usage).toFixed(6)), 13.2);
+        assert.equal(Number(estimateCostUsd('arn:aws:bedrock:us-east-1:1:inference-profile/us.anthropic.claude-haiku-5-5', usage).toFixed(6)), 0.66);
+        assert.equal(baseModelId('arn:aws:bedrock:us-east-1:1:inference-profile/global.anthropic.claude-haiku-5-5'), 'claude-haiku-5-5');
     });
     it('is zero for mock, and an unknown model never looks free', () => {
         assert.equal(estimateCostUsd(null, { inputTokens: 1, outputTokens: 1 }), 0);
@@ -386,6 +436,14 @@ describe('images', () => {
         assert.equal(sniffImage(new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"></svg>')), null);
         assert.equal(sniffImage(new Uint8Array(4)), null);
     });
+    it('names HEIC photos in the error, with what to do instead', async () => {
+        const heic = new Uint8Array(32);
+        heic.set(new TextEncoder().encode('\0\0\0\x18ftypheic'));
+        await assert.rejects(prepareImage(heic), (e: ImageError) => e.status === 415 && /HEIC/.test(e.message) && /JPEG/.test(e.message));
+        const avif = new Uint8Array(32);
+        avif.set(new TextEncoder().encode('\0\0\0\x18ftypmif1'));
+        await assert.rejects(prepareImage(avif), (e: ImageError) => e.status === 415 && /HEIC/.test(e.message));
+    });
     it('removes EXIF from a JPEG and keeps it decodable', () => {
         const j = withExif(makeJpeg(32, 32));
         assert.match(Buffer.from(j).toString('latin1'), /GPS-LOCATION-SECRET/);
@@ -410,6 +468,16 @@ describe('images', () => {
         await assert.rejects(prepareImage(pngHeader(7999, 7999)), (e: ImageError) => e.status === 413 && /dimensions/.test(e.message));
         await assert.rejects(prepareImage(pngHeader(9000, 10)), (e: ImageError) => e.status === 413);
         await assert.rejects(prepareImage(pngHeader(0, 0)), (e: ImageError) => e.status === 413);
+    });
+    it('applies the 5 MB model limit to the base64 it sends, not the raw bytes', async () => {
+        // Claude on Bedrock: 5 MB per image, base64-encoded. 4 MB of PNG is about 5.3 MB of base64.
+        const big = new Uint8Array(4 * 1024 * 1024);
+        big.set(pngHeader(1000, 1000));
+        await assert.rejects(prepareImage(big), (e: ImageError) => e.status === 413);
+        const fits = new Uint8Array(3 * 1024 * 1024);
+        fits.set(pngHeader(1000, 1000));
+        const r = await prepareImage(fits);
+        assert.ok(r.base64.length <= MAX_MODEL_IMAGE_BYTES);
     });
     it('fitWithin only shrinks', () => {
         assert.equal(fitWithin(100, 100, 200), null);

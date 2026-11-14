@@ -335,51 +335,73 @@ export class NutritionDictionaryStack extends Stack {
     }) : undefined;
 
     // The Free plan's firewall: the plan requires a web ACL on the distribution and covers
-    // its cost (5 rules). Outside a plan this ACL would cost about $8/month, so it exists
-    // only together with the subscription below.
+    // its cost. The Free tier accepts only simple rules: rule groups (including AWS managed
+    // ones) aren't eligible, and a first deploy with them failed with "not eligible for this
+    // subscription tier". So: one plain per-IP rate limit, which Free includes. The plan
+    // itself adds its baseline protections. Outside a plan, this ACL would cost about
+    // $6/month, so it exists only together with the subscription below.
     const webAcl = props.flatRatePlan ? new wafv2.CfnWebACL(this, 'WebAcl', {
       name: `nutrition-dictionary-${props.stage}`,
       scope: 'CLOUDFRONT',
       defaultAction: { allow: {} },
       visibilityConfig: { cloudWatchMetricsEnabled: true, metricName: `nutrition-dictionary-${props.stage}`, sampledRequestsEnabled: true },
       rules: [
-        managedRule('AmazonIpReputationList', 0),
-        managedRule('KnownBadInputsRuleSet', 1),
         {
-          // Per viewer IP, over 5 minutes, ignoring static files (a page load fetches many).
-          // The app has its own, tighter limits for sign-in and AI.
+          // Per viewer IP over 5 minutes, counting every request (static files included), so
+          // the limit is generous; the app has its own, tighter limits for sign-in and AI.
           name: 'RateLimitPerIp',
-          priority: 2,
+          priority: 0,
           action: { block: {} },
-          statement: {
-            rateBasedStatement: {
-              limit: 1000,
-              evaluationWindowSec: 300,
-              aggregateKeyType: 'IP',
-              scopeDownStatement: {
-                notStatement: {
-                  statement: {
-                    byteMatchStatement: {
-                      fieldToMatch: { uriPath: {} },
-                      positionalConstraint: 'STARTS_WITH',
-                      searchString: '/_next/static/',
-                      textTransformations: [{ priority: 0, type: 'NONE' }],
-                    },
-                  },
-                },
-              },
-            },
-          },
+          statement: { rateBasedStatement: { limit: 2000, evaluationWindowSec: 300, aggregateKeyType: 'IP' } },
           visibilityConfig: { cloudWatchMetricsEnabled: true, metricName: 'RateLimitPerIp', sampledRequestsEnabled: true },
         },
       ],
     }) : undefined;
 
-    // Managed policies honor the origin's Cache-Control. AllViewerExceptHostHeader forwards
-    // cookies, the query string and every viewer header except Host (a Function URL needs
-    // its own Host), plus CloudFront's viewer-location headers, which include
-    // CloudFront-Viewer-Address (the client IP the app rate-limits on).
-    const originRequestPolicy = cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
+    // What CloudFront forwards to the app. Not the managed AllViewerExceptHostHeader policy:
+    // with origin access control on a Lambda URL, forwarding every viewer header made every
+    // request fail with AccessDeniedException (first dev deploy, 2026-11-14), while the
+    // static-file behavior, which forwards none, worked. So: all cookies and query strings,
+    // and only the headers the app reads (CloudFront allows 10 per policy):
+    //   cloudfront-viewer-address  client IP for rate limits (AUTH_IP_HEADERS)
+    //   origin, sec-fetch-site     same-origin checks on account routes
+    //   content-type               JSON bodies and raw photo uploads
+    // (x-amz-content-sha256, the body hash OAC needs for POST, can't be listed: CloudFront
+    // passes it to the signer itself; lib/same-origin-fetch.ts sends it.)
+    //   rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch,
+    //   next-url                   Next.js client-side navigation (React Server Components)
+    const originRequestPolicy = new cloudfront.OriginRequestPolicy(this, 'AppOriginRequest', {
+      originRequestPolicyName: `nutrition-dictionary-${props.stage}-app`,
+      comment: 'Cookies, query strings and the headers the app reads',
+      cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
+      queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
+      headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList(
+        'cloudfront-viewer-address', 'origin', 'sec-fetch-site', 'content-type',
+        'rsc', 'next-router-state-tree', 'next-router-prefetch', 'next-router-segment-prefetch', 'next-url',
+      ),
+    });
+    // How long CloudFront keeps a response: whatever the app's Cache-Control says (nothing
+    // when it says nothing), keyed on the query string only. Not the managed
+    // UseOriginCacheControlHeaders policy: its cache key includes the Host header, which
+    // CloudFront then forwards, so Lambda saw the site's hostname instead of its own URL and
+    // refused the signed request (AccessDeniedException). Next.js puts RSC variants in the
+    // `_rsc` query parameter, so the query string is enough to keep them apart; cookies are
+    // forwarded (above) but left out of the key, as signed-in responses are `private`.
+    const appCachePolicy = new cloudfront.CachePolicy(this, 'AppCache', {
+      cachePolicyName: `nutrition-dictionary-${props.stage}-app`,
+      comment: 'Honor origin Cache-Control; key on the query string only (never Host)',
+      minTtl: Duration.seconds(0),
+      defaultTtl: Duration.seconds(0),
+      maxTtl: Duration.days(365),
+      queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
+      headerBehavior: cloudfront.CacheHeaderBehavior.none(),
+      cookieBehavior: cloudfront.CacheCookieBehavior.none(),
+      enableAcceptEncodingGzip: true,
+      enableAcceptEncodingBrotli: true,
+    });
+    // The Stripe webhook's origin has no OAC (Stripe can't sign for it) and needs
+    // stripe-signature, so it keeps forwarding every viewer header.
+    const webhookOriginRequestPolicy = cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
     const distribution = new cloudfront.Distribution(this, 'Cdn', {
       comment: `nutrition-dictionary-${props.stage}`,
       domainNames: [props.siteDomain, ...props.redirectDomains],
@@ -392,7 +414,7 @@ export class NutritionDictionaryStack extends Stack {
         origin: webOrigin,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-        cachePolicy: cloudfront.CachePolicy.USE_ORIGIN_CACHE_CONTROL_HEADERS_QUERY_STRINGS,
+        cachePolicy: appCachePolicy,
         originRequestPolicy,
         compress: true,
         functionAssociations: redirectFn ? [{ function: redirectFn, eventType: cloudfront.FunctionEventType.VIEWER_REQUEST }] : undefined,
@@ -409,7 +431,7 @@ export class NutritionDictionaryStack extends Stack {
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
           cachePolicy: cloudfront.CachePolicy.CACHING_DISABLED,
-          originRequestPolicy,
+          originRequestPolicy: webhookOriginRequestPolicy,
         },
       },
     });
@@ -587,17 +609,6 @@ export class NutritionDictionaryStack extends Stack {
     new CfnOutput(this, 'AlertsTopicArn', { value: alerts.topicArn });
     new CfnOutput(this, 'KillSwitchTopicArn', { value: killTopic.topicArn });
   }
-}
-
-/** An AWS managed rule group, counted as one rule against the plan's five. */
-function managedRule(name: string, priority: number): wafv2.CfnWebACL.RuleProperty {
-  return {
-    name,
-    priority,
-    overrideAction: { none: {} },
-    statement: { managedRuleGroupStatement: { vendorName: 'AWS', name: `AWSManagedRules${name}` } },
-    visibilityConfig: { cloudWatchMetricsEnabled: true, metricName: name, sampledRequestsEnabled: true },
-  };
 }
 
 /** CloudFront Function (JS 2.0): 301 any of `from` hosts to https://<to> with the same path and query. */

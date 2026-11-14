@@ -2,6 +2,8 @@
 
 `/recipes` works out the nutrition per serving of a pasted recipe or a photo, and lets the user correct it. The research behind these choices is in [research/RECIPE_ANALYSIS.md](research/RECIPE_ANALYSIS.md).
 
+Photos of plated food (open models, photo APIs, Bedrock options and portion aids) are compared in [research/FOOD_PHOTO_OPTIONS.md](research/FOOD_PHOTO_OPTIONS.md).
+
 > **Status.** It works end to end on the offline `mock` provider. **The Bedrock and Claude API providers have never run against a live model**: the project's AWS account can't invoke Claude yet, and no API key was available. Follow [the check below](#3-check-it-works) the first time you enable one.
 
 ## How it works

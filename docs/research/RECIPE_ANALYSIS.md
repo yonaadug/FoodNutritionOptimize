@@ -2,6 +2,8 @@
 
 Research for the recipe analyzer at `/recipes`. Links were accessed 2026-11-04.
 
+For plated-meal photos, [FOOD_PHOTO_OPTIONS.md](FOOD_PHOTO_OPTIONS.md) (2026-11-13) covers open models, photo APIs and Bedrock, and updates Bedrock's prices and Passio's tokens per photo.
+
 **How to read the numbers.** "Unverified" means the page blocked fetching, the figure wasn't published, or only a secondary source had it. Per-analysis costs and token counts are our own estimates, not vendor quotes. **No Claude cost in this document has been measured**, because no model could be invoked on the project's AWS account (see [What we tested](#what-we-tested-ourselves)). Vendor terms were read by automated page extraction, so re-check any wording you plan to rely on contractually.
 
 ## Recommendation

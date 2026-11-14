@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import type { Food } from '@/lib/food-types';
 import { fmt, foodPath, keyNutrients } from '@/lib/food-page';
 import { typicalServing } from '@/lib/servings';
@@ -11,13 +11,13 @@ export default function FoodCard({ food }: { food: Food }) {
     const top = keyNutrients(food, serving.grams, 1)[0];
     const kcal = nv(food, 'calories');
     return (
-        <Link href={foodPath(food)} className="food-card" title={food.description}>
+        <IntentLink href={foodPath(food)} className="food-card" title={food.description}>
             <span className="food-card-name">{name}</span>
             <span className="food-card-detail">{detail || ' '}</span>
             <span className="food-card-stat tabular">
                 <b>{kcal === null ? '—' : fmt(kcal * serving.grams / 100, 0)}</b> kcal per {serving.label}
             </span>
             {top && <span className="food-card-rich">Rich in {top.label.replace(/ \(.*\)$/, '')}</span>}
-        </Link>
+        </IntentLink>
     );
 }

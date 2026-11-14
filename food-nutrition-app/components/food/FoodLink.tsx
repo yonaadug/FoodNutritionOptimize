@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import type { Food } from '@/lib/food-types';
 import { foodHref } from '@/lib/food-page';
 import { OLDER_ENTRY_NOTE } from '@/lib/nutrient-fill';
@@ -14,8 +14,8 @@ export default function FoodLink({ food, className, children }: {
 }) {
     const href = foodHref(food);
     if (!href) return <span className={className}>{children}</span>;
-    // Lists can hold many foods: only fetch a page when someone goes to it.
-    return <Link href={href} prefetch={false} className={`food-link${className ? ` ${className}` : ''}`}>{children}</Link>;
+    // Lists can hold many foods: only fetch a page once someone points at it or focuses it.
+    return <IntentLink href={href} lazy className={`food-link${className ? ` ${className}` : ''}`}>{children}</IntentLink>;
 }
 
 /** The mark beside a value that isn't from the food's own USDA record. */

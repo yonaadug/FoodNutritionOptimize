@@ -1,11 +1,11 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { usePathname } from 'next/navigation';
 import AccountMenu from '@/components/account/AccountMenu';
 import Icon from '@/components/ui/Icon';
 import ThemeToggle from '@/components/ThemeToggle';
-import { isNavActive, NAV_ITEMS, SITE_NAME } from '@/lib/nav';
+import { isAccountPath, isNavActive, NAV_ITEMS, SITE_NAME } from '@/lib/nav';
 import styles from './SiteHeader.module.css';
 
 /** Skips the header without changing the address (the planner keeps its step in the #hash). */
@@ -31,23 +31,23 @@ export default function SiteHeader() {
     return (
         <header className="site-header">
             <div className="container site-header-inner">
-                <Link href="/" className={`brand ${styles.brand}`} aria-label={`${SITE_NAME} home`}>
+                <IntentLink href="/" className={`brand ${styles.brand}`} aria-label={`${SITE_NAME} home`}>
                     <span className="brand-mark"><Icon name="leaf" size={17} strokeWidth={2.4} /></span>
                     {SITE_NAME}
-                </Link>
+                </IntentLink>
                 <nav className="site-nav" aria-label="Main">
                     {NAV_ITEMS.map(item => {
                         const active = isNavActive(item, pathname);
                         return (
-                            <Link key={item.href} href={item.href} title={item.hint} className="site-nav-link"
+                            <IntentLink key={item.href} href={item.href} title={item.hint} className="site-nav-link"
                                 aria-current={active ? 'page' : undefined}>
                                 {item.label}
-                            </Link>
+                            </IntentLink>
                         );
                     })}
                 </nav>
                 <span className={`spacer ${styles.spacer}`} />
-                <AccountMenu />
+                <AccountMenu current={isAccountPath(pathname)} />
                 <ThemeToggle />
             </div>
         </header>

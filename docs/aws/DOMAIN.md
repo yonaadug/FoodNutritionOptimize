@@ -13,7 +13,7 @@ The owner renamed the product to **NutritionDictionary**, because nanonutrition.
 | nutrition-dictionary.com, thenutritiondictionary.com | Available (no record) | $16 | $11.81 / $11.81 |
 | nutritiondictionary.net / .org / .io / .co | Available (no record) | $17 / $16 / $71 / $38 | see the NanoNutrition table below |
 
-**Recommendation:** register nutritiondictionary.com at Route 53 for $16/yr (one AWS bill, and CDK can manage DNS). Porkbun is $4/yr cheaper if you point its DNS at Route 53. A typo guard such as nutrition-dictionary.com is optional.
+**Decision (2026-11-14):** register nutritiondictionary.com at **Porkbun** ($11.81/yr), then point its nameservers at the Route 53 hosted zone so CDK can manage DNS and certificates. A typo guard such as nutrition-dictionary.com is optional.
 
 **Name check (not legal advice, 2026-11-14).** Web searches found no app, website or US trademark named exactly "Nutrition Dictionary". The closest were nutrition glossary apps ("Nutrition Glossary", "Nutrition, Health and Body Glossary") and differently named marks (NUTRITICS, NUTRITIONAL PERSPECTIVES). Examiners treat "nutrition" as descriptive (NUTRITION DYNAMIC had to disclaim it), so this name is low-risk to use but may be hard to register as a trademark. Confirm at [tmsearch.uspto.gov](https://tmsearch.uspto.gov/) before investing in branding.
 

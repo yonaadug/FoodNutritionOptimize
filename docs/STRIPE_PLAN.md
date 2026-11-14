@@ -134,8 +134,8 @@ The AWS design proposes **Amazon Cognito** for production. For a laptop-testable
 
 ## 9. Open decisions
 
-1. **What Plus unlocks first.** The roadmap's candidates: unlimited saved plans and history, a week planner with grocery list, recipe import by link or photo, full nutrient-gap insights.
-2. **Trial:** none, a no-card "reverse trial" (the AWS doc's suggestion), or a card-on-file trial via `trial_period_days` (Stripe's "Free Trial" path).
+1. ~~**What Plus unlocks first.**~~ Decided 2026-11-14 ([DECISIONS.md](DECISIONS.md)): AI photo quota, unlimited history, week planner + grocery list, and a whole-plan contaminant check. Price stays $5.99/month or $39.99/year.
+2. ~~**Trial.**~~ Decided 2026-11-14: a 14-day no-card "reverse trial" with capped AI.
 3. ~~**Sign-in method** (§8).~~ Decided: Better Auth email links.
 4. **Managed Payments** later, if you'd rather Stripe handle global tax as merchant of record.
 

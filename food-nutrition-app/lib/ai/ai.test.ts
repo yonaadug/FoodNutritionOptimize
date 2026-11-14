@@ -8,7 +8,7 @@ import { createMockProvider } from './mock';
 import { baseModelId, estimateCostUsd } from './cost';
 import { PLATED_MEAL_MAX_CONFIDENCE, RECORD_RECIPE_TOOL, RECORD_RECIPE_TOOL_DEF, validateChoices, validateRecipeOutput } from './schema';
 import { clientIp, overDailyBudget, RateLimiter, recordSpend, resetLimits } from './rate-limit';
-import { boxDownscale, fitWithin, imageTokenEstimate, ImageError, MAX_EDGE_PX, prepareImage, sniffImage, stripJpegMetadata } from './image';
+import { boxDownscale, fitWithin, imageTokenEstimate, ImageError, MAX_EDGE_PX, MAX_MODEL_IMAGE_BYTES, prepareImage, sniffImage, stripJpegMetadata } from './image';
 import { AiError } from './types';
 
 const record = (input: unknown): ClaudeMessage => ({
@@ -468,6 +468,16 @@ describe('images', () => {
         await assert.rejects(prepareImage(pngHeader(7999, 7999)), (e: ImageError) => e.status === 413 && /dimensions/.test(e.message));
         await assert.rejects(prepareImage(pngHeader(9000, 10)), (e: ImageError) => e.status === 413);
         await assert.rejects(prepareImage(pngHeader(0, 0)), (e: ImageError) => e.status === 413);
+    });
+    it('applies the 5 MB model limit to the base64 it sends, not the raw bytes', async () => {
+        // Claude on Bedrock: 5 MB per image, base64-encoded. 4 MB of PNG is about 5.3 MB of base64.
+        const big = new Uint8Array(4 * 1024 * 1024);
+        big.set(pngHeader(1000, 1000));
+        await assert.rejects(prepareImage(big), (e: ImageError) => e.status === 413);
+        const fits = new Uint8Array(3 * 1024 * 1024);
+        fits.set(pngHeader(1000, 1000));
+        const r = await prepareImage(fits);
+        assert.ok(r.base64.length <= MAX_MODEL_IMAGE_BYTES);
     });
     it('fitWithin only shrinks', () => {
         assert.equal(fitWithin(100, 100, 200), null);

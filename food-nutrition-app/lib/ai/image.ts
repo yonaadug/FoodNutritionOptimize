@@ -18,8 +18,16 @@ export const MAX_EDGE_PX = 1568;
 /** Refuse to decode beyond this (a 12 MP phone photo is well under it). */
 const MAX_DECODE_MEGAPIXELS = 40;
 const MAX_DIMENSION_PX = 8000;
-/** Bedrock's per-image limit for base64 images, applied to every provider. */
+/**
+ * Claude on Bedrock's per-image limit, which counts the base64-encoded string (so
+ * about 3.75 MB of image). Applied to every provider.
+ */
 export const MAX_MODEL_IMAGE_BYTES = 5 * 1024 * 1024;
+
+/** Length of the base64 encoding of n bytes. */
+function base64Length(n: number): number {
+    return 4 * Math.ceil(n / 3);
+}
 export const DEFAULT_MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 export interface ImageInfo { mediaType: ImageMediaType; width: number; height: number }
@@ -201,7 +209,7 @@ export async function prepareImage(bytes: Uint8Array, maxUploadBytes: number = D
             out = stripJpegMetadata(bytes);
         }
     }
-    if (out.length > MAX_MODEL_IMAGE_BYTES) {
+    if (base64Length(out.length) > MAX_MODEL_IMAGE_BYTES) {
         throw new ImageError(413, 'That photo is too large to read. Please save it as a JPEG or use a smaller one.');
     }
     return { base64: Buffer.from(out).toString('base64'), mediaType, width: w, height: h, downscaled };

@@ -1,7 +1,8 @@
 import { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import jpeg from 'jpeg-js';
-import { bedrockModelId, chooseProvider, createProvider, DEFAULT_MODEL } from './index';
+import Anthropic from '@anthropic-ai/sdk';
+import { bedrockConfigHint, bedrockEndpoint, bedrockModelId, chooseProvider, createProvider, DEFAULT_MODEL, mapSdkError } from './index';
 import { createClaudeProvider, type ClaudeMessage, type ClaudeRequest } from './claude';
 import { createMockProvider } from './mock';
 import { baseModelId, estimateCostUsd } from './cost';
@@ -45,6 +46,47 @@ describe('chooseProvider', () => {
     it('keeps full Bedrock ids and profiles as written', () => {
         assert.equal(bedrockModelId('us.anthropic.claude-haiku-5-5'), 'us.anthropic.claude-haiku-5-5');
         assert.equal(bedrockModelId('arn:aws:bedrock:us-east-1:1:inference-profile/x'), 'arn:aws:bedrock:us-east-1:1:inference-profile/x');
+    });
+    it('sends inference profiles and ARNs to bedrock-runtime, bare ids to the Mantle endpoint', () => {
+        // Mantle serves "anthropic.<model>" ids only, and not every model (Haiku 5.5 and Sonnet 5.5
+        // were missing from its us-east-1 model list on 2026-11-13). Profiles go through InvokeModel.
+        assert.equal(bedrockEndpoint('anthropic.claude-opus-5-5'), 'mantle');
+        assert.equal(bedrockEndpoint('us.anthropic.claude-haiku-5-5'), 'runtime');
+        assert.equal(bedrockEndpoint('global.anthropic.claude-haiku-5-5'), 'runtime');
+        assert.equal(bedrockEndpoint('eu.anthropic.claude-sonnet-5-5'), 'runtime');
+        assert.equal(bedrockEndpoint('apac.anthropic.claude-sonnet-5-5'), 'runtime');
+        assert.equal(bedrockEndpoint('arn:aws:bedrock:us-east-1:1:inference-profile/us.anthropic.claude-haiku-5-5'), 'runtime');
+        const c = chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'us.anthropic.claude-haiku-5-5' });
+        assert.deepEqual([c.model, c.endpoint], ['us.anthropic.claude-haiku-5-5', 'runtime']);
+        assert.equal(chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1' }).endpoint, 'mantle');
+        assert.equal(chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' }).endpoint, null);
+        assert.equal(createProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'global.anthropic.claude-haiku-5-5' }).provider.model, 'global.anthropic.claude-haiku-5-5');
+    });
+    it('tells the owner what to do about Bedrock 403 and 404', () => {
+        const denied = bedrockConfigHint(403, 'us.anthropic.claude-haiku-5-5', 'runtime');
+        assert.match(denied, /use-case form/);
+        assert.match(denied, /quota/);
+        assert.match(denied, /BEDROCK_SETUP\.md/);
+        const missing = bedrockConfigHint(404, 'anthropic.claude-haiku-5-5', 'mantle');
+        assert.match(missing, /us\.anthropic\.claude-haiku-5-5/);
+        assert.match(missing, /AI_MODEL/);
+        assert.match(bedrockConfigHint(404, 'us.anthropic.claude-nope', 'runtime'), /list-inference-profiles/);
+        assert.match(bedrockConfigHint(401, 'anthropic.claude-opus-5-5', 'mantle'), /credentials/);
+    });
+    it('logs the hint for Bedrock configuration errors but keeps the user message generic', async () => {
+        const logged: string[] = [];
+        const err = mock.method(console, 'error', (m: string) => { logged.push(m); });
+        try {
+            const e = new Anthropic.PermissionDeniedError(403, { message: 'not available for this account' }, 'not available for this account', new Headers());
+            const mapped = await mapSdkError(e, { model: 'us.anthropic.claude-haiku-5-5', endpoint: 'runtime' });
+            assert.equal(mapped.code, 'ai_unavailable');
+            assert.doesNotMatch(mapped.message, /form|quota|AI_MODEL/);
+            assert.match(logged.join('\n'), /use-case form/);
+            const plain = await mapSdkError(new Anthropic.NotFoundError(404, {}, 'x', new Headers()), null);
+            assert.equal(plain.code, 'ai_unavailable');
+        } finally {
+            err.mock.restore();
+        }
     });
     it('uses the bare model id on the Claude API', () => {
         assert.equal(chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' }).model, DEFAULT_MODEL);

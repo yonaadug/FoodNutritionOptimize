@@ -1,5 +1,6 @@
 'use client';
 
+import { sameOriginFetch } from '@/lib/same-origin-fetch';
 import { useMemo, useSyncExternalStore } from 'react';
 import type { Food } from '@/lib/food-types';
 import { buildPayload, payloadKey } from '@/components/planner/payload';
@@ -186,12 +187,7 @@ export async function runPlan(s: PlannerState): Promise<void> {
     const previous = store;
     set({ ...store, status: 'loading', error: null });
     try {
-        const res = await fetch('/api/optimize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(buildPayload(s)),
-            signal: mine.signal,
-        });
+        const res = await sameOriginFetch('/api/optimize', { method: 'POST', json: buildPayload(s), signal: mine.signal });
         let data: PlanResult | null = null;
         try { data = await res.json(); } catch { data = null; }
         if (mine.signal.aborted) return;

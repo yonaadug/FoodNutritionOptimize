@@ -145,6 +145,12 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
     sent as raw bytes, and `lib/same-origin-fetch.test.ts` fails the build on any plain `fetch()` with a body
   - Emit the `NutritionDictionary/AiSpendMicroUsd` metric (Embedded Metric Format) so the `AiSpendDaily` alarm
     works. Today the app only logs `[ai] ... cost_usd=` lines, and the AWS Budget is the only AI spend alarm
+- [ ] **Privacy follow-ups found while drafting the policies** (each is disclosed accurately in the drafts today):
+  - Better Auth's sign-in rate limiter stores raw IPs as `KV#<ip>|<path>` keys for up to 300 s, while ACCOUNTS.md says
+    no raw IPs are kept. Store a keyed hash (e.g. HMAC with `AUTH_SECRET`, as `lib/auth/log.ts` does) instead.
+  - Google sign-in tokens are stored without app-level encryption (DynamoDB still encrypts at rest). Turn on Better
+    Auth's OAuth token encryption, or don't keep tokens, since sign-in needs only the identity.
+  - The recipe reader's in-memory rate limiter keeps raw IPs for up to 24 hours; hash those too.
 - [ ] Legal and compliance ([docs/LEGAL.md](docs/LEGAL.md)):
   - Privacy policy, terms and medical disclaimer: drafted, awaiting legal review
   - Washington MHMDA consent and a consumer health data policy: drafted and recorded at sign-in, awaiting review

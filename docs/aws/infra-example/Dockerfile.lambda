@@ -44,6 +44,16 @@ RUN [ "$(head -c 15 nutrition.db)" = "SQLite format 3" ] \
     || { echo "nutrition.db is not a SQLite file (Git LFS pointer?). Run 'git lfs pull' first." >&2; exit 1; }
 RUN npm run build && mkdir -p public
 
+# ---- secrets loader ------------------------------------------------------------
+# A start script that copies SSM SecureString parameters into the environment and
+# then starts the server (lambda-secrets/start.mjs). Its own tiny dependency tree,
+# so the app's package.json doesn't change.
+FROM node:${NODE_VERSION}-slim AS secrets
+WORKDIR /opt/secrets
+COPY docs/aws/infra-example/lambda-secrets/package.json docs/aws/infra-example/lambda-secrets/package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund --ignore-scripts
+COPY docs/aws/infra-example/lambda-secrets/start.mjs ./
+
 # ---- runtime -----------------------------------------------------------------
 FROM node:${NODE_VERSION}-slim AS runtime
 # Lambda Web Adapter runs as a Lambda extension and proxies invocations to the
@@ -68,13 +78,16 @@ COPY --from=build /app/public ./public
 # Read-only nutrition DB at a fixed path (the standalone bundle also carries a
 # traced copy at /app/nutrition.db; this one is what NUTRITION_DB_PATH uses).
 COPY --from=build /app/nutrition.db /app/data/nutrition.db
+COPY --from=secrets /opt/secrets /opt/secrets
 
 # Lambda's filesystem is read-only except /tmp. Next only writes .next/cache
 # for image optimization / ISR / the fetch cache, none of which this app uses;
 # `docker run --read-only --tmpfs /tmp` (see docs/LOCAL_TESTING.md) checks that.
 # Lambda runs the image as an arbitrary non-root user; files must be world-readable.
-RUN chmod -R a+rX /app
+RUN chmod -R a+rX /app /opt/secrets
 USER node
 
 EXPOSE 3000
-CMD ["node", "server.js"]
+# With SSM_SECRETS unset (a plain `docker run`), start.mjs reads nothing and just
+# starts server.js, so the image still runs offline.
+CMD ["node", "/opt/secrets/start.mjs"]

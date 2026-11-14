@@ -150,35 +150,26 @@ Lookups by email use small pointer items, not an index. An index can't enforce u
 
 ## Going to production on AWS
 
-Nothing here has been created. These are the steps, in order.
+**Follow [DEPLOY.md](DEPLOY.md).** It's the step-by-step runbook, and the CDK example (`docs/aws/infra-example/cdk`) now does everything accounts need. Nothing has been deployed yet. For reference, what the stack sets up for sign-in:
 
-1. **DynamoDB.** The CDK example (`docs/aws/infra-example/cdk`) already has the table, GSI1 and TTL on `expiresAt`. Add GSI2:
-   ```ts
-   table.addGlobalSecondaryIndex({ // or add to globalSecondaryIndexes on TableV2
-     indexName: 'GSI2',
-     partitionKey: { name: 'GSI2PK', type: dynamodb.AttributeType.STRING },
-     sortKey: { name: 'GSI2SK', type: dynamodb.AttributeType.STRING },
-   });
-   ```
-2. **Remove Cognito from the stack**: the user pool and the `cognito-idp:AdminDeleteUser` permission.
-3. **SES.** Verify the domain with DKIM, SPF and DMARC, and **request production access**, because new accounts can only email verified addresses.
-4. **Permissions for the web Lambda:** `dynamodb:GetItem, PutItem, UpdateItem, DeleteItem, Query, BatchWriteItem` on the table and `index/*`, plus `ses:SendEmail`.
-5. **Secret.** Generate with `openssl rand -base64 32` and store as an SSM SecureString. The app reads it from the environment, so your deploy has to pass it in. The design's §3.10 reads secrets at cold start, which would need a small addition to `lib/auth/config.ts`. Changing the secret signs everyone out.
-6. **Environment:**
-   ```
-   USER_STORE=dynamodb                         # already the default on Lambda
-   DYNAMODB_TABLE=<table name>
-   AUTH_BASE_URL=https://nutritiondictionary.com
-   AUTH_SECRET=<from SSM>
-   AUTH_EMAIL_FROM=NutritionDictionary <no-reply@nutritiondictionary.com>
-   AUTH_IP_HEADERS=cloudfront-viewer-address
-   ```
-   With no email settings a production build won't start sign-in, and pages say it's unavailable. The rest of the site is unaffected.
-7. **CloudFront.** Keep account routes on the default behavior, which must forward cookies. Add **`CloudFront-Viewer-Address`** to its origin request policy.
-   > **Check this one after deploying.** If that header doesn't arrive, per-IP limits on the app's routes are skipped and every visitor shares one sign-in bucket, so ten requests in five minutes would lock out sign-in for everyone. Better Auth logs a warning when it can't find an IP. Look for it in CloudWatch.
-8. **Test on the deployed site:** sign in with a real inbox, try a corporate mailbox that scans links, export, delete. Also check that POSTs get through origin access control. `lib/auth/client.ts` sends the `x-amz-content-sha256` header that needs, and this has not been run against real CloudFront.
+- **DynamoDB:** the table with `GSI1`, `GSI2` (both projecting all attributes) and TTL on `expiresAt`. PITR (35 days) in prod.
+- **No Cognito.** The user pool, its client and the `cognito-idp:AdminDeleteUser` permission are gone.
+- **SES:** a domain identity per stage (`nutritiondictionary.com` in prod, `dev.nutritiondictionary.com` in dev) with DKIM, a custom MAIL FROM domain and DMARC, all published into Route 53 by CDK. The web function may call `ses:SendEmail` only on that identity (dev, which stays in the SES sandbox, also on the email addresses you verify there). Production access is a request in the console ([DEPLOY.md, step 17](DEPLOY.md#17-ses-production-access)).
+- **Secrets:** `AUTH_SECRET`, `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are SSM SecureStrings under `/nutrition-dictionary/<stage>/auth/`, which the owner creates ([DEPLOY.md, steps 10 and 11](DEPLOY.md#10-create-the-sign-in-secret-in-each-account)). The Lambda image's start script reads them at cold start, so `lib/auth/config.ts` is unchanged. Changing the secret signs everyone out.
+- **Environment** (prod; dev uses `https://dev.nutritiondictionary.com` and sends from `no-reply@dev.nutritiondictionary.com`):
+  ```
+  USER_STORE=dynamodb
+  DYNAMODB_TABLE=nutrition-dictionary-prod
+  AUTH_BASE_URL=https://nutritiondictionary.com
+  AUTH_EMAIL_TRANSPORT=ses
+  AUTH_EMAIL_FROM=NutritionDictionary <no-reply@nutritiondictionary.com>
+  AUTH_IP_HEADERS=cloudfront-viewer-address
+  ```
+- **CloudFront:** account routes stay on the default behavior, whose managed `AllViewerExceptHostHeader` origin request policy forwards cookies and `CloudFront-Viewer-Address`.
+  > **Check this one after deploying** ([DEPLOY.md, step 15](DEPLOY.md#15-test-dev)). If that header doesn't arrive, per-IP limits on the app's routes are skipped and every visitor shares one sign-in bucket, so ten requests in five minutes would lock out sign-in for everyone. Better Auth logs a warning when it can't find an IP.
+- **Google:** the redirect URI is `https://<site>/api/auth/callback/google`. The button appears by itself once both Google parameters exist.
 
-**Google sign-in (optional):** create an OAuth client with the redirect `https://<site>/api/auth/callback/google`, then set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. The button appears by itself.
+Still to test on the deployed site: sign in with a real inbox, a corporate mailbox that scans links, export and delete, and POSTs through origin access control (`lib/auth/client.ts` sends the `x-amz-content-sha256` header they need; the planner and recipe reader don't yet, see [DEPLOY.md](DEPLOY.md#before-you-start)).
 
 **Passkeys (optional, not added):** `@better-auth/passkey`, plus a `passkey` entry in `MODELS` in `lib/auth/adapter.ts`, which rejects unmapped models on purpose.
 
@@ -220,7 +211,7 @@ Not done here, and not optional.
 
 - **Consent and legal.** The sign-in page has a plain-language notice, but the design's §6 calls for separate, recorded consent to collect health-related data (Washington MHMDA, GDPR), an age statement, a privacy policy and terms. None of those exist yet, and no consent is recorded. Get legal review first.
 - **Desktop app.** `electron-app` loads this same header, so it shows **Sign in**, which leads to "isn't available" in a packaged build. The design wants desktop free of cloud features, so that needs a build flag.
-- **The AWS doc still describes Cognito** (§1, §3.5, §5, the diagram and the CDK example), and STRIPE_PLAN §8 still says "decision pending". Update them when you accept this decision.
+- **STRIPE_PLAN §8 still says "decision pending"** for auth. The AWS design and the CDK example no longer use Cognito (2026-11-14).
 
 ## What hasn't been tested
 

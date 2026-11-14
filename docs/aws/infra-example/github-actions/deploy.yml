@@ -1,11 +1,19 @@
 # =============================================================================
-# EXAMPLE — never run. Copy to .github/workflows/deploy.yml and adapt.
-# The CDK app it deploys is synth-tested only (see docs/LOCAL_TESTING.md).
-# GitHub OIDC -> AWS (no long-lived keys). See docs/aws/AWS_HOSTING_DESIGN.md §3.11.
+# EXAMPLE — not active until you copy it to .github/workflows/deploy.yml
+# (docs/DEPLOY.md, step 14). The CDK app it deploys is synth-tested only.
 #
-# Repo settings required:
-#   Environments: `dev` (no approval) and `production` (required reviewer = you).
-#   Environment variables: AWS_DEPLOY_ROLE_ARN, ARTIFACTS_BUCKET (per environment).
+#   push to main  -> test -> deploy dev (no approval)
+#                         -> deploy prod (waits for your approval in GitHub)
+#   Actions -> deploy -> Run workflow -> stage: prod   redeploys prod from a branch
+#   Re-run an older run's "deploy-prod" job             rolls prod back to that commit
+#
+# AWS access is GitHub OIDC -> the github-deploy-<env> role in each account
+# (GithubOidc-<stage> stack). No AWS keys are stored in GitHub.
+#
+# GitHub settings (Settings -> Environments), per environment:
+#   dev:        variable AWS_DEPLOY_ROLE_ARN (dev account), secret ALERT_EMAIL
+#   production: variable AWS_DEPLOY_ROLE_ARN (prod account), secret ALERT_EMAIL,
+#               "Required reviewers" = you, "Deployment branches" = main
 # Pin actions to commit SHAs before real use.
 # =============================================================================
 name: deploy
@@ -19,15 +27,11 @@ on:
         description: "Stage to deploy"
         type: choice
         options: [dev, prod]
-        default: prod
+        default: dev
 
 permissions:
   id-token: write   # OIDC
   contents: read
-
-concurrency:
-  group: deploy-${{ github.event.inputs.stage || 'dev' }}
-  cancel-in-progress: false
 
 jobs:
   test:
@@ -41,43 +45,75 @@ jobs:
       - run: npm ci --no-audit --no-fund --ignore-scripts
       - run: npm run check   # lint + typecheck + test + build, same as CI
 
-  deploy:
+  deploy-dev:
     needs: test
+    if: github.event_name == 'push' || inputs.stage == 'dev'
     # arm64 runner so the image builds natively for Lambda arm64.
-    # (Fallback: ubuntu-latest + docker/setup-qemu-action@v4, much slower.)
     runs-on: ubuntu-24.04-arm
-    environment: ${{ (github.event.inputs.stage || 'dev') == 'prod' && 'production' || 'dev' }}
+    environment: dev
+    concurrency: { group: deploy-dev, cancel-in-progress: false }
     env:
-      STAGE: ${{ github.event.inputs.stage || 'dev' }}
+      STAGE: dev
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
     steps:
       - uses: actions/checkout@v7
+        with: { lfs: true }   # nutrition.db is baked into the image
       - uses: actions/setup-node@v7
         with: { node-version-file: .nvmrc, cache: npm, cache-dependency-path: docs/aws/infra-example/cdk/package-lock.json }
-
+      - name: Check settings
+        run: |
+          [ -n "$ALERT_EMAIL" ] || { echo "::error::Add the ALERT_EMAIL secret to the dev environment (docs/DEPLOY.md, step 13)"; exit 1; }
+          [ -n "${{ vars.AWS_DEPLOY_ROLE_ARN }}" ] || { echo "::error::Add the AWS_DEPLOY_ROLE_ARN variable to the dev environment"; exit 1; }
       - uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
-
-      - name: Fetch pinned nutrition DB artifact
-        working-directory: food-nutrition-app
-        run: |
-          VERSION="$(cat nutrition-db.version)"
-          aws s3 cp "s3://${{ vars.ARTIFACTS_BUCKET }}/nutrition-db/${VERSION}/nutrition.db" nutrition.db
-          aws s3 cp "s3://${{ vars.ARTIFACTS_BUCKET }}/nutrition-db/${VERSION}/nutrition.db.sha256" nutrition.db.sha256
-          sha256sum -c nutrition.db.sha256
-
-      - name: CDK deploy
-        working-directory: docs/aws/infra-example/cdk   # move to infra/ when adopting
+      - name: CDK deploy (DNS stack first, then the site)
+        working-directory: docs/aws/infra-example/cdk
         run: |
           npm ci --no-audit --no-fund
-          npx cdk deploy "NutritionDictionary-${STAGE}" -c stage="${STAGE}" --require-approval never
-
+          npx cdk deploy "NutritionDictionary-${STAGE}" -c stage="${STAGE}" \
+            --require-approval never --outputs-file "$RUNNER_TEMP/outputs.json"
       - name: Smoke test
         run: |
-          URL="$(aws cloudformation describe-stacks --stack-name "NutritionDictionary-${STAGE}" \
-                 --query "Stacks[0].Outputs[?OutputKey=='SiteUrl'].OutputValue" --output text)"
-          # GET-only checks: through CloudFront OAC, POST /api/optimize needs the
-          # x-amz-content-sha256 header (see the stack's Function URL notes).
-          curl -fsS "${URL}/api/meta"
-          curl -fsS "${URL}/api/search?q=salmon&limit=5" | head -c 300
+          URL="$(node -p "require(process.env.RUNNER_TEMP + '/outputs.json')['NutritionDictionary-${STAGE}'].SiteUrl")"
+          echo "Testing $URL"
+          node food-nutrition-app/scripts/smoke.mjs "$URL" --wait 120
+
+  deploy-prod:
+    needs: [test, deploy-dev]
+    # On a push, after dev succeeded. From "Run workflow", whenever stage = prod.
+    if: >-
+      !cancelled() && needs.test.result == 'success' &&
+      ((github.event_name == 'push' && needs.deploy-dev.result == 'success') ||
+       (github.event_name == 'workflow_dispatch' && inputs.stage == 'prod'))
+    runs-on: ubuntu-24.04-arm
+    environment: production   # pauses here until you approve (required reviewer)
+    concurrency: { group: deploy-prod, cancel-in-progress: false }
+    env:
+      STAGE: prod
+      ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+    steps:
+      - uses: actions/checkout@v7
+        with: { lfs: true }
+      - uses: actions/setup-node@v7
+        with: { node-version-file: .nvmrc, cache: npm, cache-dependency-path: docs/aws/infra-example/cdk/package-lock.json }
+      - name: Check settings
+        run: |
+          [ -n "$ALERT_EMAIL" ] || { echo "::error::Add the ALERT_EMAIL secret to the production environment (docs/DEPLOY.md, step 13)"; exit 1; }
+          [ -n "${{ vars.AWS_DEPLOY_ROLE_ARN }}" ] || { echo "::error::Add the AWS_DEPLOY_ROLE_ARN variable to the production environment"; exit 1; }
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: CDK deploy (DNS stack first, then the site)
+        working-directory: docs/aws/infra-example/cdk
+        run: |
+          npm ci --no-audit --no-fund
+          npx cdk deploy "NutritionDictionary-${STAGE}" -c stage="${STAGE}" \
+            --require-approval never --outputs-file "$RUNNER_TEMP/outputs.json"
+      - name: Smoke test
+        run: |
+          URL="$(node -p "require(process.env.RUNNER_TEMP + '/outputs.json')['NutritionDictionary-${STAGE}'].SiteUrl")"
+          echo "Testing $URL"
+          node food-nutrition-app/scripts/smoke.mjs "$URL" --wait 120

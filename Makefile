@@ -79,7 +79,7 @@ lambda-local:
 	docker rm -f nutrition-dictionary-lambda >/dev/null
 
 cdk-synth:
-	cd $(CDK) && npm ci --no-audit --no-fund && npm run typecheck && npx cdk synth --quiet && npx cdk synth --quiet -c stage=prod
+	cd $(CDK) && npm ci --no-audit --no-fund && npm run typecheck && npx cdk synth --quiet -c synthOnly=true && npx cdk synth --quiet -c stage=prod -c synthOnly=true
 
 desktop:
 	cd $(DESK) && npm start

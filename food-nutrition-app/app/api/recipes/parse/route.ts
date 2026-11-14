@@ -20,8 +20,24 @@ function maxUploadBytes(): number {
     return Number.isFinite(n) && n > 0 ? n : DEFAULT_MAX_UPLOAD_BYTES;
 }
 
+const RAW_IMAGE_TYPE = /^image\/(jpeg|png|webp|gif|heic|heif)\b/i;
+
 async function readImage(request: Request): Promise<RecipeInput> {
     const limit = maxUploadBytes();
+    if (RAW_IMAGE_TYPE.test(request.headers.get('content-type') ?? '')) {
+        // The browser sends the photo's bytes as the body, so CloudFront can hash them.
+        const declaredRaw = Number(request.headers.get('content-length'));
+        if (Number.isFinite(declaredRaw) && declaredRaw > limit) {
+            throw new RequestError(413, 'payload_too_large', `That photo is too large. The limit is ${Math.floor(limit / (1024 * 1024))} MB.`);
+        }
+        const bytes = new Uint8Array(await request.arrayBuffer());
+        if (bytes.length === 0) throw new RequestError(400, 'invalid_request', 'The photo was empty.');
+        if (bytes.length > limit) {
+            throw new RequestError(413, 'payload_too_large', `That photo is too large. The limit is ${Math.floor(limit / (1024 * 1024))} MB.`);
+        }
+        const prepared = await prepareImage(bytes, limit);
+        return { kind: 'image', base64: prepared.base64, mediaType: prepared.mediaType };
+    }
     // Reject on the declared size before buffering the body. 64 KB allows for the multipart envelope.
     const declared = Number(request.headers.get('content-length'));
     if (Number.isFinite(declared) && declared > limit + 64 * 1024) {
@@ -43,7 +59,8 @@ async function readImage(request: Request): Promise<RecipeInput> {
 
 /**
  * POST /api/recipes/parse
- * Body: JSON { text }, or multipart/form-data with an `image` file.
+ * Body: JSON { text }; or a photo, as its bytes with an image/* Content-Type (what the site
+ * sends, so CloudFront can hash it) or as multipart/form-data with an `image` file.
  * 200: ParseResponse (lib/recipes/types.ts): ingredients with USDA matches and gram conversions.
  * Pasted text is read by the free built-in reader first, and goes to AI only when that
  * read is unsure (lib/recipes/confidence.ts); `provider` is then "builtin". Photos go to
@@ -54,9 +71,9 @@ async function readImage(request: Request): Promise<RecipeInput> {
 export async function POST(request: Request) {
     try {
         const type = request.headers.get('content-type') ?? '';
-        const isMultipart = /^multipart\/form-data\b/i.test(type);
-        if (!isMultipart && !/^application\/(.+\+)?json\b/i.test(type)) {
-            return errorResponse(415, 'unsupported_media_type', 'Send JSON { text } or a multipart form with an image');
+        const isImage = /^multipart\/form-data\b/i.test(type) || RAW_IMAGE_TYPE.test(type);
+        if (!isImage && !/^application\/(.+\+)?json\b/i.test(type)) {
+            return errorResponse(415, 'unsupported_media_type', 'Send JSON { text }, or a photo as the body or in a multipart form');
         }
 
         const { provider } = getAiProvider();
@@ -66,7 +83,7 @@ export async function POST(request: Request) {
                 'Retry-After': String(limit.retryAfterSeconds),
             });
         }
-        const input: RecipeInput = isMultipart
+        const input: RecipeInput = isImage
             ? await readImage(request)
             : { kind: 'text', text: parseTextBody(await readJsonBody(request, MAX_TEXT_BODY_BYTES)) };
 

@@ -1,6 +1,7 @@
 /** Browser calls to the recipe API. Every failure becomes an Error with a message fit to show. */
 import type { Food } from '@/lib/food-types';
 import type { AnalyzedIngredient, ParseResponse, RecipeFood } from '@/lib/recipes/types';
+import { sameOriginFetch } from '@/lib/same-origin-fetch';
 
 const OFFLINE = 'We couldn\'t reach the server. Check your connection and try again.';
 
@@ -11,10 +12,10 @@ async function readJson<T>(res: Response): Promise<T> {
     return body;
 }
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
+async function request<T>(send: () => Promise<Response>): Promise<T> {
     let res: Response;
     try {
-        res = await fetch(url, init);
+        res = await send();
     } catch (e) {
         if ((e as Error).name === 'AbortError') throw e;
         throw new Error(OFFLINE);
@@ -22,31 +23,29 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     return readJson<T>(res);
 }
 
-const jsonPost = (body: unknown, signal?: AbortSignal): RequestInit => ({
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal,
-});
+const get = <T>(url: string, signal?: AbortSignal) => request<T>(() => fetch(url, { signal }));
+const post = <T>(url: string, json: unknown, signal?: AbortSignal) =>
+    request<T>(() => sameOriginFetch(url, { method: 'POST', json, signal }));
 
 export function parseText(text: string, signal?: AbortSignal): Promise<ParseResponse> {
-    return request('/api/recipes/parse', jsonPost({ text }, signal));
+    return post('/api/recipes/parse', { text }, signal);
 }
 
+/** Sends the photo's bytes as the body (not a form), so CloudFront can check their hash. */
 export function parseImage(image: Blob, signal?: AbortSignal): Promise<ParseResponse> {
-    const form = new FormData();
-    form.append('image', image, 'recipe.jpg');
-    return request('/api/recipes/parse', { method: 'POST', body: form, signal });
+    return request(() => sameOriginFetch('/api/recipes/parse', {
+        method: 'POST', body: image, contentType: image.type || 'image/jpeg', signal,
+    }));
 }
 
 export async function matchLine(line: string): Promise<AnalyzedIngredient> {
-    return (await request<{ ingredient: AnalyzedIngredient }>('/api/recipes/match', jsonPost({ line }))).ingredient;
+    return (await post<{ ingredient: AnalyzedIngredient }>('/api/recipes/match', { line })).ingredient;
 }
 
 export async function fetchFood(fdcId: number): Promise<RecipeFood> {
-    return (await request<{ food: RecipeFood }>(`/api/recipes/food?fdcId=${fdcId}`)).food;
+    return (await get<{ food: RecipeFood }>(`/api/recipes/food?fdcId=${fdcId}`)).food;
 }
 
 export async function searchFoods(query: string, signal?: AbortSignal): Promise<Food[]> {
-    return (await request<{ foods: Food[] }>(`/api/search?q=${encodeURIComponent(query)}&limit=8`, { signal })).foods;
+    return (await get<{ foods: Food[] }>(`/api/search?q=${encodeURIComponent(query)}&limit=8`, signal)).foods;
 }

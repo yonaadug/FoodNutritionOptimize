@@ -1,5 +1,6 @@
 'use client';
 
+import { sameOriginFetch } from '@/lib/same-origin-fetch';
 import { useSyncExternalStore } from 'react';
 import type { HistoryItem } from '@/lib/user-store/history';
 import { LOCAL_DATA_CLEARED_EVENT, reconcileLocalData } from '@/lib/local-data';
@@ -101,24 +102,9 @@ function settleIdentity(user: CurrentUser | null) {
     }
 }
 
-/**
- * Same-origin fetch for account routes. The SHA-256 header is what CloudFront's
- * origin access control needs to sign a request body for a Lambda URL
- * (docs/aws/AWS_HOSTING_DESIGN.md section 3.2), and is ignored everywhere else.
- */
+/** Same-origin fetch for account routes; see lib/same-origin-fetch.ts for the CloudFront header. */
 export async function apiFetch(path: string, init: { method?: string; json?: unknown; keepalive?: boolean } = {}): Promise<Response> {
-    const method = init.method ?? 'GET';
-    const headers: Record<string, string> = {};
-    let body: string | undefined;
-    if (init.json !== undefined) {
-        body = JSON.stringify(init.json);
-        headers['Content-Type'] = 'application/json';
-    }
-    if (method !== 'GET' && globalThis.crypto?.subtle) {
-        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(body ?? ''));
-        headers['x-amz-content-sha256'] = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
-    }
-    return fetch(path, { method, headers, body, credentials: 'same-origin', keepalive: init.keepalive });
+    return sameOriginFetch(path, init);
 }
 
 function load(): Promise<void> {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { plusRoute } from '@/lib/billing/server';
 import { ApiError, handleError, readJsonBody } from '@/lib/api';
 import { getDb } from '@/lib/db';
 import { planContaminantsIn, planFdcIds, swapCandidatesIn, type SwapCandidate } from '@/lib/plan-contaminants';
@@ -16,7 +17,7 @@ export const dynamic = 'force-dynamic';
  *
  * PLUS-GATE: planContaminants. The Plus check goes at the top of this handler.
  */
-export async function POST(request: Request) {
+async function handle(request: Request) {
     try {
         const body = await readJsonBody(request, PLAN_CONTAMINANT_LIMITS.maxBodyBytes);
         let days;
@@ -43,3 +44,6 @@ export async function POST(request: Request) {
         return handleError(error, 'plan-contaminants');
     }
 }
+
+// PLUS-GATE: planContaminants. Signed out: 401; a free account: 403 { code: 'plus_required' }.
+export const POST = plusRoute('planContaminants', request => handle(request));

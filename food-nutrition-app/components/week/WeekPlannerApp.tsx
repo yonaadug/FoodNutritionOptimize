@@ -26,6 +26,7 @@ import GroceryList from './GroceryList';
 import WeekDays, { DAY_NAMES } from './WeekDays';
 import { getWeekSnapshot, runWeek, useWeek, weekActions, type WeekState } from './weekStore';
 import styles from './Week.module.css';
+import PlusGate from '@/components/billing/PlusGate';
 
 const replan = () => void runWeek(getPlannerSnapshot(), true);
 
@@ -365,7 +366,9 @@ export default function WeekPlannerApp() {
                         <GoalsSummary result={success} />
 
                         {/* PLUS-GATE: planContaminants (week view). */}
-                        <PlanContaminants days={contaminantDays} dayNames={DAY_NAMES} busy={busy} {...contaminantActions} />
+                        <PlusGate feature="planContaminants" compact>
+                            <PlanContaminants days={contaminantDays} dayNames={DAY_NAMES} busy={busy} {...contaminantActions} />
+                        </PlusGate>
 
                         <GroceryList days={success.days!} foods={foods} checked={week.checked} />
 

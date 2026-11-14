@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { plusRoute } from '@/lib/billing/server';
 import { ApiError, handleError, jsonError, readJsonBody } from '@/lib/api';
 import { hydrateFoods, DatabaseUnavailableError, type Food } from '@/lib/db';
 import { planWeek } from '@/lib/week-planner/solve';
@@ -18,7 +19,7 @@ export const dynamic = 'force-dynamic';
  *
  * PLUS-GATE: weekPlanner. The Plus check goes at the top of this handler.
  */
-export async function POST(request: Request) {
+async function handle(request: Request) {
     try {
         const body = await readJsonBody(request, WEEK_REQUEST_LIMITS.maxBodyBytes);
         let params;
@@ -45,3 +46,6 @@ export async function POST(request: Request) {
         return handleError(error, 'plan-week');
     }
 }
+
+// PLUS-GATE: weekPlanner. Signed out: 401; a free account: 403 { code: 'plus_required' }.
+export const POST = plusRoute('weekPlanner', request => handle(request));

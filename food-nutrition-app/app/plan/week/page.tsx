@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import PlusGate from '@/components/billing/PlusGate';
 import WeekPlannerApp from '@/components/week/WeekPlannerApp';
 
 export const metadata: Metadata = {
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 
 // PLUS-GATE: weekPlanner (route). The page is one component, so wrapping it is the gate.
 export default function WeekPage() {
-    return <WeekPlannerApp />;
+    return <PlusGate feature="weekPlanner"><WeekPlannerApp /></PlusGate>;
 }

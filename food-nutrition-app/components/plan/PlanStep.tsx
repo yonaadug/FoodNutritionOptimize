@@ -18,6 +18,7 @@ import {
 import { typicalServing } from '@/lib/servings';
 import { goalProgress, goalSummary, olderEntryUse, parseIssues, recipeCaveats, unusedFoods, warningText, type GoalProgress } from './analysis';
 import InfeasibleHelp from './InfeasibleHelp';
+import PlusGate from '@/components/billing/PlusGate';
 import PlanContaminants from './PlanContaminants';
 import { plannerContaminantActions } from './contaminantActions';
 import WeekPlanEntry from './WeekPlanEntry';
@@ -385,10 +386,14 @@ function PlanResultView({ state, result, runInfo, stale, restored, updating, hea
             </div>
 
             {/* PLUS-GATE: planContaminants (UI entry for the whole-plan check). */}
-            <PlanContaminants days={contaminantDays} busy={updating} {...contaminantActions} />
+            <PlusGate feature="planContaminants" compact>
+                <PlanContaminants days={contaminantDays} busy={updating} {...contaminantActions} />
+            </PlusGate>
 
             {/* PLUS-GATE: weekPlanner (UI entry: "Plan a week"). */}
-            <WeekPlanEntry />
+            <PlusGate feature="weekPlanner" compact>
+                <WeekPlanEntry />
+            </PlusGate>
 
             <details className="disclosure">
                 <summary>Where each nutrient comes from</summary>

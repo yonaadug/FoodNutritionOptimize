@@ -20,7 +20,7 @@ For plated-meal photos, [FOOD_PHOTO_OPTIONS.md](FOOD_PHOTO_OPTIONS.md) (2026-11-
 
 | Decision | Options | Notes |
 |---|---|---|
-| **Default model** | `claude-opus-5-5` (the code default), `claude-haiku-5-5`, `claude-sonnet-5-5` | Set with `AI_MODEL`. Opus is about 40x Haiku's cost. `AWS_HOSTING_DESIGN.md` §3.7 budgets around Haiku ($0.0074 per operation, $0.75 per payer per month), so **that budget doesn't hold on the Opus default**. Haiku's quality on real recipes is untested. |
+| **Default model** | **Decided 2026-11-14:** Haiku 5.5 by default, Sonnet 5.5 for plated-food photos and failed reads, Amazon Nova 2 Lite while Claude is unavailable, and pasted text on the built-in reader first | See [RECIPES.md](../RECIPES.md#which-model-reads-what). Fits the `AWS_HOSTING_DESIGN.md` §3.7 budget ($0.0074 per operation). Haiku's and Nova's quality on real recipes is still untested. |
 | **Bedrock or Claude Platform on AWS** | Bedrock is implemented. Platform on AWS would be one small provider (`@anthropic-ai/aws-sdk`). | §3.7 prefers Platform on AWS for same-day features, batch and the Files API. Bedrock suits a requirement that AWS be the sole processor. |
 | **Who can use it** | Today, anyone: there's no sign-in on `/recipes` | Fine on `mock`. Add the §3.7 quotas before turning on a paid provider in public. |
 

@@ -2,7 +2,9 @@
 
 This guide takes you from "Claude on Bedrock refuses this account" to `/recipes` reading photos through Amazon Bedrock, first on your Mac and then on AWS. It was written on 2026-11-13 from read-only checks of the project's AWS account (<your-account-id>, us-east-1). The checks changed nothing.
 
-The app side already exists: `/recipes` takes a photo, a model reads the ingredients, and the USDA database supplies the nutrition. **The model only reads the recipe; it never supplies nutrient values.** Nothing in the code has to change for Bedrock to work. What's missing is on the AWS account. See [RECIPES.md](RECIPES.md) for how the analyzer itself works.
+The app side already exists: `/recipes` takes a photo, a model reads the ingredients, and the USDA database supplies the nutrition. **The model only reads the recipe; it never supplies nutrient values.** What's missing for Claude is on the AWS account.
+
+**Update 2026-11-14: photos work on Bedrock today through Amazon Nova 2 Lite.** The app now tries Claude Haiku 5.5 first and, while Claude is unavailable (this account's 403), falls back to Nova ([§8](#8-amazon-nova-the-fallback)). Once AWS raises the Claude quota, Claude takes over with no change. Pasted text is read by the free built-in reader first and reaches a model only when that read is unsure. See [RECIPES.md](RECIPES.md#which-model-reads-what) for the routing and its offline evaluation.
 
 ## Contents
 
@@ -13,7 +15,7 @@ The app side already exists: `/recipes` takes a photo, a model reads the ingredi
 5. [Working on AWS](#5-working-on-aws)
 6. [Spend controls](#6-spend-controls)
 7. [How the Bedrock path works](#7-how-the-bedrock-path-works)
-8. [If AWS won't enable Claude: Amazon Nova](#8-if-aws-wont-enable-claude-amazon-nova)
+8. [Amazon Nova: the fallback](#8-amazon-nova-the-fallback)
 9. [Every AWS call made for this guide](#9-every-aws-call-made-for-this-guide)
 10. [Sources](#sources)
 
@@ -144,7 +146,7 @@ aws bedrock-runtime converse --model-id us.anthropic.claude-haiku-5-5 \
 
 ## 3. Which model to use
 
-**Default: `us.anthropic.claude-haiku-5-5`, at about $0.0008 per photo. Fallback: `us.anthropic.claude-sonnet-5-5`, at about $0.017**, for plated-meal photos or when Haiku's reply fails validation. Once Haiku runs on the account, check it on 20–50 real recipe photos before relying on it.
+**Default: `us.anthropic.claude-haiku-5-5`, at about $0.0008 per photo. Escalation: `us.anthropic.claude-sonnet-5-5`, at about $0.017**, for plated-meal photos or when Haiku's reply fails validation. **Fallback while Claude is unavailable: `us.amazon.nova-2-lite-v1:0`, $0.0017 per photo measured.** These are the code defaults since 2026-11-14 (`AI_MODEL`, `AI_ESCALATION_MODEL`, `AI_FALLBACK_MODEL`). Once Haiku runs on the account, check it on 20–50 real recipe photos before relying on it.
 
 - **Haiku 5.5 suits the job.** Recipe cards, screenshots and cookbook pages are mostly reading printed text into a fixed structure.
 - **It works with the existing code.** Strict tool use is supported on Bedrock, and it is the cheapest Claude model by 10x.
@@ -165,10 +167,10 @@ Assumptions for the Claude rows:
 |---|---|---|---|---|
 | **`us.anthropic.claude-haiku-5-5`** | 0.11 / 0.55 (global 0.10 / 0.50) | **≈ $0.0008** | Strict tool use and structured outputs (bedrock-runtime) | Recommended default. Not on the Mantle endpoint in us-east-1 |
 | `us.anthropic.claude-sonnet-5-5` | 2.20 / 11.00 (global 2.00 / 10.00) | ≈ $0.017 | Yes | Fallback and plated meals. Not on the Mantle endpoint in us-east-1 |
-| `anthropic.claude-opus-5-5` (code default) | 4.40 / 22.00 (global 4.00 / 20.00) | ≈ $0.033 or more | Yes | ~40x Haiku. Thinking can't be turned off, so output runs higher |
+| `anthropic.claude-opus-5-5` (the code default before 2026-11-14) | 4.40 / 22.00 (global 4.00 / 20.00) | ≈ $0.033 or more | Yes | ~40x Haiku. Thinking can't be turned off, so output runs higher |
 | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | 1.10 / 5.50 | ≈ $0.0075 | Yes | Quota isn't zero, but needs the use-case form and agreement. Older, 9x Haiku 5.5's price |
-| `us.amazon.nova-2-lite-v1:0` | 0.33 / 2.75 (global 0.30 / 2.50) | **$0.0019 measured** (1,780 in / 481 out) | Tool use with forced `toolChoice`; AWS lists "structured outputs" as not supported | **Works on this account today.** Needs a new provider ([§8](#8-if-aws-wont-enable-claude-amazon-nova)). Bills a flat 230 tokens per image |
-| `amazon.nova-lite-v1:0` | 0.06 / 0.24 | **$0.0002 measured** (2,718 in / 258 out) | Tool use; schema not enforced | Works today. Weaker output (see below) |
+| `us.amazon.nova-2-lite-v1:0` | 0.33 / 2.75 (global 0.30 / 2.50) | **$0.0017 measured** through the app (1,839 in / 405 out); $0.0019 on 2026-11-13 | Tool use with forced `toolChoice`; AWS lists "structured outputs" as not supported | **Works on this account today. The fallback** ([§8](#8-amazon-nova-the-fallback)). Bills a flat 230 tokens per image |
+| `amazon.nova-lite-v1:0` | 0.06 / 0.24, no `us.` premium | **$0.0002 measured** (2,718 in / 258 out) | Tool use; schema not enforced | Works today. Weaker output (see below). Set `AI_FALLBACK_MODEL=us.amazon.nova-lite-v1:0` to use it |
 | `us.amazon.nova-pro-v1:0` | 0.80 / 3.20 | ≈ $0.003 | Tool use | Works today. Not tested |
 | Llama 4 Maverick, Qwen3 VL 235B, Gemma 3 27B, Pixtral Large | 0.24/0.97, 0.53/2.66, 0.23/0.38, 2.00/6.00 | — | Varies | Also in us-east-1. Not evaluated: no fit with the Claude code path, and no stronger evidence |
 
@@ -212,11 +214,13 @@ npm ci --ignore-scripts
 
 AI_PROVIDER=bedrock \
 AI_BEDROCK_REGION=us-east-1 \
-AI_MODEL=us.anthropic.claude-haiku-5-5 \
 AWS_PROFILE=default \
 AI_TIMEOUT_MS=120000 \
 npx next dev -p 3680
 ```
+
+- **The models are the defaults:** Haiku, Sonnet for plates, Nova 2 Lite when Claude is refused. **This works today**: until AWS raises the Claude quota, each read Claude refuses goes to Nova, and the log says so once every 10 minutes.
+- **To use Nova only** (no refused Claude call at all), add `AI_MODEL=off AI_ESCALATION_MODEL=off`. Remove them once Claude works.
 
 - **`AI_TIMEOUT_MS=120000` is for the first run only.** Bedrock compiles a strict schema on its first use, which "can take about 90 seconds" and is then cached for 24 hours.
 - **The same settings can go in `.env.local`** instead of the command line ([`.env.example`](../food-nutrition-app/.env.example) lists them all).
@@ -240,10 +244,10 @@ Then open http://127.0.0.1:3680/recipes and use **Upload a photo**.
 
 **What a good run looks like:**
 
-- The response says `"provider":"bedrock"`.
-- The server log has one line per model call:
+- The response says `"provider":"bedrock"`, and `"model"` names the model that read it.
+- The server log has one line per model call. Real, from Nova on 2026-11-14:
   ```
-  [ai] provider=bedrock model=us.anthropic.claude-haiku-5-5 kind=image ms=… ok=true in=… out=… cost_usd=…
+  [ai] provider=bedrock model=us.amazon.nova-2-lite-v1:0 kind=image ms=2116 ok=true in=1839 out=405 cost_usd=0.00172
   ```
 - Compare `in` and `out` with the table in [§3](#3-which-model-to-use).
 
@@ -251,7 +255,9 @@ Then open http://127.0.0.1:3680/recipes and use **Upload a photo**.
 
 | Log says | Do this |
 |---|---|
-| `PermissionDeniedError 403. Bedrock says this account can't use …` | Go back to [§2](#2-fix-the-account-owner-actions). The log line includes the `get-foundation-model-availability` command to run |
+| `PermissionDeniedError 403. Bedrock says this account can't use …` followed by `… is unavailable (access); skipping it for 600 s, using us.amazon.nova-2-lite-v1:0` | Expected until Claude is enabled: Nova is reading instead. To enable Claude, go back to [§2](#2-fix-the-account-owner-actions). The log line includes the `get-foundation-model-availability` command to run |
+| `Nova error: AccessDeniedException 403` | IAM doesn't allow the Nova profile and models ([§5](#least-privilege-iam-policy-for-the-app-role)) |
+| `Nova error: ThrottlingException 429` | Nova's tokens-per-minute quota. Try again in a minute |
 | `NotFoundError 404. The bedrock-mantle endpoint doesn't serve …` | You set a bare `AI_MODEL` such as `claude-haiku-5-5`. Use `us.anthropic.claude-haiku-5-5` |
 | `NotFoundError 404. Bedrock has no model or inference profile …` | A typo in `AI_MODEL`. Check `aws bedrock list-inference-profiles` |
 | `AuthenticationError 401` | Credentials. Run `aws sts get-caller-identity` with the same `AWS_PROFILE` |
@@ -264,8 +270,8 @@ Then open http://127.0.0.1:3680/recipes and use **Upload a photo**.
 
 `/api/recipes/parse` runs in the **web** Lambda and calls Bedrock directly. The CDK example (`docs/aws/infra-example/cdk/lib/nutrition-dictionary-stack.ts`) now sets up the web function for this:
 
-- It allows `bedrock:InvokeModel` on the `us.` Haiku 5.5 profile only.
-- It sets `AI_PROVIDER=bedrock`, `AI_MODEL=us.anthropic.claude-haiku-5-5`, the region, `AI_TIMEOUT_MS=20000`, `AI_MAX_RETRIES=1` and `AI_DAILY_BUDGET_USD`.
+- It allows `bedrock:InvokeModel` on three `us.` profiles only, Haiku 5.5, Sonnet 5.5 and Nova 2 Lite, and on each one's foundation models only through its own profile.
+- It sets `AI_PROVIDER=bedrock`, `AI_MODEL=us.anthropic.claude-haiku-5-5`, `AI_ESCALATION_MODEL=us.anthropic.claude-sonnet-5-5`, `AI_FALLBACK_MODEL=us.amazon.nova-2-lite-v1:0`, the region, `AI_TIMEOUT_MS=20000`, `AI_MAX_RETRIES=1` and `AI_DAILY_BUDGET_USD`.
 - It raises the timeout from 15 s to 28 s, which stays under CloudFront's 30 s origin default.
 - It adds a Bedrock Deny to the kill switch ([§6](#6-spend-controls)).
 
@@ -309,7 +315,7 @@ Replace `ACCOUNT_ID`:
 }
 ```
 
-**To add the Sonnet 5.5 fallback,** repeat both statements with `claude-sonnet-5-5`.
+**For the other two models,** repeat both statements with `anthropic.claude-sonnet-5-5` and with `amazon.nova-2-lite-v1:0` (profile `inference-profile/us.amazon.nova-2-lite-v1:0`, which routes to the same three regions; checked with `list-inference-profiles` on 2026-11-14). The CDK example does exactly this. Nova needs no Marketplace agreement.
 
 **For a `global.` profile instead:**
 
@@ -337,7 +343,10 @@ These are also in [`.env.example`](../food-nutrition-app/.env.example).
 | Variable | Production value | Notes |
 |---|---|---|
 | `AI_PROVIDER` | `bedrock` | Unset means the free offline mock |
-| `AI_MODEL` | `us.anthropic.claude-haiku-5-5` | **Set it.** The code default is `claude-opus-5-5`, which costs ~40x and goes to the Mantle endpoint |
+| `AI_MODEL` | `us.anthropic.claude-haiku-5-5` | The code default on Bedrock since 2026-11-14 (it was `claude-opus-5-5`) |
+| `AI_ESCALATION_MODEL` | `us.anthropic.claude-sonnet-5-5` | Plated-food photos and failed reads. `off` turns it off |
+| `AI_FALLBACK_MODEL` | `us.amazon.nova-2-lite-v1:0` | Used while Claude is unavailable. `off` turns it off |
+| `AI_BUILTIN_TEXT` | `on` | Pasted text tries the free built-in reader first |
 | `AI_BEDROCK_REGION` | `us-east-1` | Falls back to `AWS_REGION` (set automatically on Lambda) |
 | `AI_TIMEOUT_MS` / `AI_MAX_RETRIES` | `20000` / `1` | Must fit inside the Lambda timeout |
 | `AI_DAILY_BUDGET_USD` | `5` | Per Lambda instance, in memory. A speed bump, not a cap |
@@ -352,9 +361,10 @@ Credentials come from the Lambda's role. There are no keys anywhere.
 | Control | Status | What to do |
 |---|---|---|
 | Per-IP rate limit and daily estimated-spend cap | **Built**, in memory per Lambda instance | Fine for testing. Not a real cap: each instance counts on its own |
-| Cost estimate in the log | **Built** | Prices now include Bedrock's 10% premium for `us.` and in-region calls |
+| Cost estimate in the log | **Built** | Prices include Bedrock's 10% premium for `us.` and in-region calls, and Nova 2 Lite and Nova Lite v1 from the AWS Price List |
+| Built-in reader first for pasted text | **Built** | 63% of the evaluation set needs no model call at all ([RECIPES.md](RECIPES.md#when-the-built-in-reader-skips-ai)) |
 | Per-user quotas (DynamoDB conditional counters on `USAGE#yyyy-mm` and `GLOBAL/AISPEND#day`) | **Not built** | Required before `/recipes` is public on a paid model ([TODO.md](../TODO.md)). Reserve ~$0.001 per Haiku call before calling, and true up from `usage` afterwards |
-| AWS Budget | In the CDK example (monthly total cost; 50% and forecast 100% alerts; 150% fires the kill switch) | Claude charges are **AWS Marketplace** charges ("Claude Haiku 5.5 (Amazon Bedrock Edition)"), not "Amazon Bedrock". The example budget counts total cost, so it sees them. A budget filtered to the Bedrock service would not |
+| AWS Budget | In the CDK example (monthly total cost; 50% and forecast 100% alerts; 150% fires the kill switch) | Claude charges are **AWS Marketplace** charges ("Claude Haiku 5.5 (Amazon Bedrock Edition)"), not "Amazon Bedrock". Nova charges are "Amazon Bedrock". The example budget counts total cost, so it sees both. A budget filtered to the Bedrock service would miss Claude |
 | Kill switch | In the CDK example | It sets the SSM flag, stops the AI worker, and now adds an explicit Deny on Bedrock to the web role. `/recipes` then answers "the recipe reader isn't available" and users can still add ingredients by hand. To undo: `aws iam delete-role-policy --role-name <web-role> --policy-name ai-kill-switch` |
 | Bedrock quota | Set by AWS | The TPM quota you request in §2.4 is itself a hard ceiling on spend rate: 400k TPM is at most about $3 an hour on Haiku |
 
@@ -370,7 +380,7 @@ aws budgets create-budget --account-id ACCOUNT_ID \
 
 All of this is in `food-nutrition-app/lib/ai/`.
 
-**SDK and endpoints.** The code uses `@anthropic-ai/bedrock-sdk`, which speaks the Anthropic Messages API on both of Bedrock's endpoints. Converse isn't used.
+**SDK and endpoints.** Claude goes through `@anthropic-ai/bedrock-sdk`, which speaks the Anthropic Messages API on both of Bedrock's endpoints. Nova goes through `@aws-sdk/client-bedrock-runtime` and the Converse API (`lib/ai/nova.ts`). `lib/ai/router.ts` chooses between them.
 
 | `AI_MODEL` | Sent as | Endpoint | Client |
 |---|---|---|---|
@@ -401,33 +411,22 @@ Before 2026-11-13, profile IDs were also sent to Mantle, which doesn't take them
 | HEIC | iPhone HEIC isn't accepted by any model API. Safari converts it in the browser. In other browsers the server now names the format and says how to send a JPEG |
 | Image tokens | Claude counts ⌈w/28⌉×⌈h/28⌉, so 1568×1176 is 2,352 tokens. Current Claude models accept up to a 2,576 px edge (4,784 tokens), but 1568 px is legible for printed text and cheaper |
 
-**Errors.** SDK errors become friendly messages for the user (`ai_unavailable`, `ai_rate_limited`, `ai_timeout`, `ai_bad_output`, `ai_refused`). Bedrock 401, 403 and 404 errors also log a hint for you, naming the likely cause and the command to check. The user-facing text never includes it. Bedrock has no server-side refusal fallback, so a refusal shows a friendly error and the user can add ingredients by hand.
+**Errors.** SDK errors become friendly messages for the user (`ai_unavailable`, `ai_rate_limited`, `ai_timeout`, `ai_bad_output`, `ai_refused`). Bedrock 401, 403 and 404 errors (and Nova's `AccessDeniedException`, `ResourceNotFoundException` and credential errors) also log a hint for you, naming the likely cause and the command to check. The user-facing text never includes it. Errors that mean the model itself can't be used (403, 404, an invalid model ID, `ServiceQuotaExceededException`, 429, 5xx) are marked so the router hands the read to Nova; timeouts, refusals and rejected requests are not. Bedrock has no server-side refusal fallback, so a refusal shows a friendly error and the user can add ingredients by hand.
 
 **Cost logging.** One log line is written per call, with token counts and estimated cost. It never includes recipe text or images.
 
-## 8. If AWS won't enable Claude: Amazon Nova
+## 8. Amazon Nova: the fallback
 
-Nova 2 Lite and Nova Lite work on this account today:
+**Built on 2026-11-14.** Nova 2 Lite reads recipes whenever Claude can't, which on this account is every time until the quota is raised. Nova works today: its agreement is `AVAILABLE` and its quotas are at their defaults.
 
-- the agreement is `AVAILABLE`;
-- the quotas are at their defaults;
-- they handled the test card well in [§3](#3-which-model-to-use).
+- **Provider:** `lib/ai/nova.ts`. Converse with the same system prompt and `record_recipe` schema as Claude, sent as `toolConfig` with a forced `toolChoice`; images as raw bytes; `temperature: 0`. Nova doesn't enforce the schema, so every reply goes through the same `validateRecipeOutput`, which fills in a missing confidence and caps plated-meal confidence at 0.6.
+- **When:** `lib/ai/router.ts`. Claude errors marked unavailable (403, 404, quota, throttling, 5xx) send the read to Nova. Claude is then skipped for 10 minutes after an access error or 60 seconds after throttling, per server instance, and tried again.
+- **Errors:** `AccessDeniedException`, `ResourceNotFoundException`, `ThrottlingException`, `ServiceQuotaExceededException`, `ValidationException` and credential errors each log a hint; the user sees the usual generic message.
+- **Cost:** `lib/ai/cost.ts`, from the AWS Price List (2026-11-11 publication): Nova 2 Lite $0.33 / $2.75 per million tokens on `us.` (global $0.30 / $2.50), Nova Lite v1 $0.06 / $0.24 with no premium.
+- **IAM:** the profile and three foundation-model ARNs, as in [§5](#least-privilege-iam-policy-for-the-app-role).
+- **Settings:** `AI_FALLBACK_MODEL` (default `us.amazon.nova-2-lite-v1:0`; `off` turns it off). Bedrock only.
 
-The app has no Nova provider, and **adding one is your call**. It would take:
-
-- **`lib/ai/nova.ts`**, an `AiProvider` that calls `ConverseCommand`.
-  - Use `@aws-sdk/client-bedrock-runtime`, already installed as a dependency of the Bedrock SDK; pin it in `package.json`.
-  - Send the same system prompt and the `record_recipe` schema as `toolConfig`, with `toolChoice: {tool: {name: "record_recipe"}}`. Nova allows forcing a tool call.
-  - Send the image as `{image: {format: "jpeg", source: {bytes}}}`. Converse's limit is 3.75 MB of raw bytes per image.
-- **Reuse the existing pieces:**
-  - `validateRecipeOutput`, which already fills in a missing confidence and normalizes units; Nova doesn't enforce the schema;
-  - `logAiCall` and the spend guard.
-- **Wiring:**
-  - an `AI_PROVIDER=nova` branch, or Nova model IDs under `bedrock`, in `chooseProvider`;
-  - prices in `cost.ts`;
-  - Converse error mapping (`AccessDeniedException`, `ThrottlingException`, `ValidationException`).
-- **IAM:** `bedrock:InvokeModel` on `inference-profile/us.amazon.nova-2-lite-v1:0` and the three US `foundation-model/amazon.nova-2-lite-v1:0` ARNs, the same pattern as above.
-- **Tests:** the existing fake-client tests, adapted. The estimate is about 150 lines of code plus tests.
+**Quality: unmeasured beyond a smoke test.** On a rendered 9-ingredient recipe card Nova 2 Lite read every name, amount, unit and the servings correctly, twice (2,100–2,400 ms). From prose ("two chicken breasts, about a cup of white rice, a head of broccoli and a splash of soy sauce") it listed all five foods with their amounts and kept "splash" as a note rather than inventing one. The page treats a Nova read like any AI read: the user checks every ingredient.
 
 ## 9. Every AWS call made for this guide
 
@@ -459,6 +458,20 @@ All calls ran on 2026-11-13 as the CLI user, in us-east-1.
 | `Converse amazon.nova-lite-v1:0`, one test card | 2,718 in / 258 out | ≈ $0.0002 |
 
 The total was **about $0.002**. Nothing was created, subscribed, requested or changed.
+
+**2026-11-14, while building the Nova fallback** (us-east-1, through the AWS SDK with the CLI user's credentials; the local `aws` CLI still can't run):
+
+- Read-only: `bedrock list-foundation-models` (Amazon) and `list-inference-profiles`, and STS as used by `cdk synth`.
+- The public AWS Price List file for Amazon Bedrock in us-east-1 (no credentials).
+- Inference, all `Converse us.amazon.nova-2-lite-v1:0` through the app's own code, on a recipe card rendered for the test:
+
+| Call | Result | Cost |
+|---|---|---|
+| Recipe card, through `lib/ai/nova.ts` directly | 9/9 ingredients, 1,839 in / 406 out, 2.4 s | $0.0017 |
+| Recipe card, `POST /api/recipes/parse` (Claude tiers off) | 9/9 ingredients matched, 1,839 in / 405 out, 2.1 s | $0.0017 |
+| Prose text the built-in reader was unsure of, same route | 5 foods, 1,670 in / 263 out, 1.2 s | $0.0013 |
+
+The total was **about $0.0047**. No Claude call was made. Nothing was created or changed.
 
 ## Sources
 

@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { getDbInfo, getMeta } from '@/lib/db';
+import { LEGAL_DRAFT, LEGAL_PATHS } from '@/lib/legal';
+import styles from './SiteFooter.module.css';
 
 interface MetaInfo { foodCount: number; release: string | null; downloadPage: string | null }
 
@@ -48,6 +50,15 @@ export default function SiteFooter() {
                 <Link href="/methodology">How we source and match our data</Link>.
             </p>
             <p>Nutrition values and plans are estimates for general information, not medical advice.</p>
+            {/* Washington's My Health My Data Act wants the health data policy linked from the homepage. This footer is on every page. */}
+            <nav aria-label="Legal">
+                <ul className={styles.legal}>
+                    <li><Link href={LEGAL_PATHS.privacy}>Privacy Policy</Link></li>
+                    <li><Link href={LEGAL_PATHS.healthData}>Consumer Health Data Privacy Policy</Link></li>
+                    <li><Link href={LEGAL_PATHS.terms}>Terms of Use</Link></li>
+                    {LEGAL_DRAFT && <li className={styles.draft}>Drafts, under legal review</li>}
+                </ul>
+            </nav>
         </footer>
     );
 }

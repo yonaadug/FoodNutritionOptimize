@@ -87,8 +87,10 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 
 ## P1: new features (food search, contaminants, recipes, accounts)
 
-- [ ] **Before accounts go public (legal):** recorded consent, an age statement, privacy policy and terms don't exist
-      yet and need legal review. Pregnancy, weight and diet data count as health data (FTC rule, Washington MHMDA).
+- [ ] **Before accounts go public (legal):** drafts of the privacy policy, consumer health data policy and terms
+      (`/privacy`, `/health-data-privacy`, `/terms`), recorded consent and an age statement at sign-in are built and
+      **need a lawyer's review**. See [docs/LEGAL.md](docs/LEGAL.md) for the questions, the placeholders the owner must
+      fill (`lib/legal.ts`), the `privacy@nutritiondictionary.com` mailbox to set up, and when to turn `LEGAL_DRAFT` off.
 - [ ] **Before `/recipes` goes public on a paid AI provider:** per-user quotas and a global spend cap (§3.7 of the AWS
       design) plus an AWS Budget. Today's rate limits are in-memory, per server instance. Claude on Bedrock bills as
       AWS Marketplace charges, so a budget filtered to "Amazon Bedrock" misses it. The CDK kill switch now also
@@ -96,7 +98,7 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
       Bedrock compiles a strict tool schema on first use (up to ~90 s, cached 24 h): check whether the first call
       after deploy times out at `AI_TIMEOUT_MS=20000`, and add a warm-up if it does.
 - [ ] **Contaminants, license:** Milne 2024 microplastics data is CC BY-NC-ND and paid features are planned. Get a
-      review or remove those rows.
+      review or remove those rows (question 8 in [docs/LEGAL.md](docs/LEGAL.md)).
 - [ ] **Contaminants, data gaps:**
   - Microplastics are coarse (canned tuna uses an Alaska pollock figure shared across about 200 seafood items).
   - Dark chocolate reads High from one cocoa powder sample.
@@ -137,10 +139,11 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
   - AI import job API and worker with per-user quotas and a global spend breaker
   - Account export and delete
   - Origin access control: `x-amz-content-sha256` on POST bodies, auth token in `X-Auth-Token`
-- [ ] Legal and compliance:
-  - Privacy policy, terms and medical disclaimer
-  - Washington MHMDA consent and a consumer health data policy
+- [ ] Legal and compliance ([docs/LEGAL.md](docs/LEGAL.md)):
+  - Privacy policy, terms and medical disclaimer: drafted, awaiting legal review
+  - Washington MHMDA consent and a consumer health data policy: drafted and recorded at sign-in, awaiting review
   - No ad or analytics pixels on health data (FTC Health Breach Notification Rule)
+  - Auto-renewal disclosure and consent on the Plus checkout page (checklist on `/terms`)
 
 ## P1: platform and code quality
 

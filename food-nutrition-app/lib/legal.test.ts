@@ -37,8 +37,8 @@ describe('legal: one source of truth', () => {
     });
 
     it('never ships a real owner name by accident, and has no placeholders once out of draft', () => {
-        assert.equal(OWNER_LEGAL_NAME, '[OWNER LEGAL NAME]', 'only the owner fills this in');
-        assert.equal(CONTACT_EMAIL, 'privacy@nutritiondictionary.com');
+        if (LEGAL_DRAFT) assert.equal(OWNER_LEGAL_NAME, '[OWNER LEGAL NAME]', 'only the owner fills this in');
+        assert.match(CONTACT_EMAIL, /@nutritiondictionary\.com$/);
         if (!LEGAL_DRAFT) {
             for (const p of PLACEHOLDERS) assert.ok(!p.value.startsWith('['), `fill in: ${p.what}`);
         }
@@ -95,6 +95,7 @@ describe('legal: pages', () => {
             const ids = [...src.matchAll(/\{ id: '([a-z-]+)', title:/g)].map(m => m[1]);
             assert.ok(ids.length >= 8, 'has a table of contents');
             for (const id of ids) assert.ok(src.includes(`id="${id}"`), `#${id} has a heading`);
+            if (!LEGAL_DRAFT) assert.ok(!src.includes('<Placeholder>['), 'an inline placeholder is still unfilled');
         });
     }
 

@@ -4,7 +4,12 @@
   "context": {
     "@aws-cdk/core:stackRelativeExports": true,
     "@aws-cdk/core:defaultCrossStackReferences": "strong",
-    "devNameServers": [],
+    "devNameServers": [
+      "ns-2003.awsdns-58.co.uk",
+      "ns-390.awsdns-48.com",
+      "ns-917.awsdns-50.net",
+      "ns-1249.awsdns-28.org"
+    ],
     "inboundMail": {
       "//": "Porkbun email forwarding (hello@, privacy@). Prod zone only.",
       "mx": [

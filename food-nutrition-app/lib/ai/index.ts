@@ -1,11 +1,19 @@
 /**
- * Picks the AI provider from the environment.
+ * Picks the AI provider and its models from the environment.
  *
  *   AI_PROVIDER=mock       deterministic and offline (the default)
- *   AI_PROVIDER=bedrock    Claude on Amazon Bedrock (AWS credentials + region). An inference
- *                          profile id (us./global./...) or ARN goes through bedrock-runtime
- *                          InvokeModel; a bare id goes to the bedrock-mantle Messages endpoint.
- *   AI_PROVIDER=anthropic  Claude API (ANTHROPIC_API_KEY)
+ *   AI_PROVIDER=bedrock    Amazon Bedrock (AWS credentials + region): Claude, with Amazon
+ *                          Nova as the fallback. An inference profile id (us./global./...)
+ *                          or ARN goes through bedrock-runtime; a bare Claude id goes to the
+ *                          bedrock-mantle Messages endpoint.
+ *   AI_PROVIDER=anthropic  Claude API (ANTHROPIC_API_KEY). No Nova fallback.
+ *
+ * Models, each turned off with "off" (see lib/ai/router.ts for when each is used):
+ *   AI_MODEL             main reader: Claude Haiku 5.5
+ *   AI_ESCALATION_MODEL  plated-food photos and failed reads: Claude Sonnet 5.5
+ *   AI_FALLBACK_MODEL    when Claude is unavailable: Amazon Nova 2 Lite (Bedrock only)
+ * And AI_BUILTIN_TEXT=off sends all pasted text to AI instead of trying the
+ * built-in reader first (lib/recipes/confidence.ts).
  *
  * Using a paid provider is always an explicit choice: leaving AI_PROVIDER unset
  * never spends money, even if credentials happen to be in the environment. If a
@@ -16,12 +24,21 @@
  */
 import { createClaudeProvider, type ClaudeMessage, type ClaudeRequest, type ClaudeSend } from './claude';
 import { createMockProvider } from './mock';
+import { createNovaProvider, novaSend } from './nova';
 import { recordSpend } from './rate-limit';
+import { createRoutedProvider } from './router';
 import { AiError, type AiProvider } from './types';
 
 type Env = Record<string, string | undefined>;
 
-export const DEFAULT_MODEL = 'claude-opus-5-5';
+/** Claude Haiku 5.5: about $0.0008 a photo on Bedrock, 40x cheaper than Opus (docs/BEDROCK_SETUP.md §3). */
+export const DEFAULT_MODEL = 'claude-haiku-5-5';
+export const DEFAULT_ESCALATION_MODEL = 'claude-sonnet-5-5';
+/** On bedrock-runtime current Claude models are reachable only through inference profiles; "us." keeps requests in US regions. */
+export const DEFAULT_BEDROCK_MODEL = `us.anthropic.${DEFAULT_MODEL}`;
+export const DEFAULT_BEDROCK_ESCALATION_MODEL = `us.anthropic.${DEFAULT_ESCALATION_MODEL}`;
+/** Amazon Nova 2 Lite through its US profile. Works on the account while Claude's quota is 0. */
+export const DEFAULT_FALLBACK_MODEL = 'us.amazon.nova-2-lite-v1:0';
 export const DEFAULT_TIMEOUT_MS = 45_000;
 /** Retried by the SDK on connection errors, 408, 409, 429 and 5xx. */
 export const DEFAULT_MAX_RETRIES = 2;
@@ -34,9 +51,29 @@ function intEnv(env: Env, key: string, fallback: number): number {
     return env[key] !== undefined && env[key] !== '' && Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
-/** "claude-opus-5-5" -> "anthropic.claude-opus-5-5"; a full id or inference profile is kept as written. */
+const OFF = /^(off|none|false|0|no)$/i;
+
+/** A model variable: its value, the default when unset, or null when turned off. */
+function modelEnv(env: Env, key: string, fallback: string | null): string | null {
+    const v = env[key]?.trim();
+    if (!v) return fallback;
+    return OFF.test(v) ? null : v;
+}
+
+/** Try the built-in reader on pasted text before AI (AI_BUILTIN_TEXT, on by default). */
+export function builtinTextFirst(env: Env = process.env): boolean {
+    const v = env.AI_BUILTIN_TEXT?.trim();
+    return !v || !OFF.test(v);
+}
+
+/** An Amazon Nova id: "amazon.nova-…", "us.amazon.nova-…", or an ARN for one. */
+export function isNovaModel(model: string): boolean {
+    return /(?:^|[./])amazon\.nova-/.test(model);
+}
+
+/** "claude-opus-5-5" -> "anthropic.claude-opus-5-5"; a full id, Nova id or inference profile is kept as written. */
 export function bedrockModelId(model: string): string {
-    return model.includes('anthropic.') || model.startsWith('arn:') ? model : `anthropic.${model}`;
+    return model.includes('anthropic.') || model.startsWith('arn:') || isNovaModel(model) ? model : `anthropic.${model}`;
 }
 
 export type BedrockEndpoint = 'mantle' | 'runtime';
@@ -79,36 +116,70 @@ export function bedrockConfigHint(status: number | undefined, modelId: string, e
 
 export interface ProviderChoice {
     provider: 'mock' | 'bedrock' | 'anthropic';
+    /** The main model (AI_MODEL); null when turned off. */
     model: string | null;
     region: string | null;
-    /** Bedrock only: which endpoint the model id is sent to. */
+    /** Bedrock only: which endpoint the main model id is sent to (null for Nova, which uses Converse). */
     endpoint: BedrockEndpoint | null;
+    /** The model for plated-food photos and failed reads (AI_ESCALATION_MODEL); null when off. */
+    escalationModel: string | null;
+    escalationEndpoint: BedrockEndpoint | null;
+    /** The model used when Claude is unavailable (AI_FALLBACK_MODEL, Bedrock only); null when off. */
+    fallbackModel: string | null;
     /** Why a paid provider was not used, when one was asked for. */
     fallbackReason: string | null;
 }
 
+const claudeEndpoint = (id: string | null): BedrockEndpoint | null => (id && !isNovaModel(id) ? bedrockEndpoint(id) : null);
+
 /** Pure decision, separated out for tests. */
 export function chooseProvider(env: Env = process.env): ProviderChoice {
     const asked = (env.AI_PROVIDER ?? '').trim().toLowerCase();
-    const mock = (fallbackReason: string | null): ProviderChoice => ({ provider: 'mock', model: null, region: null, endpoint: null, fallbackReason });
-    const model = env.AI_MODEL?.trim() || DEFAULT_MODEL;
+    const mock = (fallbackReason: string | null): ProviderChoice => ({
+        provider: 'mock', model: null, region: null, endpoint: null, escalationModel: null, escalationEndpoint: null, fallbackModel: null, fallbackReason,
+    });
     if (asked === '' || asked === 'mock') return mock(null);
     if (asked === 'bedrock') {
         const region = env.AI_BEDROCK_REGION?.trim() || env.AWS_REGION?.trim() || env.AWS_DEFAULT_REGION?.trim() || null;
         if (!region) return mock('AI_PROVIDER=bedrock needs AI_BEDROCK_REGION or AWS_REGION');
-        const id = bedrockModelId(model);
-        return { provider: 'bedrock', model: id, region, endpoint: bedrockEndpoint(id), fallbackReason: null };
+        const main = modelEnv(env, 'AI_MODEL', DEFAULT_BEDROCK_MODEL);
+        const escalation = modelEnv(env, 'AI_ESCALATION_MODEL', DEFAULT_BEDROCK_ESCALATION_MODEL);
+        const fallback = modelEnv(env, 'AI_FALLBACK_MODEL', DEFAULT_FALLBACK_MODEL);
+        const model = main && bedrockModelId(main);
+        const escalationModel = escalation && bedrockModelId(escalation);
+        const fallbackModel = fallback && bedrockModelId(fallback);
+        if (!model && !escalationModel && !fallbackModel) return mock('AI_MODEL, AI_ESCALATION_MODEL and AI_FALLBACK_MODEL are all off');
+        return {
+            provider: 'bedrock', model, region, endpoint: claudeEndpoint(model),
+            escalationModel, escalationEndpoint: claudeEndpoint(escalationModel), fallbackModel, fallbackReason: null,
+        };
     }
     if (asked === 'anthropic') {
         if (!env.ANTHROPIC_API_KEY?.trim()) return mock('AI_PROVIDER=anthropic needs ANTHROPIC_API_KEY');
-        return { provider: 'anthropic', model, region: null, endpoint: null, fallbackReason: null };
+        const model = modelEnv(env, 'AI_MODEL', DEFAULT_MODEL);
+        const escalationModel = modelEnv(env, 'AI_ESCALATION_MODEL', DEFAULT_ESCALATION_MODEL);
+        if (!model && !escalationModel) return mock('AI_MODEL and AI_ESCALATION_MODEL are both off');
+        return { provider: 'anthropic', model, region: null, endpoint: null, escalationModel, escalationEndpoint: null, fallbackModel: null, fallbackReason: null };
     }
     return mock(`Unknown AI_PROVIDER "${asked}"`);
 }
 
+const UNAVAILABLE = 'The recipe reader isn\'t available right now. You can add the ingredients by hand.';
+
+/** The AWS error type a Bedrock reply names ("ServiceQuotaExceededException:http://…"), if any. */
+function awsErrorType(e: { headers?: Headers | null }): string {
+    const raw = typeof e.headers?.get === 'function' ? e.headers.get('x-amzn-errortype') : null;
+    return (raw ?? '').split(':')[0];
+}
+
+/** Bedrock's 400 for an unknown id, or a base id where a profile is needed. Read for the decision only; never logged. */
+const MODEL_ID_REJECTED = /model identifier|inference profile|on-demand throughput/i;
+
 /**
  * Translate SDK errors into messages safe to show. SDK error text can echo request
  * details, so it stays out. On Bedrock, configuration errors also log what to fix.
+ * Errors that mean the model itself can't be used now carry `unavailable`, so the
+ * router can hand the read to the fallback model (lib/ai/router.ts).
  */
 export async function mapSdkError(e: unknown, bedrock: { model: string; endpoint: BedrockEndpoint } | null = null): Promise<AiError> {
     if (e instanceof AiError) return e;
@@ -120,23 +191,36 @@ export async function mapSdkError(e: unknown, bedrock: { model: string; endpoint
         return new AiError('ai_timeout', 'Reading took too long. Please try again, or paste only the ingredients.');
     }
     if (e instanceof Anthropic.RateLimitError) {
-        return new AiError('ai_rate_limited', 'The recipe reader is busy right now. Please try again in a minute.');
+        console.error(`[ai] throttled: ${e.status}${bedrock ? ` on ${bedrock.model}. Check its tokens-per-minute quota in Service Quotas. See ${SETUP_DOC}.` : ''}`);
+        return new AiError('ai_rate_limited', 'The recipe reader is busy right now. Please try again in a minute.', 'capacity');
     }
     if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.PermissionDeniedError || e instanceof Anthropic.NotFoundError) {
         const hint = bedrock ? ` ${bedrockConfigHint(e.status, bedrock.model, bedrock.endpoint)}` : '';
         console.error(`[ai] provider configuration error: ${e.constructor.name} ${e.status}.${hint}`);
-        return new AiError('ai_unavailable', 'The recipe reader isn\'t available right now. You can add the ingredients by hand.');
+        // Bad credentials would fail any Bedrock model, so only 403 and 404 hand over to the fallback.
+        return new AiError('ai_unavailable', UNAVAILABLE, e instanceof Anthropic.AuthenticationError ? null : 'access');
     }
     if (e instanceof Anthropic.BadRequestError) {
-        console.error(`[ai] request rejected: ${e.status}`);
+        const type = awsErrorType(e);
+        if (type === 'ServiceQuotaExceededException') {
+            console.error(`[ai] over quota: ${type} on ${bedrock?.model ?? 'the model'}. Check its tokens-per-minute quota in Service Quotas. See ${SETUP_DOC}.`);
+            return new AiError('ai_rate_limited', 'The recipe reader is busy right now. Please try again in a minute.', 'capacity');
+        }
+        const message = (e.error as { message?: unknown } | undefined)?.message;
+        if (bedrock && type === 'ValidationException' && typeof message === 'string' && MODEL_ID_REJECTED.test(message)) {
+            console.error(`[ai] provider configuration error: ${type} 400. ${bedrockConfigHint(404, bedrock.model, bedrock.endpoint)}`);
+            return new AiError('ai_unavailable', UNAVAILABLE, 'access');
+        }
+        console.error(`[ai] request rejected: ${e.status}${type ? ` ${type}` : ''}`);
         return new AiError('ai_bad_output', 'We couldn\'t read that. Try a smaller photo, or paste the recipe as text.');
     }
     if (e instanceof Anthropic.APIError) {
         console.error(`[ai] provider error: ${e.constructor.name} ${e.status ?? ''}`);
-        return new AiError('ai_unavailable', 'The recipe reader isn\'t available right now. You can add the ingredients by hand.');
+        // 5xx and 529 (overloaded) are outages; a connection error has no status.
+        return new AiError('ai_unavailable', UNAVAILABLE, typeof e.status === 'number' && e.status >= 500 ? 'capacity' : null);
     }
     console.error(`[ai] unexpected error: ${(e as Error)?.name}`);
-    return new AiError('ai_unavailable', 'The recipe reader isn\'t available right now. You can add the ingredients by hand.');
+    return new AiError('ai_unavailable', UNAVAILABLE);
 }
 
 function clientOptions(env: Env) {
@@ -174,9 +258,9 @@ function anthropicSend(env: Env, model: string): ClaudeSend {
 type BedrockClient = import('@anthropic-ai/bedrock-sdk').AnthropicBedrockMantle | import('@anthropic-ai/bedrock-sdk').AnthropicBedrock;
 
 /**
- * Send through Amazon Bedrock. Inference profiles go to bedrock-runtime (InvokeModel),
- * bare ids to the bedrock-mantle Messages endpoint. Both take the same Messages
- * request. Credentials come from the standard AWS chain.
+ * Send Claude requests through Amazon Bedrock. Inference profiles go to
+ * bedrock-runtime (InvokeModel), bare ids to the bedrock-mantle Messages endpoint.
+ * Both take the same Messages request. Credentials come from the standard AWS chain.
  */
 function bedrockSend(env: Env, region: string, model: string, endpoint: BedrockEndpoint): ClaudeSend {
     let client: Promise<BedrockClient> | null = null;
@@ -204,20 +288,26 @@ type GlobalWithProvider = typeof globalThis & { [cacheKey]?: { provider: AiProvi
 export function createProvider(env: Env = process.env): { provider: AiProvider; fallbackReason: string | null } {
     const choice = chooseProvider(env);
     if (choice.fallbackReason) console.warn(`[ai] using the mock provider: ${choice.fallbackReason}`);
+    if (choice.provider === 'mock') return { provider: createMockProvider(), fallbackReason: choice.fallbackReason };
+
     const rerank = env.AI_RERANK === '1' || env.AI_RERANK === 'true';
-    if (choice.provider === 'anthropic') {
-        return {
-            provider: createClaudeProvider({ name: 'anthropic', model: choice.model!, send: anthropicSend(env, choice.model!), rerank, onSpend: recordSpend }),
-            fallbackReason: null,
-        };
-    }
-    if (choice.provider === 'bedrock') {
-        return {
-            provider: createClaudeProvider({ name: 'bedrock', model: choice.model!, send: bedrockSend(env, choice.region!, choice.model!, choice.endpoint!), rerank, onSpend: recordSpend }),
-            fallbackReason: null,
-        };
-    }
-    return { provider: createMockProvider(), fallbackReason: choice.fallbackReason };
+    const { timeout, maxRetries } = clientOptions(env);
+    const build = (model: string | null, endpoint: BedrockEndpoint | null, withRerank: boolean): AiProvider | null => {
+        if (!model) return null;
+        if (choice.provider === 'anthropic') {
+            return createClaudeProvider({ name: 'anthropic', model, send: anthropicSend(env, model), rerank: withRerank, onSpend: recordSpend });
+        }
+        if (isNovaModel(model)) {
+            return createNovaProvider({ model, send: novaSend(choice.region!, model, { timeoutMs: timeout, maxRetries }), onSpend: recordSpend });
+        }
+        return createClaudeProvider({ name: 'bedrock', model, send: bedrockSend(env, choice.region!, model, endpoint!), rerank: withRerank, onSpend: recordSpend });
+    };
+    const primary = build(choice.model, choice.endpoint, rerank);
+    const escalation = build(choice.escalationModel, choice.escalationEndpoint, false);
+    const fallback = build(choice.fallbackModel, null, false);
+    const tiers = [primary, escalation, fallback].filter(Boolean);
+    const provider = tiers.length === 1 ? tiers[0]! : createRoutedProvider({ primary, escalation, fallback });
+    return { provider, fallbackReason: null };
 }
 
 /** The process-wide provider. */

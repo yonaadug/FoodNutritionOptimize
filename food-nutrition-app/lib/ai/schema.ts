@@ -7,7 +7,7 @@
 import type { ParsedIngredient, ParsedRecipe } from '../recipes/types';
 import { MAX_INGREDIENTS } from '../recipes/parse';
 import { UNITS, lookupUnit } from '../recipes/units';
-import { AiError } from './types';
+import { AiError, InvalidReplyError } from './types';
 
 export const RECORD_RECIPE_TOOL = 'record_recipe';
 
@@ -118,14 +118,14 @@ function normalizeIngredient(raw: unknown, maxConfidence: number): ParsedIngredi
 /** Validate and normalise a record_recipe tool input. Throws AiError when it isn't usable. */
 export function validateRecipeOutput(input: unknown): ParsedRecipe {
     if (typeof input !== 'object' || input === null) {
-        throw new AiError('ai_bad_output', 'The reader returned something we could not understand. Please try again.');
+        throw new InvalidReplyError('The reader returned something we could not understand. Please try again.');
     }
     const o = input as Record<string, unknown>;
     if (o.kind === 'not_food') {
         throw new AiError('ai_not_food', 'That doesn\'t look like a recipe or a meal. Try another photo, or paste the recipe as text.');
     }
     if (!Array.isArray(o.ingredients)) {
-        throw new AiError('ai_bad_output', 'The reader returned something we could not understand. Please try again.');
+        throw new InvalidReplyError('The reader returned something we could not understand. Please try again.');
     }
     const platedMeal = o.kind === 'plated_meal';
     const maxConfidence = platedMeal ? PLATED_MEAL_MAX_CONFIDENCE : 1;

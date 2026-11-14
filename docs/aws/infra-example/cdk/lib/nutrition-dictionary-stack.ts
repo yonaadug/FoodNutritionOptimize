@@ -142,11 +142,19 @@ export class NutritionDictionaryStack extends Stack {
     });
 
     // ------------------------------------------------------- recipe AI (Bedrock)
-    // /api/recipes/parse reads recipes synchronously in the web function, through
-    // the US cross-region inference profile (docs/BEDROCK_SETUP.md). The profile
-    // can route to any of these regions, so each needs the foundation-model grant.
-    const recipeModel = 'anthropic.claude-haiku-5-5';
-    const recipeProfileArn = `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.${recipeModel}`;
+    // /api/recipes/parse reads recipes synchronously in the web function, each
+    // model through its US cross-region inference profile (docs/BEDROCK_SETUP.md):
+    // Haiku reads, Sonnet re-reads plated-food photos and failed reads, and Nova
+    // 2 Lite takes over while Claude is unavailable (lib/ai/router.ts). Each
+    // profile can route to any of these regions, so each needs the
+    // foundation-model grant. Pasted text the built-in reader is sure of never
+    // reaches Bedrock.
+    const recipeModels = {
+      main: 'anthropic.claude-haiku-5-5',
+      escalation: 'anthropic.claude-sonnet-5-5',
+      fallback: 'amazon.nova-2-lite-v1:0',
+    };
+    const recipeProfileArn = (model: string) => `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.${model}`;
     const recipeModelRegions = ['us-east-1', 'us-east-2', 'us-west-2'];
 
     // ------------------------------------------------------- web (Next.js)
@@ -178,7 +186,9 @@ export class NutritionDictionaryStack extends Stack {
         NUTRITION_DB_PATH: '/app/data/nutrition.db',
         AI_PROVIDER: 'bedrock',
         AI_BEDROCK_REGION: this.region,
-        AI_MODEL: `us.${recipeModel}`,
+        AI_MODEL: `us.${recipeModels.main}`,
+        AI_ESCALATION_MODEL: `us.${recipeModels.escalation}`,
+        AI_FALLBACK_MODEL: `us.${recipeModels.fallback}`,
         AI_TIMEOUT_MS: '20000',
         AI_MAX_RETRIES: '1',
         AI_DAILY_BUDGET_USD: isProd ? '5' : '1', // per instance; the AWS Budget and kill switch are the real cap
@@ -199,20 +209,22 @@ export class NutritionDictionaryStack extends Stack {
       actions: ['cognito-idp:AdminDeleteUser'],
       resources: [userPool.userPoolArn],
     }));
-    // Bedrock: only the recipe model, only through its inference profile. No
-    // aws-marketplace permissions: the owner creates the model's Marketplace
-    // agreement once, by hand (docs/BEDROCK_SETUP.md).
+    // Bedrock: only the three recipe models, each only through its own inference
+    // profile. No aws-marketplace permissions: the owner creates the Claude models'
+    // Marketplace agreements once, by hand (docs/BEDROCK_SETUP.md). Nova needs none.
     web.addToRolePolicy(new iam.PolicyStatement({
-      sid: 'RecipeModelProfile',
+      sid: 'RecipeModelProfiles',
       actions: ['bedrock:InvokeModel'],
-      resources: [recipeProfileArn],
+      resources: Object.values(recipeModels).map(recipeProfileArn),
     }));
-    web.addToRolePolicy(new iam.PolicyStatement({
-      sid: 'RecipeModelViaProfile',
-      actions: ['bedrock:InvokeModel'],
-      resources: recipeModelRegions.map(r => `arn:aws:bedrock:${r}::foundation-model/${recipeModel}`),
-      conditions: { StringEquals: { 'bedrock:InferenceProfileArn': recipeProfileArn } },
-    }));
+    for (const [tier, model] of Object.entries(recipeModels)) {
+      web.addToRolePolicy(new iam.PolicyStatement({
+        sid: `RecipeModelViaProfile${tier[0].toUpperCase()}${tier.slice(1)}`,
+        actions: ['bedrock:InvokeModel'],
+        resources: recipeModelRegions.map(r => `arn:aws:bedrock:${r}::foundation-model/${model}`),
+        conditions: { StringEquals: { 'bedrock:InferenceProfileArn': recipeProfileArn(model) } },
+      }));
+    }
 
     // Function URL protected by CloudFront OAC (AuthType AWS_IAM).
     // NOTE: with OAC, browsers must send `x-amz-content-sha256` on POST/PUT, and the

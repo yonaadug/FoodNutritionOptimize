@@ -79,8 +79,12 @@ export async function analyzeRecipeIn(
     recipe: ParsedRecipe,
     source: RecipeSource,
     meta: { provider: string; model: string | null; rerank?: Reranker | null },
+    /** Matches already made for these ingredients (the built-in reader's), in order. */
+    precomputed?: MatchResult[],
 ): Promise<ParseResponse> {
-    const matches = recipe.ingredients.map(ing => matchIngredientIn(conn, ing));
+    const matches = precomputed?.length === recipe.ingredients.length
+        ? [...precomputed]
+        : recipe.ingredients.map(ing => matchIngredientIn(conn, ing));
     if (meta.rerank) await applyRerank(conn, recipe.ingredients, matches, meta.rerank);
     const ingredients = recipe.ingredients.map((ing, i) => analyzeIngredient(conn, ing, `ing-${i + 1}`, matches[i]));
     const { servings, stated } = safeServings(recipe.servings);

@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { readJsonBody } from '@/lib/api';
-import { getAiProvider } from '@/lib/ai';
+import { builtinTextFirst, getAiProvider } from '@/lib/ai';
+import { logAiCall } from '@/lib/ai/cost';
 import { DEFAULT_MAX_UPLOAD_BYTES, prepareImage } from '@/lib/ai/image';
 import { clientIp, getRateLimiter, overDailyBudget } from '@/lib/ai/rate-limit';
 import { AiError, type RecipeInput } from '@/lib/ai/types';
 import { analyzeRecipeIn } from '@/lib/recipes/analyze';
+import { readTextBuiltin } from '@/lib/recipes/builtin';
 import { MAX_TEXT_BODY_BYTES, parseTextBody, recipesDb, RequestError } from '@/lib/recipes/request';
 import { errorResponse, handleRecipeError } from '@/lib/recipes/respond';
 
@@ -43,6 +45,9 @@ async function readImage(request: Request): Promise<RecipeInput> {
  * POST /api/recipes/parse
  * Body: JSON { text }, or multipart/form-data with an `image` file.
  * 200: ParseResponse (lib/recipes/types.ts): ingredients with USDA matches and gram conversions.
+ * Pasted text is read by the free built-in reader first, and goes to AI only when that
+ * read is unsure (lib/recipes/confidence.ts); `provider` is then "builtin". Photos go to
+ * AI, which picks its model in lib/ai/router.ts.
  * Errors: { error, code }. 400, 413, 415, 422 (not a recipe, or refused), 429 (rate limited,
  * with Retry-After), 502/503/504 (provider).
  */
@@ -61,21 +66,35 @@ export async function POST(request: Request) {
                 'Retry-After': String(limit.retryAfterSeconds),
             });
         }
-        if (provider.name !== 'mock' && overDailyBudget()) {
-            return errorResponse(503, 'ai_busy', 'The recipe reader is at capacity for today. You can still add ingredients by hand.');
-        }
-
         const input: RecipeInput = isMultipart
             ? await readImage(request)
             : { kind: 'text', text: parseTextBody(await readJsonBody(request, MAX_TEXT_BODY_BYTES)) };
 
-        const { recipe } = await provider.readRecipe(input, { signal: AbortSignal.timeout(DEADLINE_MS) });
-        if (recipe.ingredients.length === 0) {
+        // Pasted text: the free built-in reader first. The mock provider is that reader already.
+        if (input.kind === 'text' && provider.name !== 'mock' && builtinTextFirst()) {
+            const started = Date.now();
+            const builtin = readTextBuiltin(recipesDb(), input.text);
+            if (builtin.verdict.confident) {
+                logAiCall({ provider: 'builtin', model: null, kind: 'text', ms: Date.now() - started, ok: true, usage: null });
+                const result = await analyzeRecipeIn(recipesDb(), builtin.read.recipe, 'text', { provider: 'builtin', model: null }, builtin.matches);
+                return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });
+            }
+            // Reasons are rule names only, never recipe text.
+            console.info(`[recipes] built-in reader unsure (${builtin.verdict.reasons.join(',')}); reading with ${provider.model ?? provider.name}`);
+        }
+
+        if (provider.name !== 'mock' && overDailyBudget()) {
+            return errorResponse(503, 'ai_busy', 'The recipe reader is at capacity for today. You can still add ingredients by hand.');
+        }
+
+        const read = await provider.readRecipe(input, { signal: AbortSignal.timeout(DEADLINE_MS) });
+        if (read.recipe.ingredients.length === 0) {
             throw new AiError('ai_not_food', 'We couldn\'t find any ingredients. Try another photo, or paste the recipe as text.');
         }
-        const result = await analyzeRecipeIn(recipesDb(), recipe, input.kind === 'image' ? 'image' : 'text', {
+        const result = await analyzeRecipeIn(recipesDb(), read.recipe, input.kind === 'image' ? 'image' : 'text', {
             provider: provider.name,
-            model: provider.model,
+            // The model that actually read it: Haiku, Sonnet or the Nova fallback.
+            model: read.model ?? provider.model,
             rerank: provider.rerank ?? null,
         });
         return NextResponse.json(result, { headers: { 'Cache-Control': 'no-store' } });

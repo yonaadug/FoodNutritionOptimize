@@ -31,6 +31,9 @@ const PREP_WORDS = new Set([
     'finely', 'thinly', 'roughly', 'coarsely', 'freshly', 'well', 'loosely',
 ]);
 
+/** Bullets, checkboxes and "1." list markers at the start of a line. */
+export const LIST_MARKER = /^\s*(?:[-*•·▢□◦‣–]|\[\s*\]|\d+[.)](?=\s+\D))\s*/;
+
 /** Containers whose size may be given in parentheses: "1 (14.5 oz) can tomatoes". */
 const CONTAINERS = new Set(['can', 'package', 'jar', 'bottle', 'stick']);
 
@@ -135,9 +138,7 @@ function parentheticalMass(text: string): { grams: number; unit: string; quantit
  */
 export function parseIngredientLine(line: string): ParsedIngredient | null {
     const original = line.trim().slice(0, MAX_LINE);
-    let s = normalizeFractions(original)
-        .replace(/^\s*(?:[-*•·▢□◦‣–]|\[\s*\]|\d+[.)](?=\s+\D))\s*/, '') // bullets, checkboxes, "1." list markers
-        .trim();
+    let s = normalizeFractions(original).replace(LIST_MARKER, '').trim();
     if (!s || /:\s*$/.test(s)) return null;
 
     const notes: string[] = [];
@@ -288,11 +289,25 @@ function textBeforeServings(line: string): string {
  * looks like an ingredient is kept and instructions are skipped.
  */
 export function parseRecipeText(text: string): ParsedRecipe {
+    return parseRecipeTextDetailed(text).recipe;
+}
+
+export interface DetailedRead {
+    recipe: ParsedRecipe;
+    /** Lines in the ingredient part of the text that were not read as ingredients. */
+    skipped: string[];
+    /** True when the text has an "Ingredients" header. */
+    hasHeader: boolean;
+}
+
+/** parseRecipeText, plus what it left out: used to decide whether the read can be trusted (lib/recipes/confidence.ts). */
+export function parseRecipeTextDetailed(text: string): DetailedRead {
     const lines = text.replace(/\r\n?/g, '\n').split('\n').map(l => l.trim()).slice(0, 400);
     const hasHeader = lines.some(l => INGREDIENT_HEADER.test(l));
     let title = '';
     let servings: number | null = null;
     const ingredients: ParsedIngredient[] = [];
+    const skipped: string[] = [];
     let inIngredients = !hasHeader;
     let seenContent = false;
 
@@ -315,8 +330,9 @@ export function parseRecipeText(text: string): ParsedRecipe {
         if (STOP_HEADER.test(line)) { inIngredients = false; seenContent = true; continue; }
         if (!seenContent && !title && !parseQuantity(normalizeFractions(line)) && line.length <= 80 && !/[.!?]$/.test(line)) {
             // First short line without an amount: the title (unless it's a bare ingredient in a header-less list).
-            const next = lines.find(l => l && l !== line && parseServings(l) === null);
-            if (hasHeader || (next && parseQuantity(normalizeFractions(next)))) {
+            // Look past servings lines and section headers ("For the filling:"), and ignore bullets.
+            const next = lines.find(l => l && l !== line && parseServings(l) === null && !/:\s*$/.test(l));
+            if (hasHeader || (next && parseQuantity(normalizeFractions(next).replace(LIST_MARKER, '')))) {
                 title = line.replace(/^#+\s*/, '');
                 seenContent = true;
                 continue;
@@ -325,11 +341,13 @@ export function parseRecipeText(text: string): ParsedRecipe {
         seenContent = true;
         if (!inIngredients) continue;
         const ing = parseIngredientLine(line);
-        if (!ing) continue;
         // Without a header, unquantified lines must be short to count ("Salt and pepper", not a paragraph).
-        if (!hasHeader && ing.quantity === null && line.split(/\s+/).length > 6) continue;
+        if (!ing || (!hasHeader && ing.quantity === null && line.split(/\s+/).length > 6)) {
+            if (!/:\s*$/.test(line)) skipped.push(line.slice(0, MAX_LINE)); // not a section header ("For the sauce:")
+            continue;
+        }
         ingredients.push(ing);
         if (ingredients.length >= MAX_INGREDIENTS) break;
     }
-    return { title: title.slice(0, 120), servings, ingredients };
+    return { recipe: { title: title.slice(0, 120), servings, ingredients }, skipped, hasHeader };
 }

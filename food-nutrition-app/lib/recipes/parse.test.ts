@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeFractions, parseIngredientLine, parseQuantity, parseRecipeText, parseServings } from './parse';
+import { normalizeFractions, parseIngredientLine, parseQuantity, parseRecipeText, parseRecipeTextDetailed, parseServings } from './parse';
 import { lookupUnit, unitLabel } from './units';
 
 function line(s: string) {
@@ -201,6 +201,20 @@ Instructions
         assert.equal(r.title, '');
         assert.equal(r.servings, null);
         assert.equal(r.ingredients.length, 3);
+    });
+    it('finds the title when the list below it is bulleted or starts with a section header', () => {
+        const bulleted = parseRecipeText('Peanut butter smoothie\nMakes 1 serving\n- 1 banana\n- 1 cup milk');
+        assert.equal(bulleted.title, 'Peanut butter smoothie');
+        assert.deepEqual(bulleted.ingredients.map(i => i.name), ['banana', 'milk']);
+        const sections = parseRecipeText('Apple crumble\nServes 6\n\nFor the filling:\n4 apples\n2 tbsp sugar');
+        assert.equal(sections.title, 'Apple crumble');
+        assert.deepEqual(sections.ingredients.map(i => i.name), ['apples', 'sugar']);
+    });
+    it('reports the lines it skipped in the ingredient part, but not section headers', () => {
+        const r = parseRecipeTextDetailed('Ingredients\nFor the dough:\n2 cups flour\nMix 1 cup of water with 2 tbsp oil and knead well for ten minutes until smooth.\nInstructions\nBake it.');
+        assert.equal(r.hasHeader, true);
+        assert.deepEqual(r.skipped, ['Mix 1 cup of water with 2 tbsp oil and knead well for ten minutes until smooth.']);
+        assert.deepEqual(r.recipe, parseRecipeText('Ingredients\nFor the dough:\n2 cups flour\nMix 1 cup of water with 2 tbsp oil and knead well for ten minutes until smooth.\nInstructions\nBake it.'));
     });
     it('reads a title followed by a list without headers', () => {
         const r = parseRecipeText('Garlic rice\n1 cup cooked rice\n2 cloves garlic, minced\n1 tbsp olive oil\nSalt to taste\nHeat the oil in a pan and fry the garlic until golden, then add the rice.');

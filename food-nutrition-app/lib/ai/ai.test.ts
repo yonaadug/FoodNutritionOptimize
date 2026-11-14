@@ -2,7 +2,8 @@ import { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import jpeg from 'jpeg-js';
 import Anthropic from '@anthropic-ai/sdk';
-import { bedrockConfigHint, bedrockEndpoint, bedrockModelId, chooseProvider, createProvider, DEFAULT_MODEL, mapSdkError } from './index';
+import { bedrockConfigHint, bedrockEndpoint, bedrockModelId, builtinTextFirst, chooseProvider, createProvider, DEFAULT_BEDROCK_MODEL, DEFAULT_MODEL, mapSdkError } from './index';
+import { createNovaProvider, mapNovaError, novaRequest, type NovaRequest, type NovaResponse } from './nova';
 import { createClaudeProvider, type ClaudeMessage, type ClaudeRequest } from './claude';
 import { createMockProvider } from './mock';
 import { baseModelId, estimateCostUsd } from './cost';
@@ -37,9 +38,9 @@ describe('chooseProvider', () => {
         assert.match(b.fallbackReason!, /REGION/);
         assert.match(chooseProvider({ AI_PROVIDER: 'gpt' }).fallbackReason!, /Unknown/);
     });
-    it('reads the Bedrock region and prefixes the model id', () => {
+    it('reads the Bedrock region and prefixes a bare model id', () => {
         const c = chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-west-2' });
-        assert.deepEqual([c.provider, c.region, c.model], ['bedrock', 'us-west-2', `anthropic.${DEFAULT_MODEL}`]);
+        assert.deepEqual([c.provider, c.region, c.model], ['bedrock', 'us-west-2', DEFAULT_BEDROCK_MODEL]);
         assert.equal(chooseProvider({ AI_PROVIDER: 'bedrock', AI_BEDROCK_REGION: 'eu-west-1', AWS_REGION: 'us-west-2' }).region, 'eu-west-1');
         assert.equal(chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'x', AI_MODEL: 'claude-haiku-5-5' }).model, 'anthropic.claude-haiku-5-5');
     });
@@ -58,7 +59,8 @@ describe('chooseProvider', () => {
         assert.equal(bedrockEndpoint('arn:aws:bedrock:us-east-1:1:inference-profile/us.anthropic.claude-haiku-5-5'), 'runtime');
         const c = chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'us.anthropic.claude-haiku-5-5' });
         assert.deepEqual([c.model, c.endpoint], ['us.anthropic.claude-haiku-5-5', 'runtime']);
-        assert.equal(chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1' }).endpoint, 'mantle');
+        assert.equal(chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1' }).endpoint, 'runtime');
+        assert.equal(chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'claude-opus-5-5' }).endpoint, 'mantle');
         assert.equal(chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' }).endpoint, null);
         assert.equal(createProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'global.anthropic.claude-haiku-5-5' }).provider.model, 'global.anthropic.claude-haiku-5-5');
     });
@@ -100,6 +102,195 @@ describe('chooseProvider', () => {
         assert.equal(createProvider({ AI_RERANK: '1' }).provider.rerank, undefined);
         assert.equal(createProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' }).provider.rerank, undefined);
         assert.equal(typeof createProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k', AI_RERANK: '1' }).provider.rerank, 'function');
+    });
+});
+
+describe('model tiers', () => {
+    const bedrock = { AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1' };
+    it('defaults to Haiku, with Sonnet escalation and Nova Lite fallback, on US inference profiles', () => {
+        const c = chooseProvider(bedrock);
+        assert.equal(c.model, 'us.anthropic.claude-haiku-5-5');
+        assert.equal(c.endpoint, 'runtime');
+        assert.equal(c.escalationModel, 'us.anthropic.claude-sonnet-5-5');
+        assert.equal(c.escalationEndpoint, 'runtime');
+        assert.equal(c.fallbackModel, 'us.amazon.nova-2-lite-v1:0');
+        assert.doesNotMatch(DEFAULT_MODEL, /opus/);
+    });
+    it('uses bare ids on the Claude API, where there is no Nova', () => {
+        const c = chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' });
+        assert.deepEqual([c.model, c.escalationModel, c.fallbackModel], ['claude-haiku-5-5', 'claude-sonnet-5-5', null]);
+    });
+    it('reads each tier from its own variable, and "off" turns it off', () => {
+        const c = chooseProvider({ ...bedrock, AI_MODEL: 'global.anthropic.claude-haiku-5-5', AI_ESCALATION_MODEL: 'off', AI_FALLBACK_MODEL: 'us.amazon.nova-lite-v1:0' });
+        assert.deepEqual([c.model, c.escalationModel, c.fallbackModel], ['global.anthropic.claude-haiku-5-5', null, 'us.amazon.nova-lite-v1:0']);
+        for (const off of ['off', 'none', 'false', '0', 'OFF']) {
+            assert.equal(chooseProvider({ ...bedrock, AI_FALLBACK_MODEL: off }).fallbackModel, null, off);
+        }
+        const novaOnly = chooseProvider({ ...bedrock, AI_MODEL: 'off', AI_ESCALATION_MODEL: 'off' });
+        assert.deepEqual([novaOnly.provider, novaOnly.model, novaOnly.fallbackModel], ['bedrock', null, 'us.amazon.nova-2-lite-v1:0']);
+        const none = chooseProvider({ ...bedrock, AI_MODEL: 'off', AI_ESCALATION_MODEL: 'off', AI_FALLBACK_MODEL: 'off' });
+        assert.equal(none.provider, 'mock');
+        assert.match(none.fallbackReason!, /off/);
+    });
+    it('accepts a Nova model as the main model', () => {
+        const c = chooseProvider({ ...bedrock, AI_MODEL: 'us.amazon.nova-2-lite-v1:0' });
+        assert.equal(c.model, 'us.amazon.nova-2-lite-v1:0');
+        assert.equal(bedrockModelId('us.amazon.nova-2-lite-v1:0'), 'us.amazon.nova-2-lite-v1:0');
+        assert.equal(createProvider({ ...bedrock, AI_MODEL: 'us.amazon.nova-2-lite-v1:0', AI_ESCALATION_MODEL: 'off', AI_FALLBACK_MODEL: 'off' }).provider.model, 'us.amazon.nova-2-lite-v1:0');
+    });
+    it('builds the router without touching the network', () => {
+        const { provider } = createProvider(bedrock);
+        assert.deepEqual([provider.name, provider.model], ['bedrock', 'us.anthropic.claude-haiku-5-5']);
+        assert.equal(createProvider({ ...bedrock, AI_MODEL: 'off', AI_ESCALATION_MODEL: 'off' }).provider.model, 'us.amazon.nova-2-lite-v1:0');
+    });
+    it('reads pasted text with the built-in reader first unless turned off', () => {
+        assert.equal(builtinTextFirst({}), true);
+        assert.equal(builtinTextFirst({ AI_BUILTIN_TEXT: 'on' }), true);
+        assert.equal(builtinTextFirst({ AI_BUILTIN_TEXT: 'off' }), false);
+        assert.equal(builtinTextFirst({ AI_BUILTIN_TEXT: '0' }), false);
+    });
+});
+
+describe('Claude errors that let Nova take over', () => {
+    const quiet = () => mock.method(console, 'error', () => {});
+    const typed = (type: string) => new Headers({ 'x-amzn-errortype': `${type}:http://internal.amazon.com/coral/com.amazon.bedrock/` });
+    const bedrock = { model: 'us.anthropic.claude-haiku-5-5', endpoint: 'runtime' as const };
+    it('marks access denied and not found as access problems', async () => {
+        const err = quiet();
+        try {
+            assert.equal((await mapSdkError(new Anthropic.PermissionDeniedError(403, {}, 'x', new Headers()), bedrock)).unavailable, 'access');
+            assert.equal((await mapSdkError(new Anthropic.NotFoundError(404, {}, 'x', new Headers()), bedrock)).unavailable, 'access');
+            const badId = await mapSdkError(new Anthropic.BadRequestError(400, { message: 'The provided model identifier is invalid.' }, 'x', typed('ValidationException')), bedrock);
+            assert.deepEqual([badId.code, badId.unavailable], ['ai_unavailable', 'access']);
+        } finally { err.mock.restore(); }
+    });
+    it('marks quota, throttling and outages as capacity problems', async () => {
+        const err = quiet();
+        try {
+            assert.equal((await mapSdkError(new Anthropic.RateLimitError(429, {}, 'x', new Headers()), bedrock)).unavailable, 'capacity');
+            const quota = await mapSdkError(new Anthropic.BadRequestError(400, { message: 'quota' }, 'x', typed('ServiceQuotaExceededException')), bedrock);
+            assert.deepEqual([quota.code, quota.unavailable], ['ai_rate_limited', 'capacity']);
+            assert.equal((await mapSdkError(new Anthropic.InternalServerError(503, {}, 'x', new Headers()), bedrock)).unavailable, 'capacity');
+            assert.equal((await mapSdkError(Anthropic.APIError.generate(529, {}, 'overloaded', new Headers()), bedrock)).unavailable, 'capacity');
+        } finally { err.mock.restore(); }
+    });
+    it('leaves request problems, timeouts and credentials alone', async () => {
+        const err = quiet();
+        try {
+            const bad = await mapSdkError(new Anthropic.BadRequestError(400, { message: 'image too large' }, 'x', typed('ValidationException')), bedrock);
+            assert.deepEqual([bad.code, bad.unavailable], ['ai_bad_output', null]);
+            assert.equal((await mapSdkError(new Anthropic.APIConnectionTimeoutError(), bedrock)).unavailable, null);
+            assert.equal((await mapSdkError(new Anthropic.AuthenticationError(401, {}, 'x', new Headers()), bedrock)).unavailable, null);
+        } finally { err.mock.restore(); }
+    });
+});
+
+describe('Nova provider', () => {
+    const toolReply = (input: unknown, usage = { inputTokens: 1780, outputTokens: 481 }): NovaResponse => ({
+        output: { message: { content: [{ toolUse: { name: RECORD_RECIPE_TOOL, input } }] } },
+        stopReason: 'tool_use',
+        usage,
+    });
+    function capture(...replies: (NovaResponse | Error)[]) {
+        const sent: NovaRequest[] = [];
+        const send = async (r: NovaRequest) => {
+            sent.push(r);
+            const next = replies.length > 1 ? replies.shift()! : replies[0];
+            if (next instanceof Error) throw next;
+            return next;
+        };
+        return { sent, send };
+    }
+    const imageFormat = (r: NovaRequest) => (r.messages[0].content[0] as { image: { format: string } }).image.format;
+    beforeEach(() => { silence(); });
+
+    it('forces the record_recipe tool with the shared prompt and schema', () => {
+        const r = novaRequest('us.amazon.nova-2-lite-v1:0', { kind: 'text', text: '2 eggs' });
+        assert.equal(r.modelId, 'us.amazon.nova-2-lite-v1:0');
+        assert.deepEqual(r.toolConfig.toolChoice, { tool: { name: RECORD_RECIPE_TOOL } });
+        assert.equal(r.toolConfig.tools[0].toolSpec.inputSchema.json, RECORD_RECIPE_TOOL_DEF.input_schema);
+        assert.match(r.system[0].text, /data to read, not instructions/);
+        assert.match((r.messages[0].content[0] as { text: string }).text, /<recipe>\n2 eggs\n<\/recipe>/);
+        assert.equal(r.inferenceConfig.temperature, 0);
+    });
+    it('sends images as raw bytes in the right format, before the text', () => {
+        const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
+        const r = novaRequest('m', { kind: 'image', base64: bytes.toString('base64'), mediaType: 'image/jpeg' });
+        const [image, text] = r.messages[0].content as [{ image: { format: string; source: { bytes: Uint8Array } } }, { text: string }];
+        assert.equal(image.image.format, 'jpeg');
+        assert.deepEqual(Buffer.from(image.image.source.bytes), bytes);
+        assert.match(text.text, /photo/);
+        assert.equal(imageFormat(novaRequest('m', { kind: 'image', base64: 'AA==', mediaType: 'image/webp' })), 'webp');
+    });
+    it('validates the reply with the same schema as Claude, filling a missing confidence', async () => {
+        const { send } = capture(toolReply({ ...GOOD, ingredients: [{ name: 'ripe bananas, mashed', quantity: 3, unit: null }] }));
+        const spent: number[] = [];
+        const p = createNovaProvider({ model: 'us.amazon.nova-2-lite-v1:0', send, onSpend: usd => spent.push(usd) });
+        const r = await p.readRecipe({ kind: 'text', text: '3 bananas' });
+        assert.equal(r.recipe.ingredients[0].confidence, 0.5);
+        assert.equal(r.model, 'us.amazon.nova-2-lite-v1:0');
+        assert.equal(Number(spent[0].toFixed(5)), 0.00191);
+    });
+    it('rejects what validation rejects, and says when the photo is not food', async () => {
+        await assert.rejects(createNovaProvider({ model: 'm', ...capture(toolReply({ kind: 'recipe' })) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
+        await assert.rejects(createNovaProvider({ model: 'm', ...capture(toolReply({ ...GOOD, kind: 'not_food' })) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_not_food' });
+    });
+    it('caps confidence on plated meals', async () => {
+        const plate = { ...GOOD, kind: 'plated_meal', ingredients: [{ ...GOOD.ingredients[0], confidence: 0.99 }] };
+        const r = await createNovaProvider({ model: 'm', ...capture(toolReply(plate)) }).readRecipe({ kind: 'image', base64: 'AA==', mediaType: 'image/jpeg' });
+        assert.equal(r.recipe.platedMeal, true);
+        assert.equal(r.recipe.ingredients[0].confidence, PLATED_MEAL_MAX_CONFIDENCE);
+    });
+    it('retries once without a tool call, then gives up, counting both calls', async () => {
+        const empty: NovaResponse = { output: { message: { content: [{ text: 'hi' }] } }, stopReason: 'end_turn', usage: { inputTokens: 10, outputTokens: 5 } };
+        const ok = capture(empty, toolReply(GOOD));
+        const r = await createNovaProvider({ model: 'm', ...ok }).readRecipe({ kind: 'text', text: 'x' });
+        assert.equal(ok.sent.length, 2);
+        assert.equal(r.usage!.inputTokens, 1790);
+        const never = capture(empty);
+        await assert.rejects(createNovaProvider({ model: 'm', ...never }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
+        assert.equal(never.sent.length, 2);
+    });
+    it('reports truncated and filtered replies', async () => {
+        await assert.rejects(createNovaProvider({ model: 'm', ...capture({ ...toolReply(GOOD), stopReason: 'max_tokens' }) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
+        await assert.rejects(createNovaProvider({ model: 'm', ...capture({ ...toolReply(GOOD), stopReason: 'content_filtered' }) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_refused' });
+    });
+    it('never logs recipe text or image data', async () => {
+        const lines: string[] = [];
+        mock.method(console, 'info', (m: string) => { lines.push(m); });
+        await createNovaProvider({ model: 'm', ...capture(toolReply(GOOD)) }).readRecipe({ kind: 'text', text: 'SECRET-RECIPE' });
+        assert.equal(lines.length, 1);
+        assert.doesNotMatch(lines.join('\n'), /SECRET/);
+    });
+});
+
+describe('Nova errors', () => {
+    const aws = (name: string, status?: number, message = 'm') => Object.assign(new Error(message), { name, $metadata: { httpStatusCode: status } });
+    it('maps AWS errors to friendly codes and logs what to fix', () => {
+        const logged: string[] = [];
+        const err = mock.method(console, 'error', (m: string) => { logged.push(m); });
+        try {
+            const denied = mapNovaError(aws('AccessDeniedException', 403, 'secret request detail'), 'us.amazon.nova-2-lite-v1:0');
+            assert.deepEqual([denied.code, denied.unavailable], ['ai_unavailable', 'access']);
+            assert.doesNotMatch(denied.message, /IAM|AWS|bedrock/i);
+            assert.match(logged.at(-1)!, /bedrock:InvokeModel/);
+            assert.match(logged.at(-1)!, /model-id amazon\.nova-2-lite-v1:0/);
+            assert.doesNotMatch(logged.join('\n'), /secret request detail/);
+            assert.equal(mapNovaError(aws('ResourceNotFoundException', 404), 'x').unavailable, 'access');
+            assert.equal(mapNovaError(aws('ValidationException', 400, 'The provided model identifier is invalid.'), 'x').unavailable, 'access');
+            const throttled = mapNovaError(aws('ThrottlingException', 429), 'x');
+            assert.deepEqual([throttled.code, throttled.unavailable], ['ai_rate_limited', 'capacity']);
+            assert.equal(mapNovaError(aws('ServiceQuotaExceededException', 400), 'x').code, 'ai_rate_limited');
+            assert.equal(mapNovaError(aws('ValidationException', 400, 'image too big'), 'x').code, 'ai_bad_output');
+            assert.equal(mapNovaError(aws('ModelTimeoutException', 408), 'x').code, 'ai_timeout');
+            assert.equal(mapNovaError(aws('AbortError'), 'x').code, 'ai_timeout');
+            assert.equal(mapNovaError(aws('ServiceUnavailableException', 503), 'x').unavailable, 'capacity');
+            assert.equal(mapNovaError(aws('CredentialsProviderError'), 'x').code, 'ai_unavailable');
+            assert.match(logged.at(-1)!, /credentials/);
+            assert.equal(mapNovaError(new AiError('ai_refused', 'x'), 'x').code, 'ai_refused');
+        } finally {
+            err.mock.restore();
+        }
     });
 });
 
@@ -321,6 +512,20 @@ describe('cost', () => {
         assert.equal(Number(estimateCostUsd('anthropic.claude-sonnet-5-5', usage).toFixed(6)), 13.2);
         assert.equal(Number(estimateCostUsd('arn:aws:bedrock:us-east-1:1:inference-profile/us.anthropic.claude-haiku-5-5', usage).toFixed(6)), 0.66);
         assert.equal(baseModelId('arn:aws:bedrock:us-east-1:1:inference-profile/global.anthropic.claude-haiku-5-5'), 'claude-haiku-5-5');
+    });
+    it('prices Nova Lite from the AWS Price List, with the premium only where AWS charges it', () => {
+        // AmazonBedrock us-east-1 price list, 2026-11-11: Nova 2 Lite in-region/US $0.33/$2.75, global $0.30/$2.50;
+        // Nova Lite v1 $0.06/$0.24 with no global SKU.
+        const usage = { inputTokens: 1_000_000, outputTokens: 1_000_000 };
+        const usd = (m: string) => Number(estimateCostUsd(m, usage).toFixed(6));
+        assert.equal(baseModelId('us.amazon.nova-2-lite-v1:0'), 'nova-2-lite-v1:0');
+        assert.equal(usd('us.amazon.nova-2-lite-v1:0'), 3.08);
+        assert.equal(usd('amazon.nova-2-lite-v1:0'), 3.08);
+        assert.equal(usd('global.amazon.nova-2-lite-v1:0'), 2.8);
+        assert.equal(usd('us.amazon.nova-lite-v1:0'), 0.3);
+        assert.equal(usd('amazon.nova-lite-v1:0'), 0.3);
+        // The measured Nova 2 Lite card read in docs/BEDROCK_SETUP.md: 1,780 in, 481 out.
+        assert.equal(Number(estimateCostUsd('us.amazon.nova-2-lite-v1:0', { inputTokens: 1780, outputTokens: 481 }).toFixed(5)), 0.00191);
     });
     it('is zero for mock, and an unknown model never looks free', () => {
         assert.equal(estimateCostUsd(null, { inputTokens: 1, outputTokens: 1 }), 0);

@@ -12,15 +12,18 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Stripe subscriptions.** The plan is done ([docs/STRIPE_PLAN.md](docs/STRIPE_PLAN.md)) and sign-in now exists.
       Before building, decide what Plus unlocks first and the trial style. Local dev currently uses LIVE keys
       (`STRIPE_MODE=live`); switch to `test` before trying Checkout.
-- [ ] **Real AI for recipes (owner: AWS account steps).** No live Claude call has succeeded. Diagnosed 2026-11-13
-      ([docs/BEDROCK_SETUP.md](docs/BEDROCK_SETUP.md)): the account's applied Bedrock quota is **0** for every
-      Claude 5.x model (AWS default 6–30M tokens/min) and no Marketplace agreement exists. IAM, region and SCPs are
-      fine. The 404 for Haiku 5.5 was a code bug, now fixed (profile IDs go to bedrock-runtime). To do, in order:
-      submit the Anthropic use-case form, create the Haiku 5.5 agreement, request quota `L-47520EB7` > 0 (or open a
-      support case), then test with `AI_MODEL=us.anthropic.claude-haiku-5-5` (about $0.0008 a photo; Opus, the code
-      default, is ~40x). Evaluate Haiku on 20–50 real recipe photos before relying on it. If AWS won't enable
-      Claude, Amazon Nova 2 Lite works on the account today but needs a new provider (decide; spec in the doc).
-      Also: the local `aws` CLI is an Intel build that can't run on this Mac (`brew install awscli`).
+- [ ] **Real AI for recipes (owner: turn it on; Claude waits on AWS).** Since 2026-11-14 the code is ready
+      ([docs/RECIPES.md](docs/RECIPES.md#which-model-reads-what)): pasted text is read by the free built-in reader
+      first (63% of the offline evaluation set needs no AI, at 99.5% food top-1), photos and unsure text go to Claude
+      Haiku 5.5, plated-food photos and failed reads to Sonnet 5.5, and **Amazon Nova 2 Lite reads everything while
+      Claude is unavailable**. Nova works on the account now (3 live calls, $0.0047). To turn it on locally: set
+      `AI_PROVIDER=bedrock` and `AI_BEDROCK_REGION=us-east-1` (credentials from `~/.aws`). On AWS: deploy the CDK
+      example, which grants all three models. Claude itself still needs the account steps in
+      [docs/BEDROCK_SETUP.md §2](docs/BEDROCK_SETUP.md#2-fix-the-account-owner-actions) (quota `L-47520EB7` > 0 is
+      requested; also the use-case form and the Haiku 5.5 agreement), and then takes over with no change. Then:
+      evaluate Haiku and Nova on 20–50 real recipe photos, and Sonnet on plates, before relying on them; watch the
+      `provider=builtin` share and how often users edit those rows. Also: the local `aws` CLI is an Intel build that
+      can't run on this Mac (`brew install awscli`).
 - [ ] **Arsenic reference for the rice meter.** EPA 2025 (current default) reads brown rice at about 220% per cup, and
       ATSDR 2007 at about 44%. It's one edit to `is_default` in `data/contaminants/reference_values.tsv`, plus a rebuild.
 - [ ] **Old `feat/*` branches and worktrees** (`feat/food-search`, `feat/recipe-analyzer`, `feat/accounts`,

@@ -87,6 +87,12 @@ describe('model routing', () => {
         assert.equal(r.model, 'sonnet');
     });
 
+    it('passes an empty read through when there is no stronger model, so the page can say "not a recipe"', async () => {
+        const nova = fake('nova', recipe());
+        const r = await createRoutedProvider({ primary: fake('haiku', recipe(false, 0)), escalation: null, fallback: nova }).readRecipe(TEXT);
+        assert.deepEqual([r.model, r.recipe.ingredients.length, nova.calls.length], ['haiku', 0, 0]);
+    });
+
     it('does not escalate other failures: timeouts, refusals, not food, rejected requests', async () => {
         for (const e of [new AiError('ai_timeout', 'x'), new AiError('ai_refused', 'x'), new AiError('ai_not_food', 'x'), new AiError('ai_bad_output', 'x')]) {
             const sonnet = fake('sonnet', recipe());

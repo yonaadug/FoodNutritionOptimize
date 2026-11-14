@@ -79,10 +79,11 @@ export function createRoutedProvider({ primary, escalation, fallback, now = Date
                     return first.result;
                 }
                 if (recipe.ingredients.length > 0) return first.result;
-                failure = new InvalidReplyError('The reader didn\'t find any ingredients. Please try again.');
-            } else {
-                failure = first.error;
+                // No ingredients: the stronger model gets a try; otherwise the caller says "not a recipe".
+                const better = await escalate(input, signal);
+                return better?.ok ? better.result : first.result;
             }
+            failure = first.error;
 
             if (failure instanceof InvalidReplyError) {
                 const better = await escalate(input, signal);

@@ -13,13 +13,15 @@ const nextConfig = {
     },
 
     // Native module: load it with Node's require() at runtime instead of
-    // bundling it (works for both Turbopack and webpack builds).
-    serverExternalPackages: ['better-sqlite3'],
+    // bundling it (works for both Turbopack and webpack builds). `highs` (the
+    // week planner's solver) loads its .wasm from beside its own .js at runtime.
+    serverExternalPackages: ['better-sqlite3', 'highs'],
 
     // The SQLite DB is opened via fs at runtime, so the tracer can't see it.
     // Ship it inside .next/standalone so the bundle is self-contained.
     outputFileTracingIncludes: {
         '/api/**/*': ['./nutrition.db'],
+        '/api/plan/week': ['./node_modules/highs/build/highs.wasm'],
     },
 
     // No next/image optimization is used, so don't ship sharp/libvips

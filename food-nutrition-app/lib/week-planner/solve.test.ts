@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import type { Food } from '../food-types';
 import { goalsToPayload } from '@/components/planner/goals';
 import { planWeek } from './solve';
-import { toLpText, solveWithHighs } from './highs';
+import { satisfies, toLpText, solveWithHighs } from './highs';
 import { goalMode, WEEKLY_AVERAGE_KEYS } from './goals';
 import { parseWeekRequest, RequestValidationError } from './request';
 import { daysPerFood, weekGoalProgress } from './totals';
@@ -200,6 +200,21 @@ describe('model internals', () => {
         assert.equal(s.q, 1);
         assert.equal(s.p, 1);
         assert.equal(toLpText({ optimize: 'cost', opType: 'min', constraints: { e: { min: 1 } }, variables: { p: { cost: 1 } } }), null);
+    });
+});
+
+describe('time-limited answers', () => {
+    it('only counts values that meet every row and integrality as a plan', () => {
+        const model = {
+            optimize: 'cost', opType: 'min' as const,
+            constraints: { kcal: { min: 1800 }, cap: { max: 3 } },
+            variables: { x: { cost: 1, kcal: 100, cap: 1 }, y: { cap: -1 } },
+            binaries: { y: 1 as const },
+        };
+        assert.equal(satisfies(model, { x: 0, y: 0 }), false, 'a week of zeros is not a plan');
+        assert.equal(satisfies(model, { x: 18, y: 1 }), false, 'over the cap');
+        assert.equal(satisfies(model, { x: 18, y: 0.5 }), false, 'a fractional binary');
+        assert.equal(satisfies({ ...model, constraints: { kcal: { min: 1800 } } }, { x: 18, y: 1 }), true);
     });
 });
 

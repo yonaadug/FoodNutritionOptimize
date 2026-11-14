@@ -1,8 +1,28 @@
-# NanoNutrition: Domain Options and Costs
+# NutritionDictionary: Domain Options and Costs
 
-## Current status (2026-11-14): renamed to NanoNutrition, domain not chosen yet
+## Current decision (2026-11-14): NutritionDictionary at nutritiondictionary.com
 
-The product was renamed from Micronutrient Diary to **NanoNutrition** on 2026-11-13. The code and docs use **nanonutrition.app** as a working default. Change `SITE_URL` in `food-nutrition-app/lib/nav.ts` and `siteUrl`/`sesDomain` in `infra-example/cdk/bin/nanonutrition.ts` if you pick another one.
+The owner renamed the product to **NutritionDictionary**, because nanonutrition.com is taken (below). The code and docs use **nutritiondictionary.com**: `SITE_URL` in `food-nutrition-app/lib/nav.ts`, plus `siteUrl`/`sesDomain` in `infra-example/cdk/bin/nutrition-dictionary.ts`.
+
+**Availability and prices (checked 2026-11-14).** Registry RDAP and whois, Route 53's `CheckDomainAvailability` and `ListPrices` (read-only), and Porkbun's public price list. Not registered yet; registrar checkout is authoritative.
+
+| Domain | Status | Route 53 (per year) | Porkbun (first year / renewal) |
+|---|---|---|---|
+| **nutritiondictionary.com** | Available (Route 53 confirms). No website or DNS | **$16** | $11.81 / $11.81 |
+| nutritiondictionary.app | Available (Route 53 confirms) | $20 | $8.75 / $14.93 |
+| nutrition-dictionary.com, thenutritiondictionary.com | Available (no record) | $16 | $11.81 / $11.81 |
+| nutritiondictionary.net / .org / .io / .co | Available (no record) | $17 / $16 / $71 / $38 | see the NanoNutrition table below |
+
+**Recommendation:** register nutritiondictionary.com at Route 53 for $16/yr (one AWS bill, and CDK can manage DNS). Porkbun is $4/yr cheaper if you point its DNS at Route 53. A typo guard such as nutrition-dictionary.com is optional.
+
+**Name check (not legal advice, 2026-11-14).** Web searches found no app, website or US trademark named exactly "Nutrition Dictionary". The closest were nutrition glossary apps ("Nutrition Glossary", "Nutrition, Health and Body Glossary") and differently named marks (NUTRITICS, NUTRITIONAL PERSPECTIVES). Examiners treat "nutrition" as descriptive (NUTRITION DYNAMIC had to disclaim it), so this name is low-risk to use but may be hard to register as a trademark. Confirm at [tmsearch.uspto.gov](https://tmsearch.uspto.gov/) before investing in branding.
+
+---
+
+
+## Earlier (2026-11-13 to 14, superseded): NanoNutrition
+
+The product was briefly named **NanoNutrition** (2026-11-13), with nanonutrition.app as a working default. It was dropped because nanonutrition.com isn't available. The findings are kept for reference.
 
 **Availability and prices (checked 2026-11-14).** Registry RDAP and whois, Route 53's `CheckDomainAvailability` and `ListPrices` (read-only), and Porkbun's public price list. Registrar checkout is authoritative.
 

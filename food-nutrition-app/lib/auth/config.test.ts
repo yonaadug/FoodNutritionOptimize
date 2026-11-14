@@ -33,14 +33,14 @@ describe('loadAuthConfig', () => {
     });
 
     it('a deployed site trusts only its own origin', () => {
-        const config = loadAuthConfig(env({ NODE_ENV: 'production', AUTH_BASE_URL: 'https://nanonutrition.app', AUTH_SECRET: SECRET, AUTH_EMAIL_FROM: 'x@nanonutrition.app' }));
-        assert.deepEqual(config.origins, ['https://nanonutrition.app']);
-        const request = (origin: string) => new Request('https://nanonutrition.app/api/history', { method: 'POST', headers: { origin } });
+        const config = loadAuthConfig(env({ NODE_ENV: 'production', AUTH_BASE_URL: 'https://nutritiondictionary.com', AUTH_SECRET: SECRET, AUTH_EMAIL_FROM: 'x@nutritiondictionary.com' }));
+        assert.deepEqual(config.origins, ['https://nutritiondictionary.com']);
+        const request = (origin: string) => new Request('https://nutritiondictionary.com/api/history', { method: 'POST', headers: { origin } });
         assert.throws(() => assertSameOrigin(request('http://localhost:3000'), config), AccountError);
     });
 
     it('a deployed site needs https, a real secret and a sender', () => {
-        const prod = { NODE_ENV: 'production', AUTH_BASE_URL: 'https://nanonutrition.app', AUTH_SECRET: SECRET, AUTH_EMAIL_FROM: 'no-reply@nanonutrition.app' };
+        const prod = { NODE_ENV: 'production', AUTH_BASE_URL: 'https://nutritiondictionary.com', AUTH_SECRET: SECRET, AUTH_EMAIL_FROM: 'no-reply@nutritiondictionary.com' };
         const config = loadAuthConfig(env(prod));
         assert.equal(config.emailTransport, 'ses');
         assert.equal(config.isHttps, true);
@@ -50,7 +50,7 @@ describe('loadAuthConfig', () => {
             [{ ...prod, AUTH_SECRET: '' }, /AUTH_SECRET/],
             [{ ...prod, AUTH_SECRET: 'short' }, /at least 32/],
             [{ ...prod, AUTH_EMAIL_FROM: '' }, /AUTH_EMAIL_FROM/],
-            [{ ...prod, AUTH_BASE_URL: 'http://nanonutrition.app' }, /https/],
+            [{ ...prod, AUTH_BASE_URL: 'http://nutritiondictionary.com' }, /https/],
             [{ NODE_ENV: 'production' }, /AUTH_BASE_URL/],
         ];
         for (const [values, message] of missing) {
@@ -60,7 +60,7 @@ describe('loadAuthConfig', () => {
 
     it('never prints sign-in links on a deployed site', () => {
         assert.throws(() => loadAuthConfig(env({
-            NODE_ENV: 'production', AUTH_BASE_URL: 'https://nanonutrition.app', AUTH_SECRET: SECRET, AUTH_EMAIL_TRANSPORT: 'console',
+            NODE_ENV: 'production', AUTH_BASE_URL: 'https://nutritiondictionary.com', AUTH_SECRET: SECRET, AUTH_EMAIL_TRANSPORT: 'console',
         })), /only allowed when AUTH_BASE_URL is localhost/);
     });
 

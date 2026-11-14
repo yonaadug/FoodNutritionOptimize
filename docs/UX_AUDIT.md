@@ -1,4 +1,4 @@
-# NanoNutrition UX Audit
+# NutritionDictionary UX Audit
 
 _Section C (UX) review, November 2026. Tested with headless Chromium (Playwright 1.58.2) against `npm run dev` on port 3100, at 1440×900 (desktop) and 390×844 (phone), in light and dark themes, using the 411-food Foundation Foods DB._
 

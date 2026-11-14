@@ -40,7 +40,7 @@ export interface HistoryPage {
 }
 
 export interface AccountExport {
-    format: 'nanonutrition-account-export';
+    format: 'nutrition-dictionary-account-export';
     version: 1;
     exportedAt: string;
     profile: UserProfile | null;
@@ -222,7 +222,7 @@ export class UserStore {
             this.readAll(pk, HIST_PREFIX),
         ]);
         return {
-            format: 'nanonutrition-account-export',
+            format: 'nutrition-dictionary-account-export',
             version: 1,
             exportedAt: new Date().toISOString(),
             profile,

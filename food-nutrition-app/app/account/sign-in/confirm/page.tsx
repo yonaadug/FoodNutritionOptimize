@@ -33,7 +33,7 @@ export default async function ConfirmSignInPage({ searchParams }: { searchParams
                     ? (
                         <>
                             <h1 id="confirm-title" className={styles.heading}>Finish signing in</h1>
-                            <p className={styles.lede}>Press the button to sign in to NanoNutrition on this device.</p>
+                            <p className={styles.lede}>Press the button to sign in to NutritionDictionary on this device.</p>
                             <form method="get" action="/api/auth/magic-link/verify" className={styles.form}>
                                 {values.map(([name, value]) => <input key={name} type="hidden" name={name} value={value} />)}
                                 <button type="submit" className="btn btn-primary btn-lg btn-block">Sign in</button>

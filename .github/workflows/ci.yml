@@ -77,19 +77,19 @@ jobs:
         with:
           lfs: true
       - name: Build image
-        run: docker build -t nanonutrition:ci .
+        run: docker build -t nutrition-dictionary:ci .
       - name: Run and wait for HEALTHCHECK
         run: |
-          docker run -d --name nanonutrition-ci -p 3000:3000 --health-interval 2s nanonutrition:ci
+          docker run -d --name nutrition-dictionary-ci -p 3000:3000 --health-interval 2s nutrition-dictionary:ci
           for i in $(seq 1 30); do
-            s="$(docker inspect -f '{{.State.Health.Status}}' nanonutrition-ci)"; echo "health: $s"
+            s="$(docker inspect -f '{{.State.Health.Status}}' nutrition-dictionary-ci)"; echo "health: $s"
             [ "$s" = healthy ] && break; sleep 2
           done
-          [ "$(docker inspect -f '{{.State.Health.Status}}' nanonutrition-ci)" = healthy ] || { docker logs nanonutrition-ci; exit 1; }
+          [ "$(docker inspect -f '{{.State.Health.Status}}' nutrition-dictionary-ci)" = healthy ] || { docker logs nutrition-dictionary-ci; exit 1; }
       - name: Smoke test
         run: node food-nutrition-app/scripts/smoke.mjs http://127.0.0.1:3000 --wait 30
       - if: always()
-        run: docker rm -f nanonutrition-ci || true
+        run: docker rm -f nutrition-dictionary-ci || true
 
   cdk-synth:
     name: AWS CDK example (typecheck + synth, no AWS account)

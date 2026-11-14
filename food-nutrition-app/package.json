@@ -1,8 +1,8 @@
 {
-    "name": "nanonutrition",
+    "name": "nutrition-dictionary",
     "version": "0.1.0",
     "private": true,
-    "description": "NanoNutrition - Intelligent Nutrition Optimizer",
+    "description": "NutritionDictionary - Intelligent Nutrition Optimizer",
     "author": "Yonathan Kebede <primeyonathan@gmail.com>",
     "license": "MIT",
     "repository": {

@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
-# NanoNutrition web app: Next.js standalone server with the SQLite DB bundled read-only.
+# NutritionDictionary web app: Next.js standalone server with the SQLite DB bundled read-only.
 #
 #   git lfs pull                       # the DB must be the real file, not an LFS pointer
-#   docker build -t nanonutrition .
-#   docker run --rm -p 3000:3000 nanonutrition
+#   docker build -t nutrition-dictionary .
+#   docker run --rm -p 3000:3000 nutrition-dictionary
 #
 # Build on (or with --platform for) the target arch: the better-sqlite3 binary
 # traced into the standalone bundle is the one for the build platform.

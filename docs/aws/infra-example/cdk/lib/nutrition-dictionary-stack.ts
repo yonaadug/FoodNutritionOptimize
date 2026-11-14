@@ -6,7 +6,7 @@
  *  run `cdk diff` / deploy in a DEV account first (see docs/LOCAL_TESTING.md).
  * ============================================================================
  *
- * NanoNutrition stack (one per stage: dev | prod):
+ * NutritionDictionary stack (one per stage: dev | prod):
  *   CloudFront (OAC) -> Lambda "web" (Next.js standalone in an arm64 container via Lambda Web Adapter)
  *   DynamoDB single table · Cognito user pool · S3 uploads · SQS imports + DLQ
  *   Lambda "ai-worker" (Claude via Claude Platform on AWS) · Lambda "stripe-webhook" (public URL)
@@ -39,25 +39,25 @@ import * as budgets from 'aws-cdk-lib/aws-budgets';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import { SqsEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 
-export interface NanoNutritionStackProps extends StackProps {
+export interface NutritionDictionaryStackProps extends StackProps {
   stage: 'dev' | 'prod';
-  /** e.g. "https://nanonutrition.app" (prod) or the CloudFront URL (dev). Used for CORS + Stripe redirects. */
+  /** e.g. "https://nutritiondictionary.com" (prod) or the CloudFront URL (dev). Used for CORS + Stripe redirects. */
   siteUrl: string;
   alertEmail: string;
   /** Monthly AWS cost budget in USD (start small; raise with revenue). */
   monthlyBudgetUsd: number;
-  /** Verified SES domain for Cognito emails, e.g. "nanonutrition.app". Optional in dev. */
+  /** Verified SES domain for Cognito emails, e.g. "nutritiondictionary.com". Optional in dev. */
   sesDomain?: string;
 }
 
-export class NanoNutritionStack extends Stack {
-  constructor(scope: Construct, id: string, props: NanoNutritionStackProps) {
+export class NutritionDictionaryStack extends Stack {
+  constructor(scope: Construct, id: string, props: NutritionDictionaryStackProps) {
     super(scope, id, props);
     const isProd = props.stage === 'prod';
     // lib/ -> cdk/ -> infra-example/ -> aws/ -> docs/ -> repo root
     const repoRoot = path.join(__dirname, '../../../../..');
     const workersDir = path.join(__dirname, '../workers');
-    const paramPrefix = `/nanonutrition/${props.stage}`;
+    const paramPrefix = `/nutrition-dictionary/${props.stage}`;
 
     // ---------------------------------------------------------------- alerts
     const alerts = new sns.Topic(this, 'Alerts');
@@ -72,7 +72,7 @@ export class NanoNutritionStack extends Stack {
 
     // ------------------------------------------------------------ data store
     const table = new dynamodb.TableV2(this, 'Table', {
-      tableName: `nanonutrition-${props.stage}`,
+      tableName: `nutrition-dictionary-${props.stage}`,
       partitionKey: { name: 'PK', type: dynamodb.AttributeType.STRING },
       sortKey: { name: 'SK', type: dynamodb.AttributeType.STRING },
       billing: dynamodb.Billing.onDemand(),
@@ -89,7 +89,7 @@ export class NanoNutritionStack extends Stack {
 
     // ------------------------------------------------------------------ auth
     const userPool = new cognito.UserPool(this, 'Users', {
-      userPoolName: `nanonutrition-${props.stage}`,
+      userPoolName: `nutrition-dictionary-${props.stage}`,
       featurePlan: cognito.FeaturePlan.ESSENTIALS, // 10k MAU free; switch to LITE later if needed
       selfSignUpEnabled: true,
       signInAliases: { email: true },
@@ -100,7 +100,7 @@ export class NanoNutritionStack extends Stack {
       email: props.sesDomain
         ? cognito.UserPoolEmail.withSES({
             fromEmail: `no-reply@${props.sesDomain}`,
-            fromName: 'NanoNutrition',
+            fromName: 'NutritionDictionary',
             sesRegion: this.region,
             sesVerifiedDomain: props.sesDomain,
           })
@@ -241,7 +241,7 @@ export class NanoNutritionStack extends Stack {
 
     // 5 behaviors total = the flat-rate Free plan's limit.
     const distribution = new cloudfront.Distribution(this, 'Cdn', {
-      comment: `nanonutrition-${props.stage}`,
+      comment: `nutrition-dictionary-${props.stage}`,
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100, // irrelevant on flat-rate plans; cheaper on PAYG
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
       defaultBehavior: {
@@ -329,8 +329,8 @@ export class NanoNutritionStack extends Stack {
     }));
     const webhookUrl = stripeWebhook.addFunctionUrl({ authType: lambda.FunctionUrlAuthType.NONE });
     // Create SecureString params out-of-band (CloudFormation can't create SecureString):
-    //   aws ssm put-parameter --type SecureString --name /nanonutrition/prod/stripe/secret-key --value sk_live_...
-    //   aws ssm put-parameter --type SecureString --name /nanonutrition/prod/stripe/webhook-secret --value whsec_...
+    //   aws ssm put-parameter --type SecureString --name /nutrition-dictionary/prod/stripe/secret-key --value sk_live_...
+    //   aws ssm put-parameter --type SecureString --name /nutrition-dictionary/prod/stripe/webhook-secret --value whsec_...
 
     // --------------------------------------------------------- kill switch
     // The web function's synchronous recipe reader doesn't read the SSM flag, so the
@@ -400,16 +400,16 @@ export class NanoNutritionStack extends Stack {
         w: table.metric('WriteThrottleEvents', { statistic: 'Sum', period: Duration.minutes(5) }),
       },
     }), 0);
-    // App emits NanoNutrition/AiSpendMicroUsd via Embedded Metric Format; alert at ~80% of the daily cap.
+    // App emits NutritionDictionary/AiSpendMicroUsd via Embedded Metric Format; alert at ~80% of the daily cap.
     alarm('AiSpendDaily', new cw.Metric({
-      namespace: 'NanoNutrition', metricName: 'AiSpendMicroUsd',
+      namespace: 'NutritionDictionary', metricName: 'AiSpendMicroUsd',
       dimensionsMap: { Stage: props.stage }, statistic: 'Sum', period: Duration.days(1),
     }), 4_000_000 /* $4 */);
 
     // ---------------------------------------------------------------- budget
     new budgets.CfnBudget(this, 'MonthlyBudget', {
       budget: {
-        budgetName: `nanonutrition-${props.stage}-monthly`,
+        budgetName: `nutrition-dictionary-${props.stage}-monthly`,
         budgetType: 'COST',
         timeUnit: 'MONTHLY',
         budgetLimit: { amount: props.monthlyBudgetUsd, unit: 'USD' },

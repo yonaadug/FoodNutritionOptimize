@@ -1,4 +1,4 @@
-# NanoNutrition Desktop (Electron)
+# NutritionDictionary Desktop (Electron)
 
 A thin Electron shell around the Next.js app in `../food-nutrition-app`. Everything
 runs locally, and the app works offline.
@@ -64,8 +64,8 @@ certificate and notarization; see https://www.electron.build/code-signing.
 ## Troubleshooting
 
 - **Logs:** the main and server output goes to the console and to
-  `~/Library/Logs/NanoNutrition/main.log` on macOS (`%APPDATA%\NanoNutrition\logs` on
-  Windows, `~/.config/NanoNutrition/logs` on Linux).
+  `~/Library/Logs/NutritionDictionary/main.log` on macOS (`%APPDATA%\NutritionDictionary\logs` on
+  Windows, `~/.config/NutritionDictionary/logs` on Linux).
 - **"Database not found" or "not a SQLite file":** run `git lfs pull` in the repo root,
   then rebuild.
 - **`electron .` behaves like plain Node:** your shell has `ELECTRON_RUN_AS_NODE` set

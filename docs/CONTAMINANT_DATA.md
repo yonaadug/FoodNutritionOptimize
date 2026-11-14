@@ -2,7 +2,7 @@
 
 > Customers read this at `/methodology` on the site (`food-nutrition-app/app/methodology/page.tsx`). Change both together: `lib/methodology.test.ts` fails if a section or source here is missing from the page.
 
-Most foods contain traces of metals, and many have pesticide residues. On each food page, NanoNutrition shows how much one serving typically contains, using public testing data, so you can compare foods without reading raw numbers.
+Most foods contain traces of metals, and many have pesticide residues. On each food page, NutritionDictionary shows how much one serving typically contains, using public testing data, so you can compare foods without reading raw numbers.
 
 **This is general information, not medical advice.** It shows typical levels, not what's in any one package. If you're pregnant, feeding young children or have health concerns, talk to your clinician.
 

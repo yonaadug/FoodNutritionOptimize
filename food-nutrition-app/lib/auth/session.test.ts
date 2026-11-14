@@ -199,8 +199,8 @@ describe('cookies', () => {
 
     it('are Secure with the __Secure- prefix on an https site', async () => {
         const table = new SqliteTable(':memory:');
-        const site = 'https://nanonutrition.example';
-        const h = harnessOn(table, { AUTH_BASE_URL: site, AUTH_EMAIL_TRANSPORT: 'ses', AUTH_EMAIL_FROM: 'a@nanonutrition.example' });
+        const site = 'https://nutritiondictionary.example';
+        const h = harnessOn(table, { AUTH_BASE_URL: site, AUTH_EMAIL_TRANSPORT: 'ses', AUTH_EMAIL_FROM: 'a@nutritiondictionary.example' });
         const send = (path: string, init: RequestInit) => authEndpoint(new Request(`${site}${path}`, init), h);
         await send('/api/auth/sign-in/magic-link', {
             method: 'POST',

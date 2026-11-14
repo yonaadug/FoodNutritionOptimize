@@ -1,12 +1,12 @@
-# NanoNutrition
+# NutritionDictionary
 
-> **What's in your food?** · nanonutrition.app *(working default; domain not registered yet)*
+> **What's in your food?** · nutritiondictionary.com *(planned domain, not registered yet)*
 
 *Formerly "NutriCompare".*
 
-NanoNutrition lets you look up the nutrients in any food, see what contaminant testing found in it, work out the nutrition of a recipe, and plan a day of eating that meets your goals. It uses public USDA and FDA data, it's free, and it needs no account.
+NutritionDictionary lets you look up the nutrients in any food, see what contaminant testing found in it, work out the nutrition of a recipe, and plan a day of eating that meets your goals. It uses public USDA and FDA data, it's free, and it needs no account.
 
-![The NanoNutrition home page](docs/walkthrough/01-home.png)
+![The NutritionDictionary home page](docs/walkthrough/01-home.png)
 
 **New here?** The [guided tour](docs/WEBSITE_WALKTHROUGH.md) shows every screen and lists known rough edges.
 
@@ -143,8 +143,8 @@ non-root user, and the database is read-only. Its `HEALTHCHECK` polls `/api/meta
 
 ```bash
 git lfs pull
-docker build -t nanonutrition .
-docker run --rm -p 3000:3000 nanonutrition      # or: make docker-test
+docker build -t nutrition-dictionary .
+docker run --rm -p 3000:3000 nutrition-dictionary      # or: make docker-test
 ```
 
 For AWS, the planned shape is the Lambda container in
@@ -158,7 +158,7 @@ example passes `cdk synth` but has never been deployed. See
 
 ### Desktop App (Electron)
 
-Run NanoNutrition as a **native desktop application** that works completely offline. The
+Run NutritionDictionary as a **native desktop application** that works completely offline. The
 app runs its own server on `127.0.0.1` with a random port, and its window is locked down:
 it is sandboxed, has a CSP, and cannot load remote content. End users don't need Node.js.
 See [electron-app/README.md](electron-app/README.md) for details.
@@ -321,7 +321,7 @@ FoodNutritionOptimize/
 
 ## How the Optimization Works (Technical)
 
-NanoNutrition uses **Linear Programming**, specifically the **Simplex Algorithm**, to solve this problem:
+NutritionDictionary uses **Linear Programming**, specifically the **Simplex Algorithm**, to solve this problem:
 
 ### Mathematical Formulation
 
@@ -457,7 +457,7 @@ node -e "console.log(new (require('better-sqlite3'))('nutrition.db',{readonly:tr
 **Problem:** The Electron window doesn't open, or an error dialog appears
 
 **Solutions:**
-- Read the log at `~/Library/Logs/NanoNutrition/main.log` (macOS), `%APPDATA%\NanoNutrition\logs\main.log` (Windows), or `~/.config/NanoNutrition/logs/main.log` (Linux).
+- Read the log at `~/Library/Logs/NutritionDictionary/main.log` (macOS), `%APPDATA%\NutritionDictionary\logs\main.log` (Windows), or `~/.config/NutritionDictionary/logs/main.log` (Linux).
 - In dev mode, make sure `food-nutrition-app` is installed (`npm ci --ignore-scripts`) and the LFS database is pulled.
 - If `electron .` acts like plain Node, unset `ELECTRON_RUN_AS_NODE` (some IDE terminals set it). The npm scripts already unset it.
 - The app picks a random free port, so you never need to free port 3000.

@@ -141,7 +141,7 @@ def fetch_sources(allow_hash_mismatch: bool) -> None:
             url = FDC_BASE + src["zip"]
             log(f"[download] {url}")
             tmp = zpath.with_suffix(".part")
-            req = urllib.request.Request(url, headers={"User-Agent": "NanoNutrition-build_db/" + BUILDER_VERSION})
+            req = urllib.request.Request(url, headers={"User-Agent": "NutritionDictionary-build_db/" + BUILDER_VERSION})
             with urllib.request.urlopen(req, timeout=600) as resp, open(tmp, "wb") as out:
                 while True:
                     chunk = resp.read(1 << 20)

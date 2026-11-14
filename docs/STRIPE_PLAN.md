@@ -1,11 +1,11 @@
-# NanoNutrition: Stripe Integration Plan
+# NutritionDictionary: Stripe Integration Plan
 
 *Generated 2026-11-04 with Stripe's `stripe_implementation_planner` (guide `iguide_61VhbzFAc0bobNT3c41BJBe1RKB2N`, account `acct_1UYAsNBJBe1RKB2N`, live), then adapted to this codebase. Stripe products: **Payments, Billing, Invoicing**. Status: **plan only**. Nothing has been created in Stripe, and no Stripe code exists in the app yet.*
 
 ## 1. What we're building
 
 - **Free** (today's app): planning with no account and no card.
-- **NanoNutrition Plus**: a subscription at **$5.99/month or $39.99/year** that unlocks premium features. Which features is still open; see §9.
+- **NutritionDictionary Plus**: a subscription at **$5.99/month or $39.99/year** that unlocks premium features. Which features is still open; see §9.
 - People subscribe on a **Stripe-hosted Checkout page**. They manage their subscription in the **Stripe Customer Portal**: switch monthly ↔ annual, cancel, update their card, download invoices and receipts.
 - **Webhooks** keep our database in sync, and the app turns Plus features on or off from that data.
 - Stripe sends receipts and invoices automatically. We sell no physical goods and give no medical advice.
@@ -18,7 +18,7 @@
 | No-code (Payment Link / Pricing Table)? | **No: code integration** | Subscriptions must link to our own user accounts and sync by webhook |
 | Control page layout or branding? | **No** → redirect is fine | Use **Stripe-hosted Checkout** ⭐ (Stripe's default). Brand it under Dashboard → Settings → Branding |
 | Managed Payments (Stripe handles tax, fraud and compliance)? | **No, for now** | Standard fees (2.9% + 30¢ + 0.7% Billing) instead of an extra ~3.5%. Revisit if global VAT/GST compliance becomes a burden ([docs](https://docs.stripe.com/payments/managed-payments/set-up?mode=subscription)) |
-| Pricing model | **Flat rate** ⭐ | One product, "NanoNutrition Plus", with two recurring prices: monthly and annual |
+| Pricing model | **Flat rate** ⭐ | One product, "NutritionDictionary Plus", with two recurring prices: monthly and annual |
 | Free access before charging | **Freemium** (no card) | The free tier needs no card. A Plus trial (§9) is a plan-design detail on top |
 | Subscription changes | **Customer Portal** ⭐ | Upgrades, downgrades, cancellations, card updates and invoice history, with no custom UI |
 | Failed payments | **Smart Retries + automated emails** ⭐ | Configured in the Dashboard; no code |
@@ -34,7 +34,7 @@
 ```mermaid
 sequenceDiagram
     participant U as User (browser)
-    participant A as NanoNutrition (Next.js)
+    participant A as NutritionDictionary (Next.js)
     participant S as Stripe
     participant DB as User store
     U->>A: Click "Upgrade to Plus" (monthly/annual)
@@ -56,9 +56,9 @@ sequenceDiagram
 
 ## 4. Stripe Dashboard setup (sandbox first, then live)
 
-Do each step in the **sandbox** ("NanoNutrition sandbox", the `STRIPE_TEST_*` keys) first. Repeat it in **live** only when launching.
+Do each step in the **sandbox** ("NutritionDictionary sandbox", the `STRIPE_TEST_*` keys) first. Repeat it in **live** only when launching.
 
-1. **Product catalog** → add product **"NanoNutrition Plus"**.
+1. **Product catalog** → add product **"NutritionDictionary Plus"**.
    - Add a description, and set the tax code to SaaS for personal use. We'll check the exact `txcd_` code at setup.
    - Add two recurring prices: **$5.99 / month** with lookup key `plus_monthly`, and **$39.99 / year** with lookup key `plus_annual`.
    - With lookup keys, the code can find each price by name in both sandbox and live. Copy the price IDs into `STRIPE_*_PRICE_PLUS_MONTHLY/ANNUAL` as a fallback.
@@ -67,9 +67,9 @@ Do each step in the **sandbox** ("NanoNutrition sandbox", the `STRIPE_TEST_*` ke
    - Set the default return URL (`http://localhost:3000/account` while testing).
 3. **Settings → Billing → Revenue recovery:** turn on Smart Retries, failed-payment emails, and automatic card updates. After all retries fail, **cancel the subscription**.
 4. **Settings → Billing → Subscriptions and emails:** turn on receipts and upcoming-renewal emails (for the annual plan). Set the default billing mode to **Flexible**.
-5. **Settings → Branding:** add the logo, colours and public business name "NanoNutrition".
+5. **Settings → Branding:** add the logo, colours and public business name "NutritionDictionary".
 6. **Tax:** add the head-office address and enable threshold monitoring.
-7. **Webhooks:** create an endpoint, `https://nanonutrition.app/api/stripe/webhook` in production. Locally, `stripe listen` forwards events (§7). Subscribe to:
+7. **Webhooks:** create an endpoint, `https://nutritiondictionary.com/api/stripe/webhook` in production. Locally, `stripe listen` forwards events (§7). Subscribe to:
    - `checkout.session.completed`
    - `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`
    - `invoice.paid`, `invoice.payment_failed`
@@ -147,4 +147,4 @@ Follow Stripe's [go-live checklist](https://docs.stripe.com/get-started/checklis
 - Use a restricted key.
 - Verify the webhook signature secret for the production endpoint.
 - Do one real $5.99 purchase and refund it.
-- Confirm receipts and portal links work on `nanonutrition.app`.
+- Confirm receipts and portal links work on `nutritiondictionary.com`.

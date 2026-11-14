@@ -80,7 +80,7 @@ This is required for Haiku 4.5 and older, and is the step AWS support will ask a
 2. Go to **Model catalog** and filter by provider **Anthropic**.
 3. Open **Claude Haiku 4.5** and choose **Open in playground**. The use-case form opens if it hasn't been submitted.
 4. Fill it in:
-   - Company: NanoNutrition
+   - Company: NutritionDictionary
    - Website: your site
    - Intended users: external
    - Use case: "Reads ingredient lists from user-supplied recipe text and photos for a nutrition website. No medical advice."
@@ -262,7 +262,7 @@ Then open http://127.0.0.1:3680/recipes and use **Upload a photo**.
 
 ## 5. Working on AWS
 
-`/api/recipes/parse` runs in the **web** Lambda and calls Bedrock directly. The CDK example (`docs/aws/infra-example/cdk/lib/nanonutrition-stack.ts`) now sets up the web function for this:
+`/api/recipes/parse` runs in the **web** Lambda and calls Bedrock directly. The CDK example (`docs/aws/infra-example/cdk/lib/nutrition-dictionary-stack.ts`) now sets up the web function for this:
 
 - It allows `bedrock:InvokeModel` on the `us.` Haiku 5.5 profile only.
 - It sets `AI_PROVIDER=bedrock`, `AI_MODEL=us.anthropic.claude-haiku-5-5`, the region, `AI_TIMEOUT_MS=20000`, `AI_MAX_RETRIES=1` and `AI_DAILY_BUDGET_USD`.

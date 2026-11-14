@@ -197,7 +197,7 @@ function bedrockSend(env: Env, region: string, model: string, endpoint: BedrockE
     };
 }
 
-const cacheKey = Symbol.for('nanonutrition.ai-provider');
+const cacheKey = Symbol.for('nutrition-dictionary.ai-provider');
 type GlobalWithProvider = typeof globalThis & { [cacheKey]?: { provider: AiProvider; fallbackReason: string | null } };
 
 /** Build a provider from an explicit environment (no caching). */

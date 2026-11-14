@@ -11,7 +11,7 @@ export function Welcome({ onSample, onScratch, loading, error }: { onSample: () 
             <p className="eyebrow">Free · No sign-up · Uses USDA nutrition data</p>
             <h1 id="welcome-title" style={{ marginTop: 8 }}>Eat the foods you like and still hit your nutrition goals.</h1>
             <p>
-                Pick some foods, choose what you&apos;re aiming for, and NanoNutrition works out how much of each to eat,
+                Pick some foods, choose what you&apos;re aiming for, and NutritionDictionary works out how much of each to eat,
                 in grams and everyday servings.
             </p>
             <div className="hero-actions">

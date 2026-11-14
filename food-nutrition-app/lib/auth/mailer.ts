@@ -17,7 +17,7 @@ export type Mailer = (mail: SignInMail) => Promise<void>;
 
 function renderText({ url, expiresInMinutes }: SignInMail): string {
     return [
-        'Sign in to NanoNutrition',
+        'Sign in to NutritionDictionary',
         '',
         `Open this link to sign in. It works once and expires in ${expiresInMinutes} minutes:`,
         url,
@@ -31,7 +31,7 @@ const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
 function renderHtml({ url, expiresInMinutes }: SignInMail): string {
     const href = escapeHtml(url);
     return `<!doctype html><html><body style="font-family:system-ui,sans-serif;color:#0f172a;line-height:1.5">
-<h1 style="font-size:20px">Sign in to NanoNutrition</h1>
+<h1 style="font-size:20px">Sign in to NutritionDictionary</h1>
 <p><a href="${href}" style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600">Continue to sign in</a></p>
 <p style="color:#475569">This link works once and expires in ${expiresInMinutes} minutes.</p>
 <p style="color:#475569">If you didn't ask for this, you can ignore this email. Nothing happens unless the link is used.</p>
@@ -54,7 +54,7 @@ function sesMailer(config: AuthConfig): Mailer {
             Destination: { ToAddresses: [mail.to] },
             Content: {
                 Simple: {
-                    Subject: { Data: 'Your NanoNutrition sign-in link', Charset: 'UTF-8' },
+                    Subject: { Data: 'Your NutritionDictionary sign-in link', Charset: 'UTF-8' },
                     Body: {
                         Text: { Data: renderText(mail), Charset: 'UTF-8' },
                         Html: { Data: renderHtml(mail), Charset: 'UTF-8' },

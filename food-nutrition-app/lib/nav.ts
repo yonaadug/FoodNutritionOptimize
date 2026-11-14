@@ -44,13 +44,13 @@ export function isAccountPath(pathname: string | null | undefined): boolean {
     return under(cleanPath(pathname), ACCOUNT_PATH);
 }
 
-export const SITE_NAME = 'NanoNutrition';
+export const SITE_NAME = 'NutritionDictionary';
 
 /** One line that says what the site is. */
 export const SITE_TAGLINE = 'Look up the nutrients and contaminants in any food, work out a recipe’s nutrition, and plan a day that meets your goals.';
 
 /** Canonical origin, without a trailing slash. Set NEXT_PUBLIC_SITE_URL per environment. */
-export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://nanonutrition.app').replace(/\/+$/, '');
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://nutritiondictionary.com').replace(/\/+$/, '');
 
 /** Absolute URL for a site path. */
 export function absoluteUrl(path: string): string {

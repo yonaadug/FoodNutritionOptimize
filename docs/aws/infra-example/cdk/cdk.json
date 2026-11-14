@@ -1,6 +1,6 @@
 {
   "//": "EXAMPLE (synth-tested, never deployed) — see docs/aws/AWS_HOSTING_DESIGN.md and docs/LOCAL_TESTING.md",
-  "app": "npx tsx bin/nanonutrition.ts",
+  "app": "npx tsx bin/nutrition-dictionary.ts",
   "context": {
     "@aws-cdk/core:stackRelativeExports": true
   }

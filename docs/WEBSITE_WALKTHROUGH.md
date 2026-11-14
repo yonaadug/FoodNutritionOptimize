@@ -1,4 +1,4 @@
-# NanoNutrition: a guided tour
+# NutritionDictionary: a guided tour
 
 _Toured on 5 November 2026 against the production build on a laptop (`npm run preview`, port 3620), with the full 9,435-food database, a throwaway account database and the offline demo AI. Screenshots come from headless Chromium at 1440×900 and 390×844, in light and dark themes._
 

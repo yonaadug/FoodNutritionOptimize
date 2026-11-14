@@ -201,9 +201,10 @@ export class NutritionDictionaryStack extends Stack {
       // Recipe reading waits on Bedrock (a few seconds on Haiku). Keep this under
       // CloudFront's origin response timeout (30 s by default).
       timeout: Duration.seconds(28),
-      // Caps how fast money can be spent. A new account's concurrency quota (often 10) is
-      // too low for any reservation: request 1,000 first (docs/DEPLOY.md, step 4).
-      reservedConcurrentExecutions: isProd ? 25 : 5,
+      // Caps how fast money can be spent in prod. A new account's concurrency quota (often 10)
+      // allows no reservation at all, so dev reserves nothing: its small account limit and its
+      // $5 budget are the cap there (docs/DEPLOY.md, step 4).
+      reservedConcurrentExecutions: isProd ? 25 : undefined,
       environment: {
         STAGE: props.stage,
         NUTRITION_DB_PATH: '/app/data/nutrition.db',
@@ -299,7 +300,7 @@ export class NutritionDictionaryStack extends Stack {
       architecture: lambda.Architecture.ARM_64,
       memorySize: 512,
       timeout: Duration.seconds(15),
-      reservedConcurrentExecutions: isProd ? 5 : 2,
+      reservedConcurrentExecutions: isProd ? 5 : undefined, // dev: see the web function
       environment: {
         STAGE: props.stage,
         NUTRITION_DB_PATH: '/app/data/nutrition.db',
@@ -445,7 +446,7 @@ export class NutritionDictionaryStack extends Stack {
       architecture: lambda.Architecture.ARM_64,
       memorySize: 512,
       timeout: Duration.seconds(60),
-      reservedConcurrentExecutions: 2, // hard ceiling on concurrent Claude calls
+      reservedConcurrentExecutions: isProd ? 2 : undefined, // prod: hard ceiling on concurrent Claude calls
       environment: {
         STAGE: props.stage,
         DYNAMODB_TABLE: table.tableName,

@@ -4,6 +4,20 @@
   "context": {
     "@aws-cdk/core:stackRelativeExports": true,
     "@aws-cdk/core:defaultCrossStackReferences": "strong",
-    "devNameServers": []
+    "devNameServers": [],
+    "inboundMail": {
+      "//": "Porkbun email forwarding (hello@, privacy@). Prod zone only.",
+      "mx": [
+        {
+          "host": "fwd1.porkbun.com",
+          "priority": 10
+        },
+        {
+          "host": "fwd2.porkbun.com",
+          "priority": 20
+        }
+      ],
+      "spf": "v=spf1 include:_spf.porkbun.com ~all"
+    }
   }
 }

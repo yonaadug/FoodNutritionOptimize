@@ -23,6 +23,12 @@ export interface DnsStackProps extends StackProps {
   zoneName: string;
   /** Subdomains delegated to another account: label -> its zone's nameservers. Empty lists are skipped. */
   delegations?: Record<string, string[]>;
+  /**
+   * Inbound mail for the apex, e.g. Porkbun's email forwarding (hello@, privacy@). Its MX
+   * and SPF records must live in this zone once the registrar's nameservers point here, or
+   * forwarding stops (Porkbun KB: "How to use Porkbun email when your DNS is hosted elsewhere").
+   */
+  inboundMail?: { mx: { host: string; priority: number }[]; spf?: string };
 }
 
 export class DnsStack extends Stack {
@@ -50,6 +56,18 @@ export class DnsStack extends Stack {
         values: nameServers,
         ttl: Duration.days(2),
       });
+    }
+
+    if (props.inboundMail?.mx.length) {
+      new route53.MxRecord(this, 'InboundMx', {
+        zone,
+        values: props.inboundMail.mx.map(({ host, priority }) => ({ hostName: host, priority })),
+        ttl: Duration.hours(1),
+      });
+      if (props.inboundMail.spf) {
+        // SES sends from mail.<domain>, which has its own SPF, so the apex SPF is the forwarder's.
+        new route53.TxtRecord(this, 'InboundSpf', { zone, values: [props.inboundMail.spf], ttl: Duration.hours(1) });
+      }
     }
 
     // ---------------------------------------------------------------- SES

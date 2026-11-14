@@ -76,6 +76,8 @@ const dns = new DnsStack(app, `NutritionDictionaryDns-${stage}`, {
   stage,
   zoneName,
   delegations: isProd ? { dev: list('devNameServers') } : {},
+  // Porkbun's email forwarding (hello@, privacy@) keeps working after the nameservers move here.
+  inboundMail: isProd ? app.node.tryGetContext('inboundMail') : undefined,
 });
 
 const site = new NutritionDictionaryStack(app, `NutritionDictionary-${stage}`, {

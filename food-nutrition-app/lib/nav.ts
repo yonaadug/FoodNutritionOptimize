@@ -15,7 +15,7 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: readonly NavItem[] = [
-    { href: '/', label: 'Foods', hint: 'Look up any food and its nutrients', alsoActiveOn: ['/food', '/nutrients'] },
+    { href: '/', label: 'Foods', hint: 'Look up any food and its nutrients', alsoActiveOn: ['/food', '/nutrients', '/methodology'] },
     { href: '/plan', label: 'Plan', hint: 'Plan a day of eating that meets your goals' },
     { href: '/recipes', label: 'Recipes', hint: 'Work out the nutrition of a recipe' },
 ];
@@ -25,10 +25,23 @@ function under(pathname: string, prefix: string): boolean {
     return pathname === prefix || pathname.startsWith(prefix + '/');
 }
 
+/** A path without its query, hash or trailing slash ("/" stays "/"). */
+function cleanPath(pathname: string | null | undefined): string {
+    return (pathname || '/').split(/[?#]/)[0].replace(/\/+$/, '') || '/';
+}
+
 /** Is this nav item the current section? "/" only matches the home page itself. */
 export function isNavActive(item: NavItem, pathname: string | null | undefined): boolean {
-    const path = (pathname || '/').split(/[?#]/)[0].replace(/\/+$/, '') || '/';
+    const path = cleanPath(pathname);
     return under(path, item.href) || (item.alsoActiveOn ?? []).some(p => under(path, p));
+}
+
+/** Account pages (/account, /account/history, sign-in) belong to the account menu in the header. */
+export const ACCOUNT_PATH = '/account';
+
+/** Is this an account page? The header marks its Sign in link or account button as current there. */
+export function isAccountPath(pathname: string | null | undefined): boolean {
+    return under(cleanPath(pathname), ACCOUNT_PATH);
 }
 
 export const SITE_NAME = 'NanoNutrition';

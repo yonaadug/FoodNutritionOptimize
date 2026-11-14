@@ -13,7 +13,11 @@ import type { PlanContaminantActions } from './PlanContaminants';
  * the foods, makes the plan again and offers Undo. `replan` lets the week planner re-run its
  * own plan instead of the day's.
  */
-export function plannerContaminantActions(replan: () => void = () => void runPlan(getPlannerSnapshot())): PlanContaminantActions {
+export function plannerContaminantActions(
+    replan: () => void = () => void runPlan(getPlannerSnapshot()),
+    /** Week view: the most of a food on any one day (reduce caps each day, not the week). */
+    perDayGrams?: (key: number) => number | undefined,
+): PlanContaminantActions {
     const change = (message: string, fn: () => void) => {
         const before = getPlannerSnapshot();
         fn();
@@ -52,7 +56,7 @@ export function plannerContaminantActions(replan: () => void = () => void runPla
     return {
         onReduce(key, factor, grams) {
             const { fixed } = find(key);
-            const current = fixed?.grams ?? grams;
+            const current = fixed?.grams ?? perDayGrams?.(key) ?? grams;
             reduceTo(key, Math.floor((current * factor) / 5) * 5);
         },
         onExclude(key) {

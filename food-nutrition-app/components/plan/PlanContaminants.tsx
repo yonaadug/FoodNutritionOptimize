@@ -12,6 +12,7 @@ import { formatAmount, formatPercent, LEVELS } from '@/lib/contaminants-meter';
 import { reduceFactor, type PlanContaminantRow, type PlanContaminantSummary, type PlanPortion } from '@/lib/plan-contaminants-core';
 import type { SwapCandidate } from '@/lib/plan-contaminants';
 import { RecentCache } from '@/lib/navigation-ux';
+import { sameOriginFetch } from '@/lib/same-origin-fetch';
 import { formatGrams } from '@/lib/serving-scale';
 import Icon from '@/components/ui/Icon';
 import styles from './PlanContaminants.module.css';
@@ -55,7 +56,7 @@ function useSummary(days: PlanPortion[][]) {
         if (cache.get(body)) return;
         const ctrl = new AbortController();
         const timer = setTimeout(() => {
-            fetch('/api/plan/contaminants', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, signal: ctrl.signal })
+            sameOriginFetch('/api/plan/contaminants', { method: 'POST', json: JSON.parse(body), signal: ctrl.signal })
                 .then(async res => {
                     if (!res.ok) throw new Error(String(res.status));
                     const data = await res.json() as Loaded;

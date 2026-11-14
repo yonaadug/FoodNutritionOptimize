@@ -141,6 +141,14 @@ export class NanoNutritionStack extends Stack {
       deadLetterQueue: { queue: importsDlq, maxReceiveCount: 3 },
     });
 
+    // ------------------------------------------------------- recipe AI (Bedrock)
+    // /api/recipes/parse reads recipes synchronously in the web function, through
+    // the US cross-region inference profile (docs/BEDROCK_SETUP.md). The profile
+    // can route to any of these regions, so each needs the foundation-model grant.
+    const recipeModel = 'anthropic.claude-haiku-5-5';
+    const recipeProfileArn = `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.${recipeModel}`;
+    const recipeModelRegions = ['us-east-1', 'us-east-2', 'us-west-2'];
+
     // ------------------------------------------------------- web (Next.js)
     const commonEnv = {
       STAGE: props.stage,
@@ -157,7 +165,9 @@ export class NanoNutritionStack extends Stack {
       }),
       architecture: lambda.Architecture.ARM_64,
       memorySize: 1024,
-      timeout: Duration.seconds(15),
+      // Recipe reading waits on Bedrock (a few seconds on Haiku). Keep this under
+      // CloudFront's origin response timeout (30 s by default).
+      timeout: Duration.seconds(28),
       reservedConcurrentExecutions: isProd ? 25 : 5, // caps spend rate; needs account quota > default for new accounts
       environment: {
         ...commonEnv,
@@ -166,6 +176,12 @@ export class NanoNutritionStack extends Stack {
         UPLOADS_BUCKET: uploads.bucketName,
         IMPORTS_QUEUE_URL: imports.queueUrl,
         NUTRITION_DB_PATH: '/app/data/nutrition.db',
+        AI_PROVIDER: 'bedrock',
+        AI_BEDROCK_REGION: this.region,
+        AI_MODEL: `us.${recipeModel}`,
+        AI_TIMEOUT_MS: '20000',
+        AI_MAX_RETRIES: '1',
+        AI_DAILY_BUDGET_USD: isProd ? '5' : '1', // per instance; the AWS Budget and kill switch are the real cap
       },
       logGroup: new logs.LogGroup(this, 'WebLogs', {
         retention: logs.RetentionDays.TWO_WEEKS,
@@ -182,6 +198,20 @@ export class NanoNutritionStack extends Stack {
     web.addToRolePolicy(new iam.PolicyStatement({ // account deletion
       actions: ['cognito-idp:AdminDeleteUser'],
       resources: [userPool.userPoolArn],
+    }));
+    // Bedrock: only the recipe model, only through its inference profile. No
+    // aws-marketplace permissions: the owner creates the model's Marketplace
+    // agreement once, by hand (docs/BEDROCK_SETUP.md).
+    web.addToRolePolicy(new iam.PolicyStatement({
+      sid: 'RecipeModelProfile',
+      actions: ['bedrock:InvokeModel'],
+      resources: [recipeProfileArn],
+    }));
+    web.addToRolePolicy(new iam.PolicyStatement({
+      sid: 'RecipeModelViaProfile',
+      actions: ['bedrock:InvokeModel'],
+      resources: recipeModelRegions.map(r => `arn:aws:bedrock:${r}::foundation-model/${recipeModel}`),
+      conditions: { StringEquals: { 'bedrock:InferenceProfileArn': recipeProfileArn } },
     }));
 
     // Function URL protected by CloudFront OAC (AuthType AWS_IAM).
@@ -303,22 +333,35 @@ export class NanoNutritionStack extends Stack {
     //   aws ssm put-parameter --type SecureString --name /nanonutrition/prod/stripe/webhook-secret --value whsec_...
 
     // --------------------------------------------------------- kill switch
+    // The web function's synchronous recipe reader doesn't read the SSM flag, so the
+    // switch also adds an explicit Deny on Bedrock to the web role. Bedrock then
+    // returns 403 and /recipes says the reader isn't available. Undo by deleting
+    // the inline policy "ai-kill-switch" from the role.
     const killSwitch = new lambda.Function(this, 'KillSwitch', {
       runtime: lambda.Runtime.NODEJS_24_X,
       architecture: lambda.Architecture.ARM_64,
       handler: 'index.handler',
       timeout: Duration.seconds(10),
-      environment: { PARAM: aiEnabledParam.parameterName, WORKER: aiWorker.functionName },
+      environment: { PARAM: aiEnabledParam.parameterName, WORKER: aiWorker.functionName, WEB_ROLE: web.role!.roleName },
       code: lambda.Code.fromInline(`
         const { SSMClient, PutParameterCommand } = require('@aws-sdk/client-ssm');
         const { LambdaClient, PutFunctionConcurrencyCommand } = require('@aws-sdk/client-lambda');
+        const { IAMClient, PutRolePolicyCommand } = require('@aws-sdk/client-iam');
         exports.handler = async (event) => {
           console.log(JSON.stringify({ msg: 'kill-switch fired', event }));
           await new SSMClient({}).send(new PutParameterCommand({ Name: process.env.PARAM, Value: 'false', Type: 'String', Overwrite: true }));
           await new LambdaClient({}).send(new PutFunctionConcurrencyCommand({ FunctionName: process.env.WORKER, ReservedConcurrentExecutions: 0 }));
+          await new IAMClient({}).send(new PutRolePolicyCommand({
+            RoleName: process.env.WEB_ROLE, PolicyName: 'ai-kill-switch',
+            PolicyDocument: JSON.stringify({ Version: '2012-10-17', Statement: [{ Effect: 'Deny', Action: ['bedrock:InvokeModel', 'bedrock-mantle:CreateInference'], Resource: '*' }] }),
+          }));
         };`),
     });
     aiEnabledParam.grantWrite(killSwitch);
+    killSwitch.addToRolePolicy(new iam.PolicyStatement({
+      actions: ['iam:PutRolePolicy'],
+      resources: [web.role!.roleArn],
+    }));
     killSwitch.addToRolePolicy(new iam.PolicyStatement({
       actions: ['lambda:PutFunctionConcurrency'],
       resources: [aiWorker.functionArn],

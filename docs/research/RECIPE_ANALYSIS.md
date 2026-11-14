@@ -148,11 +148,11 @@ What it found:
 | Messages endpoint: `anthropic.claude-sonnet-5` | 403 `not available for this account` |
 | `InvokeModel`: `us.anthropic.claude-haiku-5-5` | 403 `not available for this account` |
 
-Being listed doesn't mean being invocable. Anthropic's docs describe Sonnet 5 as open to all Bedrock customers, yet this account got a 403, so the block may be account-level. **The Claude request shape (strict schema, nullable types, images) has only been type-checked and tested against a fake client, never against a live model.** `docs/RECIPES.md` has the steps to enable and check it.
+Being listed doesn't mean being invocable. **Follow-up 2026-11-13:** the account's applied Claude quotas are 0 and no Marketplace agreement exists; the Haiku 5.5 404 came from the bedrock-mantle endpoint, which doesn't serve that model. See [BEDROCK_SETUP.md](../BEDROCK_SETUP.md). Anthropic's docs describe Sonnet 5 as open to all Bedrock customers, yet this account got a 403, so the block may be account-level. **The Claude request shape (strict schema, nullable types, images) has only been type-checked and tested against a fake client, never against a live model.** `docs/RECIPES.md` has the steps to enable and check it.
 
 ## Gaps to close by hand
 
-- Bedrock's rate table for the 5.5 models
+- ~~Bedrock's rate table for the 5.5 models~~ Done 2026-11-13: global profiles match Anthropic list prices, and `us.` and regional calls cost 10% more ([BEDROCK_SETUP.md §3](../BEDROCK_SETUP.md#3-which-model-to-use))
 - Edamam's "Commercial use: no" row
 - FatSecret NLP and image add-on quotes, and whether Premier Free permits storage
 - Nutritionix and LogMeal pricing

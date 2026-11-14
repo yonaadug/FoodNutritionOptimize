@@ -12,9 +12,15 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Stripe subscriptions.** The plan is done ([docs/STRIPE_PLAN.md](docs/STRIPE_PLAN.md)) and sign-in now exists.
       Before building, decide what Plus unlocks first and the trial style. Local dev currently uses LIVE keys
       (`STRIPE_MODE=live`); switch to `test` before trying Checkout.
-- [ ] **Real AI for recipes.** No live model call has succeeded. AWS refuses Claude on this account (403/404). Either
-      request Bedrock access or set `AI_PROVIDER=anthropic` with a key ([docs/RECIPES.md](docs/RECIPES.md)). Start with
-      `AI_MODEL=claude-haiku-5-5`: the code defaults to Opus, about 40x the cost, and Haiku's quality needs evaluating.
+- [ ] **Real AI for recipes (owner: AWS account steps).** No live Claude call has succeeded. Diagnosed 2026-11-13
+      ([docs/BEDROCK_SETUP.md](docs/BEDROCK_SETUP.md)): the account's applied Bedrock quota is **0** for every
+      Claude 5.x model (AWS default 6–30M tokens/min) and no Marketplace agreement exists. IAM, region and SCPs are
+      fine. The 404 for Haiku 5.5 was a code bug, now fixed (profile IDs go to bedrock-runtime). To do, in order:
+      submit the Anthropic use-case form, create the Haiku 5.5 agreement, request quota `L-47520EB7` > 0 (or open a
+      support case), then test with `AI_MODEL=us.anthropic.claude-haiku-5-5` (about $0.0008 a photo; Opus, the code
+      default, is ~40x). Evaluate Haiku on 20–50 real recipe photos before relying on it. If AWS won't enable
+      Claude, Amazon Nova 2 Lite works on the account today but needs a new provider (decide; spec in the doc).
+      Also: the local `aws` CLI is an Intel build that can't run on this Mac (`brew install awscli`).
 - [ ] **Arsenic reference for the rice meter.** EPA 2025 (current default) reads brown rice at about 220% per cup, and
       ATSDR 2007 at about 44%. It's one edit to `is_default` in `data/contaminants/reference_values.tsv`, plus a rebuild.
 - [ ] **Old `feat/*` branches and worktrees** (`feat/food-search`, `feat/recipe-analyzer`, `feat/accounts`,
@@ -83,7 +89,11 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Before accounts go public (legal):** recorded consent, an age statement, privacy policy and terms don't exist
       yet and need legal review. Pregnancy, weight and diet data count as health data (FTC rule, Washington MHMDA).
 - [ ] **Before `/recipes` goes public on a paid AI provider:** per-user quotas and a global spend cap (§3.7 of the AWS
-      design) plus an AWS Budget. Today's rate limits are in-memory, per server instance.
+      design) plus an AWS Budget. Today's rate limits are in-memory, per server instance. Claude on Bedrock bills as
+      AWS Marketplace charges, so a budget filtered to "Amazon Bedrock" misses it. The CDK kill switch now also
+      denies Bedrock to the web role ([docs/BEDROCK_SETUP.md §6](docs/BEDROCK_SETUP.md#6-spend-controls)).
+      Bedrock compiles a strict tool schema on first use (up to ~90 s, cached 24 h): check whether the first call
+      after deploy times out at `AI_TIMEOUT_MS=20000`, and add a warm-up if it does.
 - [ ] **Contaminants, license:** Milne 2024 microplastics data is CC BY-NC-ND and paid features are planned. Get a
       review or remove those rows.
 - [ ] **Contaminants, data gaps:**
@@ -102,7 +112,7 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Remaining rough edges:** see the checklist in [docs/WEBSITE_WALKTHROUGH.md](docs/WEBSITE_WALKTHROUGH.md).
       M10 (privacy and terms pages) needs legal review, and L5, L10, L11–14 and L16 are still open.
 - [ ] **Recipes, not built:** import by URL, cooking-loss adjustment, the Claude Platform on AWS provider, refusal
-      fallback on Bedrock. HEIC photos are rejected outside Safari.
+      fallback on Bedrock. HEIC photos are rejected outside Safari (the error now says to send a JPEG).
 - [ ] **Desktop app** shows "Sign in", which leads to "isn't available" in a packaged build. Needs a build flag.
 - [ ] **Food pages** have no CDN cache headers, so every view hits Lambda. Add CloudFront caching before launch.
 - [ ] **Not tested on real services:** DynamoDB (emulator only), SES email, Google sign-in, CloudFront.

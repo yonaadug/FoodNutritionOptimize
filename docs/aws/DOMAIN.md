@@ -1,18 +1,26 @@
 # NanoNutrition: Domain Options and Costs
 
-## Current status (2026-11-13): renamed to NanoNutrition, domain not chosen yet
+## Current status (2026-11-14): renamed to NanoNutrition, domain not chosen yet
 
 The product was renamed from Micronutrient Diary to **NanoNutrition** on 2026-11-13. The code and docs use **nanonutrition.app** as a working default. Change `SITE_URL` in `food-nutrition-app/lib/nav.ts` and `siteUrl`/`sesDomain` in `infra-example/cdk/bin/nanonutrition.ts` if you pick another one.
 
-**Availability (RDAP, 2026-11-13).** Registry RDAP is a strong signal, but the registrar's checkout is authoritative.
+**Availability and prices (checked 2026-11-14).** Registry RDAP and whois, Route 53's `CheckDomainAvailability` and `ListPrices` (read-only), and Porkbun's public price list. Registrar checkout is authoritative.
 
-| Domain | Status |
-|---|---|
-| nanonutrition.com | **Taken.** Registered 2001-03-05 at GoDaddy, expires 2027-03-05, with transfer and delete locks. It didn't answer HTTPS when checked |
-| nanonutrition.app | No record, so very likely available. `.app` is HTTPS-only, which suits CloudFront |
-| nanonutrition.io, nanonutrition.co, getnanonutrition.com | No record, so very likely available |
+| Domain | Status | Route 53 (per year) | Porkbun (first year / renewal) |
+|---|---|---|---|
+| nanonutrition.com | **Taken.** Registered 2001 at GoDaddy, renewed 2026-03-06 to 2027-03-05, owner hidden ("Registration Private"). It has no website (no DNS A record), and its nameservers (`ns*.219.com`) don't resolve either | — | — |
+| **nanonutrition.app** (working default) | Available (Route 53 confirms). HTTPS-only, which suits CloudFront | **$20** | $8.75 / $14.93 |
+| getnanonutrition.com | Available (Route 53 confirms) | $16 | $11.81 / $11.81 |
+| nanonutrition.net | Available (no record) | $17 | $12.52 / $12.52 |
+| nanonutrition.org | Available (no record). Reads as a nonprofit | $16 | $7.98 / $11.84 |
+| nanonutrition.co | Available (no record). One letter from someone else's `.com` | $38 | $15.76 / $31.20 |
+| nanonutrition.io | Available (no record) | $71 | $28.12 / $51.80 |
+| nanonutrition.ai | Available (no record) | $137 | $82.70 / $82.70 |
+| nanonutrition.us | **Taken** (GoDaddy, 2021) | — | — |
+| nanonutrition.health | **Taken** (2023): a live Spanish-language "Nano Nutrition" supplement brand (nano-bubble supplements) | — | — |
+| nano-nutrition.com | **Taken** (2026): an unrelated spam site | — | — |
 
-Prices for these weren't checked. The figures below are for the old `.com` name. Note that `.co` is one letter from someone else's `.com`.
+**Buying nanonutrition.com.** No public sale listing was found on 2026-11-14 (web search; Afternic returned 404; Sedo, GoDaddy, HugeDomains and Atom block automated checks, so look in a browser). The owner has held it for 25 years and renews it yearly without using it. The way to approach a private owner is a broker, such as GoDaddy's Domain Broker Service (fee and terms not checked). A 25-year-old two-word `.com` is unlikely to be cheap, and an offer reveals that someone wants it.
 
 **Name check (not legal advice, 2026-11-13).** Web searches found many supplement brands built on "nano" (NanoNutra, Nano Nutrients, Nano Nutrition in Sherman Oaks, CA, NanoNutrients L.C.). A third-party trademark database also lists a **pending US application for "NANONUTRITION LIVE"** (serial 99606776, filed 2026-01-21 by an individual in Easley, SC), in classes 41 and 42, covering nutrition and wellness education, research and publishing. That overlaps with a nutrition information website. The record couldn't be confirmed on USPTO's own site from here. Look up serial 99606776 at [tmsearch.uspto.gov](https://tmsearch.uspto.gov/) and talk to a trademark attorney before registering a domain or investing in branding.
 

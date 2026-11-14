@@ -80,6 +80,7 @@ describe('plan contaminants on the real database', { skip }, () => {
         assert.equal(pest.atLeast, true);
         assert.deepEqual(pest.unknown.map(f => f.key), [1]);
         near(pest.percent, 0.275647 * 2, 1e-4);
+        assert.equal(pest.text, "At average levels, the day's foods add up to under 1% of EPA's daily reference doses.");
 
         // Microplastics: a comparison only, never a level. 5.5 particles per 100 g of tuna x 1.5.
         const mp = row(s, 'microplastics');

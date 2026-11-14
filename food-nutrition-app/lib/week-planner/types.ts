@@ -34,7 +34,8 @@ export const WEEK_LIMITS = {
     /** Most servings of one recipe eaten in a day, and cooked in one batch. */
     recipeServingsPerDay: 2,
     recipeServingsPerBatch: 4,
-    timeLimitMs: 8000,
+    /** The whole request's solver budget; one solve gets at most 2 s of it. */
+    timeLimitMs: 6000,
 } as const;
 
 /** A food fixed on one day, as it was in the plan being re-planned. */

@@ -317,17 +317,19 @@ export function rowText(row: PlanContaminantRow, period: 'day' | 'week'): string
     if (row.kind === 'comparison') {
         return `${row.atLeast ? 'At least about' : 'About'} ${formatAmount(row.total)} particles ${where}, from published estimates. No health limit exists, so this is a comparison, not a safety rating.`;
     }
+    if (row.id === 'pesticide_residues' && row.percent !== null) {
+        const p = formatPercent(row.percent);
+        const share = row.atLeast && !p.startsWith('under') ? `at least ${p}` : p;
+        return period === 'day'
+            ? `At average levels, the day's foods add up to ${share} of EPA's daily reference doses.`
+            : `At average levels, an average day this week adds up to ${share} of EPA's daily reference doses.`;
+    }
     if (row.percent === null || !row.reference) return `${capital(amountText(row))} ${where}.`;
     const pct = formatPercent(row.percent);
     if (row.id === 'mercury') {
         return period === 'day'
             ? `${capital(amountText(row))} this day, ${pct} of ${row.reference.authority}'s weekly reference.`
             : `${capital(amountText(row))} this week, ${pct} of ${row.reference.authority}'s weekly reference.`;
-    }
-    if (row.id === 'pesticide_residues') {
-        return period === 'day'
-            ? `At average levels, the day's foods add up to ${pct} of EPA's daily reference doses.`
-            : `At average levels, an average day this week adds up to ${pct} of EPA's daily reference doses.`;
     }
     return period === 'day'
         ? `${capital(amountText(row))} this day, ${pct} of ${row.reference.authority}'s daily reference.`

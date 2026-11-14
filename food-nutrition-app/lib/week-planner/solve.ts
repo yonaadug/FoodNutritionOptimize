@@ -46,7 +46,13 @@ const MIN_PORTION_FLOOR_G = 5;
 export const BACK_TO_BACK_PENALTY = 40;
 export const AVOID_PENALTY = 120;
 const ELASTIC_FOOD_PENALTY = 10;
-const MIP_GAP = 0.01;
+/**
+ * A plan within 5% of the fewest calories is as good as the best one for a person (calories
+ * stay inside the goal range either way), and proving the last percent is slow: stop there.
+ */
+const MIP_GAP = 0.05;
+/** One MILP solve's share of the request's time budget. */
+const SOLVE_MS = 2000;
 
 function solve(model: JsModel, timeLimitMs?: number, mipGap = MIP_GAP): Promise<Solved> {
     return solveWithHighs(model, { timeLimit: timeLimitMs === undefined ? undefined : timeLimitMs / 1000, mipGap });
@@ -549,9 +555,12 @@ export async function planWeek(params: WeekParams): Promise<WeekResult> {
         }
     }
 
-    const timeLimit = Math.min(WEEK_LIMITS.timeLimitMs, Math.max(200, params.timeLimitMs ?? WEEK_LIMITS.timeLimitMs));
+    // One budget for the whole request: the plan, then any variety retry or diagnosis.
+    const budget = Math.min(WEEK_LIMITS.timeLimitMs, Math.max(200, params.timeLimitMs ?? WEEK_LIMITS.timeLimitMs));
+    const deadline = started + budget;
+    const left = (cap = budget) => Math.max(200, Math.min(cap, deadline - performance.now()));
     const built = buildWeekModel(p);
-    const sol = await solve(built.model, timeLimit);
+    const sol = await solve(built.model, left(SOLVE_MS));
     const elapsed = performance.now() - started;
     const timedOut = sol.timeLimited;
 
@@ -570,7 +579,7 @@ export async function planWeek(params: WeekParams): Promise<WeekResult> {
     }
 
     // No week found: explain why, in the day planner's terms.
-    const relaxed = await solve(buildWeekModel(p, { relaxed: true }).model, timeLimit);
+    const relaxed = await solve(buildWeekModel(p, { relaxed: true }).model, left());
     let diagnosis: WeekDiagnosis;
     let message: string;
     let issues: OptimizationIssue[] = [];
@@ -581,8 +590,8 @@ export async function planWeek(params: WeekParams): Promise<WeekResult> {
         message = 'The week planner ran out of time before it found a plan. Try fewer foods, a looser variety limit, or lock a day you like.';
     } else if (!relaxed.feasible) {
         diagnosis = p.locks.length > 0 || p.lockedDays.size > 0 ? 'locks' : 'nutrients';
-        ({ message, issues } = await diagnoseNutrients(p, timeLimit));
-        portionCapBinding = p.items.some(i => i.generalCap) && (await solve(buildWeekModel(p, { relaxed: true, noGeneralCap: true }).model, timeLimit)).feasible;
+        ({ message, issues } = await diagnoseNutrients(p, left()));
+        portionCapBinding = p.items.some(i => i.generalCap) && (await solve(buildWeekModel(p, { relaxed: true, noGeneralCap: true }).model, left())).feasible;
         if (diagnosis === 'locks' && !issues.length) message = 'The locked days and foods leave no room to meet your goals on the other days.';
     } else {
         // Every goal can be met, but not with this much variety (or such sensible portions).
@@ -592,7 +601,7 @@ export async function planWeek(params: WeekParams): Promise<WeekResult> {
         for (const candidate of [k + 1, k + 2, p.settings.days]) {
             if (candidate <= k || candidate > p.settings.days || varietyNeeded !== undefined) continue;
             const m = buildWeekModel(p, { maxDaysPerFood: candidate });
-            const s2 = await solve(m.model, timeLimit);
+            const s2 = await solve(m.model, left(SOLVE_MS));
             if (!s2.feasible) continue;
             varietyNeeded = candidate;
             const days = extractDays(m, s2);

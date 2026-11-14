@@ -106,7 +106,7 @@ function unitCount(grams: number, s: ServingSize, re: RegExp): string | null {
     const noun = n === 1 ? word : PLURAL[word] ?? word;
     // Keep a short qualifier ("large", "(7 in long)" is dropped).
     const rest = m[3].replace(/\s*\([^)]*\)/g, '').replace(/^,\s*/, '').trim();
-    const tail = rest && rest.length <= 24 && !/[0-9"]/.test(rest) ? `, ${rest}` : '';
+    const tail = rest && rest.length <= 24 && !/[0-9"]/.test(rest) ? `, ${rest.toLowerCase()}` : '';
     return `≈ ${n} ${noun}${tail}`;
 }
 

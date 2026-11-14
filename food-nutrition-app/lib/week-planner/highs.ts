@@ -2,7 +2,7 @@
  * HiGHS (MIT, compiled to WebAssembly by the `highs` package) for the week planner's
  * mixed-integer program. javascript-lp-solver still runs the instant one-day plan; for a week
  * (about 400 integer variables at 30 foods) its branch and bound didn't finish in minutes and
- * didn't honour its timeout (docs/WEEK_PLANNER.md has the measurements).
+ * didn't honour its timeout (measurements in docs/WEBSITE_WALKTHROUGH.md, "Plan a week").
  *
  * Models are built in javascript-lp-solver's JSON shape (rows and variables by name) and
  * written out here as CPLEX LP text, which is what HiGHS reads.

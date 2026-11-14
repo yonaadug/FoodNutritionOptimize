@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import Icon from '@/components/ui/Icon';
-import { currentUserId, fetchHistoryItem, useCurrentUser } from '@/lib/auth/client';
+import { currentUserId, fetchHistoryItem, refreshCurrentUser, useCurrentUser } from '@/lib/auth/client';
 import { LOCAL_DATA_CLEARED_EVENT } from '@/lib/local-data';
 import { recipeFromHistory, recipeHref } from '@/lib/recipes/history';
 import { notify } from '@/hooks/useToasts';
@@ -182,7 +182,13 @@ export default function RecipeAnalyzer({ onRecipeAnalyzed, urlId }: RecipeAnalyz
 
     const onPhoto = useCallback((file: File) => {
         setPhotoUrl(URL.createObjectURL(file));
-        void read(async signal => parseImage(await downscaleForUpload(file), signal), true);
+        void read(async signal => {
+            try {
+                return await parseImage(await downscaleForUpload(file), signal);
+            } finally {
+                if (currentUserId()) void refreshCurrentUser(); // the photo-read count changed (lib/billing/quota.ts)
+            }
+        }, true);
     }, [read]);
 
     const onBlank = useCallback(() => {

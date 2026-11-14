@@ -187,7 +187,7 @@ for (const backend of backends) {
 
         it('requireFeature: 401 signed out, 403 on free, through on the trial and Plus', async () => {
             const { deps, cookie, userId } = await newUser();
-            const gate = (c?: string) => call(deps, async (r, d) => {
+            const gate = (c?: string) => call(deps, async (r: Request, d: AccountDeps) => {
                 await requireFeature(r, d, 'weekPlanner');
                 return Response.json({ ok: true });
             }, siteRequest('/api/week', { cookie: c }));

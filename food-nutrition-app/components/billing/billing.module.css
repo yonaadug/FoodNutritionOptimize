@@ -1,0 +1,73 @@
+/* Plans and billing. Colours come from the theme tokens in app/globals.css, so light and dark both work. */
+
+/* ---- the gate shown in place of a Plus feature ---- */
+.gate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+}
+.gateCompact { padding: var(--space-4); gap: 6px; }
+.gateTitle { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.gateTitle svg { color: var(--primary); flex: none; }
+.gateText { color: var(--text-secondary); font-size: 14px; }
+.gateActions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.badgeFree { background: var(--bg-secondary); color: var(--text-secondary); }
+
+/* ---- the plan section on /account ---- */
+.planHead { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.planTitle { font-size: 18px; font-weight: 700; }
+.planText { margin-top: var(--space-2); color: var(--text-secondary); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+.fact { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--bg-secondary); }
+.factLabel { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.factValue { font-size: 15px; font-weight: 650; margin-top: 2px; }
+.meter { height: 6px; border-radius: var(--radius-pill); background: var(--bg-sunken); margin-top: 8px; overflow: hidden; }
+.meterFill { height: 100%; border-radius: inherit; background: var(--primary); }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-4); }
+.note { font-size: 13px; color: var(--text-muted); margin-top: var(--space-3); }
+.error { font-size: 14px; color: var(--danger); margin-top: var(--space-2); }
+
+/* ---- /plus ---- */
+.page { padding-top: var(--space-6); padding-bottom: var(--space-7); display: flex; flex-direction: column; gap: var(--space-5); max-width: 880px; }
+@media (max-width: 560px) { .page { padding-top: var(--space-4); padding-bottom: var(--space-6); gap: var(--space-4); } }
+.hero { text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--space-2); }
+.heroTitle { font-size: 32px; font-weight: 800; letter-spacing: -0.02em; }
+@media (max-width: 560px) { .heroTitle { font-size: 26px; } }
+.heroText { color: var(--text-secondary); max-width: 560px; }
+.priceCard { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; }
+.price { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+.pricePer { font-size: 16px; font-weight: 600; color: var(--text-secondary); }
+.priceSub { color: var(--text-muted); font-size: 14px; min-height: 1.4em; }
+.ctaRow { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+.columns { display: grid; grid-template-columns: 3fr 2fr; gap: var(--space-4); align-items: start; }
+@media (max-width: 720px) { .columns { grid-template-columns: 1fr; } }
+.list { list-style: none; display: flex; flex-direction: column; gap: var(--space-4); margin-top: var(--space-3); }
+.listItem { display: flex; gap: var(--space-3); align-items: flex-start; }
+.listItem > svg { flex: none; margin-top: 3px; color: var(--primary); }
+.listName { font-weight: 650; }
+.listWhat { color: var(--text-secondary); font-size: 14px; margin-top: 2px; }
+.freeList { list-style: none; display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-3); font-size: 14px; color: var(--text-secondary); }
+.freeList li { display: flex; gap: var(--space-2); align-items: flex-start; }
+.freeList svg { flex: none; margin-top: 2px; color: var(--success); }
+.faq { display: flex; flex-direction: column; gap: var(--space-3); font-size: 14px; color: var(--text-secondary); }
+.faq h3 { font-size: 15px; color: var(--text-primary); font-weight: 650; }
+
+/* ---- small inline lines (photo card, history) ---- */
+.inline { font-size: 13px; color: var(--text-muted); }
+.inline a { color: var(--primary); font-weight: 600; }

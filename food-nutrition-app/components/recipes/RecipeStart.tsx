@@ -1,6 +1,7 @@
 'use client';
 
 import { useId } from 'react';
+import PhotoQuota from '@/components/billing/PhotoQuota';
 import Icon from '@/components/ui/Icon';
 import type { AnalyzedRecipe } from '@/lib/recipes/types';
 import { fmt } from '@/lib/food-page';
@@ -91,16 +92,18 @@ export default function RecipeStart({ error, text, onTextChange: setText, recent
                     <section className={`panel ${styles.photoCard}`} aria-labelledby="photo-title">
                         <h2 className="panel-title" id="photo-title">Use a photo</h2>
                         <p className="small muted">Works best on a recipe card or cookbook page. A photo of a finished plate gives only a rough estimate.</p>
-                        <div className={styles.photoButtons}>
-                            <label className={`btn btn-primary-soft ${styles.fileButton}`}>
-                                Take a photo
-                                <input className="sr-only" type="file" accept="image/*" capture="environment" onChange={onFile} />
-                            </label>
-                            <label className={`btn btn-secondary ${styles.fileButton}`}>
-                                Upload a photo
-                                <input className="sr-only" type="file" accept="image/*" onChange={onFile} />
-                            </label>
-                        </div>
+                        <PhotoQuota>
+                            <div className={styles.photoButtons}>
+                                <label className={`btn btn-primary-soft ${styles.fileButton}`}>
+                                    Take a photo
+                                    <input className="sr-only" type="file" accept="image/*" capture="environment" onChange={onFile} />
+                                </label>
+                                <label className={`btn btn-secondary ${styles.fileButton}`}>
+                                    Upload a photo
+                                    <input className="sr-only" type="file" accept="image/*" onChange={onFile} />
+                                </label>
+                            </div>
+                        </PhotoQuota>
                         <p className="tiny muted">Your photo goes to our AI provider to be read. We don&apos;t store it.</p>
                     </section>
 

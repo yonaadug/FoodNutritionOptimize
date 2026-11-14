@@ -43,7 +43,7 @@ export function subscription(fields: Partial<StripeSubscriptionLike> & { custome
     };
 }
 
-export function event(type: string, object: Record<string, unknown>, extra: { id?: string; livemode?: boolean; created?: number } = {}) {
+export function event(type: string, object: object, extra: { id?: string; livemode?: boolean; created?: number } = {}) {
     return {
         id: extra.id ?? next('evt'),
         object: 'event',

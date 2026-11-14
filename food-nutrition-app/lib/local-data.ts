@@ -19,6 +19,8 @@ export const PERSONAL_KEYS: readonly string[] = [
     'selectedFoods', 'guaranteedFoods', 'foodConstraints', 'nc.goals.v2', 'nc.plan.v1', 'nc.step',
     // Legacy planner goals, still read when migrating
     'customConstraints', 'minCalories', 'maxCalories',
+    // Week planner (components/week/weekStore.ts)
+    'nc.week.v1', 'nc.week.settings.v1', 'nc.week.grocery.v1',
     // Recipe analyzer (lib/recipes/editor.ts)
     'recipes.recent.v1',
     // Recent searches (lib/recent-searches.ts)

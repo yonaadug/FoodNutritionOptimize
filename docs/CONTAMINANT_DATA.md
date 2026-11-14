@@ -67,6 +67,14 @@ Most testing measures total arsenic, which mixes the more harmful inorganic form
 
 The science is young. Studies count particles of different sizes in different ways, and many counted particles were never chemically confirmed as plastic. Results for one food can differ a thousandfold: bottled water ranges from under 4 to about 240,000 particles per liter, depending on the method. Treat these as rough guides.
 
+## Totals for a whole plan
+
+A day or week plan adds up each food at its planned amount, using the same per-serving figure as that food's page. Lead, cadmium, inorganic arsenic and pesticides are compared with a **day's** reference (a week plan uses its average day and also names the highest day). Mercury is compared with the **week's** reference: a day plan shows that day's share of it, and a week plan shows the real total of all 7 days.
+
+A food's meter on its own page leaves room for everything else you eat that day. A plan total already is the day (or week), so its lines are wider: low is under 25% of the reference, moderate 25% to under 50%, elevated 50% to under 100%, and high is over the whole reference. A day's mercury keeps the fish-advice lines above, because one day of fish is one serving's worth of the week.
+
+When a total reaches elevated, the plan names the foods that push it there and offers to reduce, swap or leave them out. Foods without data are listed as unknown and never counted as zero, so a total with unknowns is "at least" that much. Microplastics are added up for comparison only: there is no health limit, so they are never rated.
+
 ## How similar foods share data
 
 Testing programs measure a food once, while USDA lists many versions of it. "Eggs, Grade A, Large" and "Egg, whole, raw, fresh" don't need separate measurements, so they point to the same FDA record, "Eggs, hard-boiled". The panel says when this happens, for example: *Based on: FDA Total Diet Study, "Eggs, hard-boiled", applies to 38 similar foods.*

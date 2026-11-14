@@ -197,7 +197,7 @@ function resolveBounds(key: string, custom: unknown, hasCustom: boolean): Constr
     throw new OptimizationInputError(`Invalid ${what}`);
 }
 
-function validateFood(food: unknown, where: string): Food {
+export function validateFood(food: unknown, where: string): Food {
     if (!food || typeof food !== 'object') throw new OptimizationInputError(`${where}: food must be an object`);
     const f = food as Record<string, unknown>;
     if (typeof f.id !== 'number' || !Number.isSafeInteger(f.id)) {
@@ -257,10 +257,7 @@ export function optimizeDiet(params: OptimizationParams): OptimizationResult {
 }
 
 function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
-    const {
-        customConstraints, maxCalories, minCalories, diversityMode, maxFoodAmount,
-        foodConstraints, applyUpperLimits, portionCap,
-    } = params ?? ({} as OptimizationParams);
+    const { customConstraints, foodConstraints } = params ?? ({} as OptimizationParams);
     const rawFoods: unknown = params?.foods ?? [];
     const rawGuaranteed: unknown = params?.guaranteedFoods ?? [];
 
@@ -312,51 +309,8 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
     }
 
     // 1. Resolve goals.
-    const custom = (customConstraints ?? {}) as Record<string, unknown>;
-    const has = (k: string) => Object.prototype.hasOwnProperty.call(custom, k);
-    const constraintLimits: Record<string, ConstraintLimit> = {};
-    const upperLimitKeys: string[] = [];
-
-    for (const key of NUTRIENT_KEYS) {
-        const bounds = resolveBounds(key, custom[key], has(key));
-        const config = ALL_NUTRIENT_CONFIG[key];
-        if (applyUpperLimits && bounds.max === undefined && config.ul && isFoodSafeUpperLimit(config)) {
-            bounds.max = config.ul.value;
-            upperLimitKeys.push(key);
-        }
-        if (bounds.min !== undefined || bounds.max !== undefined) {
-            constraintLimits[key] = { min: bounds.min, max: bounds.max };
-        }
-    }
-
-    const calBounds = resolveBounds('calories', custom.calories, has('calories'));
-    const legacyMin = parseBound(minCalories, 'minCalories');
-    const legacyMax = parseBound(maxCalories, 'maxCalories');
-    if (legacyMin !== undefined) calBounds.min = legacyMin;
-    if (legacyMax !== undefined) calBounds.max = legacyMax;
-    if (calBounds.min !== undefined || calBounds.max !== undefined) {
-        constraintLimits.calories = { min: calBounds.min, max: calBounds.max };
-    }
-
-    if (portionCap !== undefined && portionCap !== null && (typeof portionCap !== 'object' || Array.isArray(portionCap))) {
-        throw new OptimizationInputError('portionCap must be an object');
-    }
-    const portion = portionCap
-        ? { servings: parseBound(portionCap.servings, 'portionCap.servings'), grams: parseBound(portionCap.grams, 'portionCap.grams') }
-        : null;
-    const diversityCap = diversityMode ? parseBound(maxFoodAmount, 'maxFoodAmount') : undefined;
-    /** The general (non-user) cap for one food, in grams; undefined = no cap. */
-    const generalCapGrams = (food: Food): number | undefined => {
-        const ref = referenceServingGrams(food.serving_sizes);
-        if (portion) {
-            const caps: number[] = [];
-            if (portion.servings !== undefined) caps.push(portion.servings * (ref ?? FALLBACK_SERVING_GRAMS));
-            if (portion.grams !== undefined) caps.push(portion.grams);
-            return caps.length ? Math.min(...caps) : undefined;
-        }
-        const legacy = ref !== undefined ? DEFAULT_SERVINGS * ref : DEFAULT_CAP_GRAMS;
-        return diversityCap !== undefined ? Math.min(legacy, diversityCap) : legacy;
-    };
+    const { constraintLimits, upperLimitKeys } = resolveGoalLimits(params);
+    const generalCapGrams = generalCapResolver(params);
     const fc = (foodConstraints ?? {}) as Record<string, { min?: BoundInput; max?: BoundInput } | undefined>;
 
     // 2. Missing-data warnings (for every user-selected food).
@@ -440,13 +394,8 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
         model.variables[key] = variable;
 
         // Per-food bounds (grams).
-        let capGrams = generalCapGrams(food);
-        const user = fc[String(food.id)];
-        const userMin = user ? parseBound(user.min, `minimum grams for food ${food.id}`) : undefined;
-        const userMax = user ? parseBound(user.max, `maximum grams for food ${food.id}`) : undefined;
-        if (userMax !== undefined) capGrams = userMax; // explicit user max overrides every default
-        else if (userMin !== undefined && capGrams !== undefined && userMin > capGrams) capGrams = userMin; // ...and so does a min
-        else if (capGrams !== undefined) generalCapped.add(key);
+        const { capGrams, userMin, generalCap } = foodBoundsGrams(food, fc[String(food.id)], generalCapGrams);
+        if (generalCap) generalCapped.add(key);
 
         const bound: ConstraintLimit = {};
         if (capGrams !== undefined) bound.max = capGrams / 100;
@@ -520,6 +469,90 @@ function optimizeDietUnchecked(params: OptimizationParams): OptimizationResult {
         lpModel: model,
         warnings: buildWarnings(new Set(diet.map(d => d.food.id))),
     };
+}
+
+// ---------------------------------------------------------------------------
+// Goal and per-food bound resolution (shared with lib/week-planner)
+// ---------------------------------------------------------------------------
+
+/**
+ * The goals a request asks for, as limits per nutrient key (and 'calories'), plus the keys
+ * whose max is a safe upper limit added by `applyUpperLimits`. Throws OptimizationInputError
+ * for malformed bounds. The week planner uses this so both planners read goals the same way.
+ */
+export function resolveGoalLimits(params: Pick<OptimizationParams, 'customConstraints' | 'minCalories' | 'maxCalories' | 'applyUpperLimits'>): {
+    constraintLimits: Record<string, ConstraintLimit>;
+    upperLimitKeys: string[];
+} {
+    const { customConstraints, maxCalories, minCalories, applyUpperLimits } = params;
+    const custom = (customConstraints ?? {}) as Record<string, unknown>;
+    const has = (k: string) => Object.prototype.hasOwnProperty.call(custom, k);
+    const constraintLimits: Record<string, ConstraintLimit> = {};
+    const upperLimitKeys: string[] = [];
+
+    for (const key of NUTRIENT_KEYS) {
+        const bounds = resolveBounds(key, custom[key], has(key));
+        const config = ALL_NUTRIENT_CONFIG[key];
+        if (applyUpperLimits && bounds.max === undefined && config.ul && isFoodSafeUpperLimit(config)) {
+            bounds.max = config.ul.value;
+            upperLimitKeys.push(key);
+        }
+        if (bounds.min !== undefined || bounds.max !== undefined) {
+            constraintLimits[key] = { min: bounds.min, max: bounds.max };
+        }
+    }
+
+    const calBounds = resolveBounds('calories', custom.calories, has('calories'));
+    const legacyMin = parseBound(minCalories, 'minCalories');
+    const legacyMax = parseBound(maxCalories, 'maxCalories');
+    if (legacyMin !== undefined) calBounds.min = legacyMin;
+    if (legacyMax !== undefined) calBounds.max = legacyMax;
+    if (calBounds.min !== undefined || calBounds.max !== undefined) {
+        constraintLimits.calories = { min: calBounds.min, max: calBounds.max };
+    }
+    return { constraintLimits, upperLimitKeys };
+}
+
+/** The general (non-user) per-food cap in grams for a request; the function returns undefined for "no cap". */
+export function generalCapResolver(params: Pick<OptimizationParams, 'portionCap' | 'diversityMode' | 'maxFoodAmount'>): (food: Food) => number | undefined {
+    const { portionCap, diversityMode, maxFoodAmount } = params;
+    if (portionCap !== undefined && portionCap !== null && (typeof portionCap !== 'object' || Array.isArray(portionCap))) {
+        throw new OptimizationInputError('portionCap must be an object');
+    }
+    const portion = portionCap
+        ? { servings: parseBound(portionCap.servings, 'portionCap.servings'), grams: parseBound(portionCap.grams, 'portionCap.grams') }
+        : null;
+    const diversityCap = diversityMode ? parseBound(maxFoodAmount, 'maxFoodAmount') : undefined;
+    return (food: Food): number | undefined => {
+        const ref = referenceServingGrams(food.serving_sizes);
+        if (portion) {
+            const caps: number[] = [];
+            if (portion.servings !== undefined) caps.push(portion.servings * (ref ?? FALLBACK_SERVING_GRAMS));
+            if (portion.grams !== undefined) caps.push(portion.grams);
+            return caps.length ? Math.min(...caps) : undefined;
+        }
+        const legacy = ref !== undefined ? DEFAULT_SERVINGS * ref : DEFAULT_CAP_GRAMS;
+        return diversityCap !== undefined ? Math.min(legacy, diversityCap) : legacy;
+    };
+}
+
+/**
+ * One food's bounds in grams: an explicit user max overrides every default, and so does a
+ * user min above the general cap. `generalCap` is true when the cap is the general one.
+ */
+export function foodBoundsGrams(
+    food: Food,
+    user: { min?: BoundInput; max?: BoundInput } | undefined,
+    generalCapGrams: (food: Food) => number | undefined,
+): { capGrams: number | undefined; userMin: number | undefined; generalCap: boolean } {
+    let capGrams = generalCapGrams(food);
+    const userMin = user ? parseBound(user.min, `minimum grams for food ${food.id}`) : undefined;
+    const userMax = user ? parseBound(user.max, `maximum grams for food ${food.id}`) : undefined;
+    let generalCap = false;
+    if (userMax !== undefined) capGrams = userMax;
+    else if (userMin !== undefined && capGrams !== undefined && userMin > capGrams) capGrams = userMin;
+    else if (capGrams !== undefined) generalCap = true;
+    return { capGrams, userMin, generalCap };
 }
 
 // ---------------------------------------------------------------------------

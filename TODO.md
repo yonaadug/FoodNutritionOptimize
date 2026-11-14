@@ -114,7 +114,18 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Plan balance:** the sample day is about 49% fat (nuts and seeds), and the FDA preset leans on greens
       (255 g spinach, 2,270 mcg vitamin K), because the planner picks the fewest calories that meet every goal. Consider
       a macro-range goal for total fat in the presets, or a realistic-mix objective.
-- [ ] **Plans don't warn about contaminants:** they link to each food's page, but don't flag a High contaminant food.
+- [x] **Plans don't warn about contaminants:** a plan now has "Contaminants in this plan" (day and week), which
+      flags the foods that push a total into elevated, with reduce, swap and leave-out
+      ([walkthrough 6.5](docs/WEBSITE_WALKTHROUGH.md#65-contaminants-in-a-plan)).
+- [ ] **Week planner and plan contaminants, follow-ups:**
+  - Plus gating: wrap the entry points marked `PLUS-GATE: weekPlanner` and `PLUS-GATE: planContaminants`.
+  - The account page has no tab for history kind `week-plan` (weeks reopen from `/plan/week`).
+  - "Keep contaminants low" in Set goals: add per-food contaminant amounts as optimizer rows (unknowns count as 0
+    there, so the UI must say so).
+  - Recipes in a plan have no contaminant data (counted as unknown); total them from their ingredients.
+  - Instacart "Shop this list" needs a Developer Platform key (TODO in `lib/week-planner/grocery.ts`).
+  - A week solve blocks the server's event loop for up to ~4 s (HiGHS's one-shot API is synchronous): move it
+    to a worker thread before heavy traffic.
 - [ ] **8 KB history cap:** a recipe or plan over it (roughly 10+ recipes in a plan) keeps only its summary and can't
       reopen on another device.
 - [ ] **Sign-in timing glitch:** if `/api/me` takes over 0.8 s, a new recipe saves to history but can still show the
@@ -202,7 +213,7 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
   - Self-host the Inter font (`next/font/google` needs network at build time).
   - Add a Windows `.ico`, auto-update and Dependabot.
   - Fix the 16 moderate dev-only `npm audit` findings (minimatch via typescript-eslint).
-- [ ] **Solver:** evaluate javascript-lp-solver 1.x or HiGHS (WASM) before the week planner, which needs integer
-      and variety constraints.
+- [x] **Solver:** the week planner uses HiGHS 1.15.4 (WASM); javascript-lp-solver didn't finish a 20-food week in
+      200 s and ignored its timeout. The day planner stays on javascript-lp-solver.
 - [ ] **Repo:** `screenshots/` shows the old UI and is no longer referenced (the README uses `docs/ux/after-*.png`).
       Replace or remove it. Decide whether `graphify-out/` should be gitignored.

@@ -13,11 +13,14 @@ import { savePlanNow, type PlanResult, type PlanRunInfo, type PlanStatus } from 
 import { notify } from '@/hooks/useToasts';
 import { presetTitle } from '@/components/planner/goals';
 import {
-    GOAL_KEYS, amountFor, fmtNumber, householdAmount, nutrientLabel, nutrientUnit, num, shortFoodName, splitFoodName,
+    GOAL_KEYS, amountFor, displayFoodName, fmtNumber, householdAmount, nutrientLabel, nutrientUnit, num, shortFoodName, splitFoodName,
 } from '@/components/planner/nutrients';
 import { typicalServing } from '@/lib/servings';
 import { goalProgress, goalSummary, olderEntryUse, parseIssues, recipeCaveats, unusedFoods, warningText, type GoalProgress } from './analysis';
 import InfeasibleHelp from './InfeasibleHelp';
+import PlanContaminants from './PlanContaminants';
+import { plannerContaminantActions } from './contaminantActions';
+import WeekPlanEntry from './WeekPlanEntry';
 
 interface PlanStepProps {
     state: PlannerState;
@@ -230,6 +233,11 @@ function PlanResultView({ state, result, runInfo, stale, restored, updating, hea
     }));
 
     const presetAtRun = runInfo?.presetId ?? state.presetId;
+    // The contaminant check follows the plan on screen, at exactly the grams shown.
+    const contaminantDays = useMemo(() => [items.map(i => ({
+        key: i.food.id, fdcId: i.food.recipe ? null : i.food.fdc_id, name: displayFoodName(i.food.description), grams: i.grams,
+    }))], [items]);
+    const contaminantActions = useMemo(() => plannerContaminantActions(), []);
 
     return (
         <div className={`stack-lg${updating ? ' is-updating' : ''}`} aria-busy={updating}>
@@ -375,6 +383,12 @@ function PlanResultView({ state, result, runInfo, stale, restored, updating, hea
                     {summary.safety.length > 0 && <SafetyLimits rows={summary.safety} />}
                 </section>
             </div>
+
+            {/* PLUS-GATE: planContaminants (UI entry for the whole-plan check). */}
+            <PlanContaminants days={contaminantDays} busy={updating} {...contaminantActions} />
+
+            {/* PLUS-GATE: weekPlanner (UI entry: "Plan a week"). */}
+            <WeekPlanEntry />
 
             <details className="disclosure">
                 <summary>Where each nutrient comes from</summary>

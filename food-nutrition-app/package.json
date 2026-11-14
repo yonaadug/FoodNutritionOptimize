@@ -37,6 +37,7 @@
         "@aws-sdk/lib-dynamodb": "3.1162.0",
         "better-auth": "1.7.17",
         "better-sqlite3": "^13.0.3",
+        "highs": "1.15.4",
         "javascript-lp-solver": "^1.0.3",
         "jpeg-js": "0.4.4",
         "next": "^16.4.5",

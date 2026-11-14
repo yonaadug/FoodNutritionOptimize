@@ -2,6 +2,7 @@ import type { Food } from './food-types';
 import { nutrientValue } from './food-types';
 import { NUTRIENT_CONFIG } from './nutrient-defaults';
 import { typicalServing } from './servings';
+import { scaleAmount } from './serving-scale';
 
 /**
  * "Good sources of X" for people, not for a lab: rank foods by how much of a
@@ -212,7 +213,7 @@ export function scoreSources(foods: Food[], nutrient: string): RankedSource[] {
         if (per100g === null || !(per100g > 0)) continue;
         const { tier, reason } = sourceTier(food);
         const { label, grams } = typicalServing(food.serving_sizes, food);
-        out.push({ food, tier, reason, servingLabel: label, servingGrams: grams, per100g, perServing: per100g * grams / 100 });
+        out.push({ food, tier, reason, servingLabel: label, servingGrams: grams, per100g, perServing: scaleAmount(per100g, grams)! });
     }
     return out;
 }

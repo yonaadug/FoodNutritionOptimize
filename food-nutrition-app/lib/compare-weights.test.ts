@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    basisChoices, basisFromChoice, choiceOfBasis, compareServings, initialBasis, preparationHint, preparationState,
+    basisChoices, basisFromChoice, choiceOfBasis, compareServings, initialBasis, normalizeBasis, preparationHint, preparationState,
 } from './compare-weights';
 import { GRAMS_PER_OUNCE } from './serving-scale';
 import { makeFood } from './testing/fixtures';
@@ -108,6 +108,19 @@ describe('the "Compare at" menu', () => {
             assert.deepEqual(basisFromChoice(choiceOfBasis(basis), { text: '1', unit: 'g' }), basis);
         }
         assert.deepEqual(basisFromChoice('custom', { text: '4', unit: 'oz' }), { kind: 'custom', text: '4', unit: 'oz' });
+    });
+});
+
+describe('normalizeBasis', () => {
+    it('keeps a basis the menu offers', () => {
+        assert.deepEqual(normalizeBasis({ kind: 'food', foodId: 3 }, foods), { kind: 'food', foodId: 3 });
+        assert.deepEqual(normalizeBasis({ kind: 'custom', text: '2', unit: 'oz' }, foods), { kind: 'custom', text: '2', unit: 'oz' });
+    });
+    it('turns a food’s serving that is now a standard weight into that weight, and a removed food into 100 g', () => {
+        assert.deepEqual(normalizeBasis({ kind: 'food', foodId: 3 }, foods, { foodId: 3, grams: THREE_OZ, label: '3 oz (85.05 g)' }),
+            { kind: 'standard', id: 'w-3oz' });
+        assert.deepEqual(normalizeBasis({ kind: 'food', foodId: 99 }, foods), { kind: 'standard', id: 'w-100g' });
+        assert.deepEqual(normalizeBasis({ kind: 'usual' }, [broccoli]), { kind: 'standard', id: 'w-100g' });
     });
 });
 

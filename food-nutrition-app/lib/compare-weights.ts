@@ -144,6 +144,21 @@ export function basisChoices(foods: Food[], anchor?: Anchor): BasisChoice[] {
     return out;
 }
 
+/**
+ * The basis as the menu can show it. A food's serving that is now a standard weight
+ * (the page switched to 3 oz) becomes that weight; a removed food's serving becomes 100 g.
+ */
+export function normalizeBasis(basis: CompareBasis, foods: Food[], anchor?: Anchor): CompareBasis {
+    const choices = basisChoices(foods, anchor);
+    if (choices.some(c => c.value === choiceOfBasis(basis))) return basis;
+    if (basis.kind === 'food') {
+        const food = foods.find(f => f.id === basis.foodId);
+        const w = food ? standardWeightAt(usualServing(food, anchor).grams) : undefined;
+        if (w) return { kind: 'standard', id: w.id };
+    }
+    return { kind: 'standard', id: 'w-100g' };
+}
+
 /** The menu value for a basis. */
 export function choiceOfBasis(basis: CompareBasis): string {
     switch (basis.kind) {

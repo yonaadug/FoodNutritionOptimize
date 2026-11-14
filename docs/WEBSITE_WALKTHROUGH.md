@@ -287,6 +287,54 @@ The bar along the bottom of steps 1 and 2 shows the food and goal counts and the
 
 **What's remembered.** Foods, goals, the last plan and your current step are all kept in this browser, through reloads and visits to other pages. The step also appears in the address (`/plan#goals`).
 
+### 6.5 Contaminants in a plan
+
+*A Plus feature (`PLUS-GATE: planContaminants`); shown to everyone until the Plus check lands.*
+
+![Contaminants in the sample day](walkthrough/week-01-plan-contaminants.png)
+
+Under **Goal progress**, **Contaminants in this plan** adds up every food at the grams the plan shows, using the same per-serving figure as each food's page:
+
+- **Lead, cadmium, inorganic arsenic and pesticides** against a day's reference; **mercury** against the week's ("2% of US EPA's weekly reference"), with what a week of days like this one would come to.
+- The bands are for a whole day: elevated is over half the reference, high is over all of it ([methodology](/methodology#plan-totals)). A day's mercury keeps the fish-advice bands.
+- **Foods without data are unknown, never zero.** "2 of 8 foods have no data" sits on top, and each row says which foods it couldn't count, so the total reads "at least". Seafood arsenic is listed as not counted. **Microplastics** say "Comparison only".
+- **Foods that push a total past elevated** get a box with **Reduce to 60 g** (when that alone is enough), **Swap for** a food from the same USDA category with at most half as much per 100 g, and **Leave it out and re-plan**. Each re-plans at once and offers **Undo**.
+- **Each food's share** opens a table per contaminant: grams, micrograms, share of the reference and share of the total.
+
+The sample day reads High for cadmium (spinach and sunflower seeds) and near the line for inorganic arsenic: that's what the database says for those amounts, and the swap and reduce buttons are the way out.
+
+**Hand check.** In the sample day, salmon is planned at 42 g. Its mercury is 22 ppb (FDA), so 22 × 42 / 1000 = 0.92 mcg, which is what the table shows. A unit test does the same for 150 g of canned light tuna and 200 g of white rice: cadmium 3.8 + 1.31 = 5.11 mcg (30% of 16.8 mcg, moderate), mercury 18.9 mcg (36% of the week's 52.5 mcg, elevated, tuna flagged), inorganic arsenic 7.38 mcg from the rice (154% of 4.8 mcg, high, rice flagged; the tuna's arsenic isn't rated).
+
+### 6.6 Plan a week
+
+*A Plus feature (`PLUS-GATE: weekPlanner`); open to everyone until the Plus check lands.*
+
+From **Your plan**, **Plan a week** opens `/plan/week`. It uses the same foods and goals as the day.
+
+![A week on a computer](walkthrough/week-02-week-desktop.png)
+
+- **Settings:** **Variety** (at most 2, 3, 4 or 5 days a week per food, or any day), **Cook once, eat twice** for recipes, and **Average stored vitamins and minerals over the week**. With that on, vitamins A, D, E, K, B12, folate, iron and zinc are met on average over the 7 days. Calories, protein, fiber, sodium, the other nutrients and every upper limit are met on each day.
+- **The week:** seven columns on a computer. Each food is "none, or at least half a serving", the same food is kept off back-to-back days when possible, and recipes are planned in whole servings ("Cook 2 servings, eat 1", then "Leftovers · 1 serving" the next day).
+- If the variety asked for can't meet every goal, the week uses the smallest limit that can, and says so ("this week allows up to 4 days").
+- **Lock and re-plan:** the pin on a day keeps that whole day; the pin on a food keeps it on that day. **Re-plan the rest** keeps those and steers the other days away from what they had.
+- Below: **Goals over the week** (each goal marked "Each day" with days met, or "Weekly average"), how many days each food appears, the week's contaminants (mercury is the real week's total), and the grocery list.
+
+![Goals over the week](walkthrough/week-03-week-goals.png) ![The week's mercury](walkthrough/week-04-week-contaminants.png)
+
+![The grocery list](walkthrough/week-05-grocery.png)
+
+**Grocery list:** each food's total for the week in weight ("1.2 kg ≈ 2.6 lb") and, where USDA lists one, a unit a shop sells ("≈ 6 breasts", "≈ 8 bananas", milk as "1.7 L ≈ 1.7 qt"), grouped by aisle from the food category. Ticks stay in this browser. **Copy as text** and **Download CSV**; to print, use the browser's own Print, and the page prints the week and the list without the menus. A recipe is listed once per batch with a link to its ingredients. Instacart isn't connected (it needs a key).
+
+| | |
+|---|---|
+| ![A week on a phone, in dark mode](walkthrough/week-06-phone-dark.png) | ![The grocery list on a phone](walkthrough/week-07-phone-grocery-dark.png) |
+
+On a phone, a day picker (Mon to Sun) shows one day at a time.
+
+**Saving:** the week is kept in this browser, like the day plan. Signed in, each new week is also recorded to history (kind `week-plan`, the days as planned, under the 8 KB cap); `/plan/week?open=<id>` reopens it on any device with today's food data, and an empty week page offers "Your last week".
+
+**Speed:** the week is a mixed-integer program solved by HiGHS on the server. With the Everyday essentials goals: 10 foods 0.07 s typical (0.5 s worst), 15 foods 1.5 s (3.8 s), 20 foods 2.2 s (4.0 s), 30 foods 0.6 s (0.9 s). Tight weeks (few foods for the variety asked) are the slow ones: a solve stops after 1.5-2 s with the best week found, and the page says it's good but not proven the best. javascript-lp-solver, which runs the day plan, didn't finish a 20-food week in over 200 s.
+
 ---
 
 ## 7. Recipes

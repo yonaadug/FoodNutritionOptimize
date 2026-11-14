@@ -4,13 +4,15 @@
 .select { min-height: 40px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); background: var(--bg-card); color: var(--text-primary); font: inherit; }
 
 .picker { display: none; overflow-x: auto; margin-bottom: var(--space-3); max-width: 100%; }
-.picker :global(.segmented) { flex-wrap: nowrap; }
-.picker button { min-width: 44px; min-height: 36px; }
+.picker :global(.segmented) { display: flex; flex-wrap: nowrap; width: 100%; }
+.picker button { flex: 1 1 0; min-width: 0; min-height: 40px; padding: 0 4px; }
 
 .days { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
 @media (min-width: 1180px) {
   .days { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--space-2); }
   .days .entryName { font-size: 13px; }
+  .days .entry { padding: 4px; }
+  .days .entry .lockBtn { width: 26px; height: 26px; }
 }
 @media (max-width: 767px) {
   .picker { display: block; }

@@ -5,7 +5,7 @@ import type { Food } from '@/lib/food-types';
 import type { WeekDay, WeekEntry } from '@/lib/week-planner/types';
 import FoodLink from '@/components/food/FoodLink';
 import Icon from '@/components/ui/Icon';
-import { displayFoodName, fmtNumber, householdAmount, shortFoodName } from '@/components/planner/nutrients';
+import { fmtNumber, householdAmount, shortFoodName } from '@/components/planner/nutrients';
 import { weekActions } from './weekStore';
 import styles from './Week.module.css';
 
@@ -38,7 +38,7 @@ function Entry({ day, e, food, locked, dayLocked, busy }: { day: number; e: Week
         <li className={styles.entry} data-locked={locked || dayLocked} data-testid="week-entry" data-food={food.id}>
             <div className={styles.entryMain}>
                 <div className={styles.entryName} title={food.description}>
-                    <FoodLink food={food}>{displayFoodName(food.description)}</FoodLink>
+                    <FoodLink food={food}>{food.recipe ? food.description : name}</FoodLink>
                 </div>
                 <div className={styles.entryAmount}>
                     {fmtNumber(e.grams, { decimals: e.grams < 10 ? 1 : 0 })} g{hh ? ` · ${hh}` : ''}

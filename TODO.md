@@ -9,9 +9,14 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **USDA data updates with admin approval and change tracking.** Design is pending one choice: approve on a
       page of the website (needs an admin login), or email + GitHub pull request (free, history built in).
       Foods are matched across USDA releases by NDB number, because USDA gives updated foods new FDC IDs.
-- [ ] **Stripe subscriptions.** The plan is done ([docs/STRIPE_PLAN.md](docs/STRIPE_PLAN.md)) and sign-in now exists.
-      Before building, decide what Plus unlocks first and the trial style. Local dev currently uses LIVE keys
-      (`STRIPE_MODE=live`); switch to `test` before trying Checkout.
+- [ ] **Plus and Stripe (owner: set up the sandbox, then try it).** Built 2026-11-14 and tested with a fake Stripe client
+      only; nothing has called Stripe yet ([docs/STRIPE_PLAN.md §7](docs/STRIPE_PLAN.md#7-testing-locally-no-real-money)).
+      Create the product, both prices, the portal settings and a webhook in the sandbox, set `STRIPE_MODE=test` with
+      the `STRIPE_TEST_*` values, and run one Checkout with `4242 4242 4242 4242` under `stripe listen`. Live keys are
+      refused unless `NODE_ENV=production` and `STRIPE_ALLOW_LIVE=1`, so the live keys in `.env.local` can't charge anyone.
+      Still open: the week planner and plan contaminant check need wrapping in `<PlusGate>` once they land, the
+      privacy policy must mention that Stripe keeps invoices after an account is deleted, and the EU/UK VAT choice
+      (AWS design §3.6).
 - [ ] **Real AI for recipes (owner: turn it on; Claude waits on AWS).** Since 2026-11-14 the code is ready
       ([docs/RECIPES.md](docs/RECIPES.md#which-model-reads-what)): pasted text is read by the free built-in reader
       first (63% of the offline evaluation set needs no AI, at 99.5% food top-1), photos and unsure text go to Claude
@@ -92,8 +97,9 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
       (`/privacy`, `/health-data-privacy`, `/terms`), recorded consent and an age statement at sign-in are built and
       **need a lawyer's review**. See [docs/LEGAL.md](docs/LEGAL.md) for the questions, the placeholders the owner must
       fill (`lib/legal.ts`), the `privacy@nutritiondictionary.com` mailbox to set up, and when to turn `LEGAL_DRAFT` off.
-- [ ] **Before `/recipes` goes public on a paid AI provider:** per-user quotas and a global spend cap (§3.7 of the AWS
-      design) plus an AWS Budget. Today's rate limits are in-memory, per server instance. Claude on Bedrock bills as
+- [ ] **Before `/recipes` goes public on a paid AI provider:** a global spend cap (§3.7 of the AWS design) plus an
+      AWS Budget. Per-account photo quotas are done (lib/billing/quota.ts, in the user table). The per-IP limits and
+      the daily budget are still in-memory, per server instance. Claude on Bedrock bills as
       AWS Marketplace charges, so a budget filtered to "Amazon Bedrock" misses it. The CDK kill switch now also
       denies Bedrock to the web role ([docs/BEDROCK_SETUP.md §6](docs/BEDROCK_SETUP.md#6-spend-controls)).
       Bedrock compiles a strict tool schema on first use (up to ~90 s, cached 24 h): check whether the first call
@@ -137,7 +143,7 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] App changes from the design:
   - ~~Auth middleware (Cognito)~~ Done with Better Auth; Cognito is removed from the CDK example
   - A local-first store with a sync API, replacing localStorage-only state
-  - Stripe Checkout, Customer Portal and a webhook worker → entitlements
+  - ~~Stripe Checkout, Customer Portal and a webhook worker → entitlements~~ (built in the web app: `app/api/stripe/*`, `lib/billing`)
   - AI import job API and worker with per-user quotas and a global spend breaker
   - Account export and delete
   - ~~**Blocks launch:** origin access control needs `x-amz-content-sha256` on every browser POST.~~ Fixed

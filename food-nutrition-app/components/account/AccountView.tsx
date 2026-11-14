@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import PlanSection from '@/components/billing/PlanSection';
 import Icon from '@/components/ui/Icon';
 import { apiFetch, clearCurrentUser, primeCurrentUser, refreshCurrentUser, signOut, type CurrentUser } from '@/lib/auth/client';
 import { signInPath } from '@/lib/auth/next-path';
@@ -99,12 +100,15 @@ export default function AccountView({ user: initialUser }: { user: CurrentUser }
                 <p className={styles.status} role="status">{status}</p>
             </section>
 
+            <PlanSection initial={initialUser.plan} />
+
             <HistoryView />
 
             <section className={`panel ${styles.danger}`} aria-labelledby="delete-title">
                 <h2 id="delete-title" className={styles.sectionTitle}>Delete account</h2>
                 <p className={styles.dangerText}>
                     Permanently removes your profile and history. It can&apos;t be undone, and you can keep using the site without an account.
+                    {' '}A Plus subscription is cancelled first.
                 </p>
                 <div className={styles.actions}>
                     <button type="button" className={`btn ${styles.btnDanger}`} onClick={() => dialog.current?.showModal()}>Delete my account…</button>
@@ -134,11 +138,16 @@ function DeleteDialog({ dialogRef, email }: { dialogRef: React.RefObject<HTMLDia
         setError('');
         try {
             const res = await apiFetch('/api/account', { method: 'DELETE', json: { confirmEmail: typed.trim() } });
-            if (!res.ok) throw new Error(String(res.status));
+            if (!res.ok) {
+                // A subscription that couldn't be cancelled stops deletion, and the server says so.
+                const body = (await res.json().catch(() => null)) as { code?: string; error?: string } | null;
+                throw new Error(body?.code === 'subscription_cancel_failed' && body.error ? body.error : String(res.status));
+            }
             clearCurrentUser();
             window.location.replace('/account/sign-in?deleted=1');
-        } catch {
-            setError('Your account wasn\'t deleted. Please try again.');
+        } catch (e) {
+            const message = (e as Error).message;
+            setError(/^\d+$/.test(message) ? 'Your account wasn\'t deleted. Please try again.' : message);
             setDeleting(false);
         }
     };

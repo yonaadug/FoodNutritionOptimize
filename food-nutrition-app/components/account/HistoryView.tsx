@@ -20,6 +20,8 @@ type Kind = (typeof TABS)[number]['kind'];
 interface TabData {
     items: HistoryItem[];
     nextCursor: string | null;
+    /** Free accounts: older plans and recipes kept back (lib/billing/history-limits.ts). */
+    limited?: { limit: number; hidden: number };
     status: 'loading' | 'ready' | 'error';
     loadingMore: boolean;
 }
@@ -47,7 +49,7 @@ export default function HistoryView() {
             window.location.replace(signInPath(window.location.pathname));
         }
         if (!res.ok) throw new Error(String(res.status));
-        return (await res.json()) as { items: HistoryItem[]; nextCursor: string | null };
+        return (await res.json()) as { items: HistoryItem[]; nextCursor: string | null; limited?: { limit: number; hidden: number } };
     }, []);
 
     const load = useCallback(async (kind: Kind) => {
@@ -178,6 +180,12 @@ export default function HistoryView() {
                         <ul className={styles.list}>
                             {data.items.map(item => <HistoryRow key={item.itemId} item={item} onRemove={() => remove(item)} />)}
                         </ul>
+                        {data.limited && data.limited.hidden > 0 && (
+                            <p className={styles.note} data-testid="history-limited">
+                                Showing your newest {data.limited.limit} {tab.label.toLowerCase()}. {data.limited.hidden} older {data.limited.hidden === 1 ? 'one is' : 'ones are'} kept
+                                in your account and come back with <Link href="/plus">Plus</Link>. Your data export includes them all.
+                            </p>
+                        )}
                         {data.nextCursor && (
                             <div className={styles.more}>
                                 <button type="button" className="btn btn-secondary" onClick={loadMore} disabled={data.loadingMore}>

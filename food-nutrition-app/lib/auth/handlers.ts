@@ -1,4 +1,9 @@
 import { getSessionCookie } from 'better-auth/cookies';
+import { cancelSubscriptionForDeletion } from '@/lib/billing/cancel';
+import { historyItemVisible, listHistoryWithLimit } from '@/lib/billing/history-limits';
+import type { StripeProvider } from '@/lib/billing/stripe-client';
+import { loadEntitlements, planSummary } from '@/lib/billing/summary';
+import { historyLimit } from '@/lib/billing/entitlements';
 import {
     HISTORY_LIMITS, validateHistoryInput, validateItemId, validateKind,
 } from '@/lib/user-store/history';
@@ -22,6 +27,8 @@ export interface AccountDeps {
     table: SingleTable;
     store: UserStore;
     auth: Auth;
+    /** Stripe, for plans and billing (lib/billing). Absent means billing is off. */
+    stripe?: StripeProvider;
 }
 
 const COOKIE_PREFIX = 'md';
@@ -48,7 +55,7 @@ async function currentUser(request: Request, deps: AccountDeps): Promise<Session
     return session?.user ? { id: session.user.id, email: session.user.email } : null;
 }
 
-async function requireUser(request: Request, deps: AccountDeps): Promise<SessionUser> {
+export async function requireUser(request: Request, deps: AccountDeps): Promise<SessionUser> {
     const user = await currentUser(request, deps);
     if (!user) throw new AccountError(401, 'unauthorized', 'Sign in to use this feature');
     return user;
@@ -72,7 +79,8 @@ export async function getMe(request: Request, deps: AccountDeps): Promise<Respon
     // 30 days after sign-in even for someone using the site every day.
     const { response: session, headers } = await deps.auth.api.getSession({ headers: request.headers, returnHeaders: true });
     const profile = session?.user ? await deps.store.getProfile(session.user.id) : null;
-    const res = jsonOk({ user: profile ? publicUser(profile) : null });
+    const plan = profile ? await planSummary(deps.table, profile.id, Boolean(deps.stripe?.config.ok)) : null;
+    const res = jsonOk({ user: profile ? { ...publicUser(profile), plan } : null });
     headers.forEach((value, name) => {
         if (name.toLowerCase() === 'set-cookie') res.headers.append('set-cookie', value);
     });
@@ -138,11 +146,19 @@ export async function getHistory(request: Request, deps: AccountDeps): Promise<R
     const rawItemId = params.get('itemId');
     if (rawItemId !== null) {
         if (!rawKind) throw new AccountError(400, 'invalid_request', 'Pass kind with itemId', { field: 'kind' });
-        const item = await deps.store.getHistoryItem(user.id, validateKind(rawKind), validateItemId(rawItemId));
+        const kind = validateKind(rawKind);
+        const itemId = validateItemId(rawItemId);
+        const item = await deps.store.getHistoryItem(user.id, kind, itemId);
         if (!item) throw new AccountError(404, 'not_found', 'History item not found');
+        // Free accounts keep older plans and recipes, but open only their newest few (lib/billing/history-limits.ts).
+        const limit = historyLimit((await loadEntitlements(deps.table, user.id)).entitlements);
+        if (!(await historyItemVisible(deps.store, user.id, limit, kind, itemId))) {
+            throw new AccountError(403, 'plus_required', 'This is kept in your account. Plus shows all your saved plans and recipes.');
+        }
         return jsonOk({ item });
     }
-    const page = await deps.store.listHistory(user.id, {
+    const limit = historyLimit((await loadEntitlements(deps.table, user.id)).entitlements);
+    const page = await listHistoryWithLimit(deps.store, user.id, limit, {
         kind: rawKind ? validateKind(rawKind) : undefined,
         limit: pageSize(params),
         cursor: params.get('cursor') || undefined,
@@ -200,7 +216,8 @@ export async function getAccountExport(request: Request, deps: AccountDeps): Pro
 }
 
 /**
- * Sessions go first: once they are revoked no new request can pass the session check
+ * An active Plus subscription is cancelled first, and if Stripe can't be reached the
+ * account stays (lib/billing/cancel.ts). Then sessions: once they are revoked no new request can pass the session check
  * while the data is being removed. Typing the address back is the confirmation: it
  * stops accidents and makes an unattended signed-in browser harder to abuse.
  */
@@ -213,6 +230,8 @@ export async function deleteAccount(request: Request, deps: AccountDeps): Promis
     if (typeof typed !== 'string' || typed.trim().toLowerCase() !== user.email.toLowerCase()) {
         throw new AccountError(400, 'invalid_request', 'Type your email address to confirm', { field: 'confirmEmail' });
     }
+    // A subscription is cancelled before anything is removed. If that fails, nothing is deleted.
+    await cancelSubscriptionForDeletion(deps.table, deps.stripe, user.id);
     const context = await deps.auth.$context;
     await context.internalAdapter.deleteUserSessions(user.id);
     await deps.store.deleteAccountData(user.id);

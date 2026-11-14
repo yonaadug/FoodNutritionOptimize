@@ -1,7 +1,5 @@
-'use client';
-
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { getDbInfo, getMeta } from '@/lib/db';
 
 interface MetaInfo { foodCount: number; release: string | null; downloadPage: string | null }
 
@@ -13,37 +11,37 @@ function latestRelease(sourcesJson: string | undefined): string | null {
         const last = dates[dates.length - 1];
         if (!last) return null;
         const d = new Date(last.length === 7 ? `${last}-01` : last);
-        return Number.isNaN(d.getTime()) ? last : d.toLocaleDateString(undefined, { month: 'short', year: 'numeric', timeZone: 'UTC' });
+        return Number.isNaN(d.getTime()) ? last : d.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
     } catch {
         return null;
     }
 }
 
-/** Data provenance footer, e.g. "9,435 foods · USDA FoodData Central, Oct 2026". */
+/** What the footer says about the data. The footer is optional, so a database problem just leaves it out. */
+function readMeta(): MetaInfo | null {
+    try {
+        const meta = getMeta();
+        return {
+            foodCount: getDbInfo().foodCount,
+            release: latestRelease(meta?.sources),
+            downloadPage: typeof meta?.download_page === 'string' ? meta.download_page : null,
+        };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Data provenance footer, e.g. "9,435 foods · USDA FoodData Central, Oct 2026".
+ * Rendered on the server, so it's in the page from the first paint (no request after
+ * load, no text appearing later, and no JavaScript).
+ */
 export default function SiteFooter() {
-    const [info, setInfo] = useState<MetaInfo | null>(null);
-
-    useEffect(() => {
-        const ctrl = new AbortController();
-        (async () => {
-            try {
-                const res = await fetch('/api/meta', { signal: ctrl.signal });
-                if (!res.ok) return;
-                const data = await res.json();
-                setInfo({
-                    foodCount: Number(data.foodCount ?? 0),
-                    release: latestRelease(data.meta?.sources),
-                    downloadPage: typeof data.meta?.download_page === 'string' ? data.meta.download_page : null,
-                });
-            } catch { /* footer is optional */ }
-        })();
-        return () => ctrl.abort();
-    }, []);
-
+    const info = readMeta();
     return (
         <footer className="container site-footer small muted">
             <p>
-                {info?.foodCount ? `${info.foodCount.toLocaleString()} foods · ` : ''}
+                {info?.foodCount ? `${info.foodCount.toLocaleString('en-US')} foods · ` : ''}
                 Nutrition data from{' '}
                 <a href={info?.downloadPage ?? 'https://fdc.nal.usda.gov/'} target="_blank" rel="noreferrer">USDA FoodData Central</a>
                 {info?.release ? `, ${info.release}` : ''} (public domain).{' '}

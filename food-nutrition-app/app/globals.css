@@ -851,3 +851,84 @@ a.chip-btn { text-decoration: none; }
 .prose th { font-weight: 700; }
 .prose .table-scroll { margin-bottom: var(--space-3); }
 .prose :target { scroll-margin-top: 80px; }
+
+/* =========================================================
+   Page changes: transitions, loading skeletons, focus
+   (components/shell/RouteTransition.tsx, NavigationEffects.tsx,
+   PageSkeletons.tsx). Kept in one block to keep merges easy.
+   ========================================================= */
+:root {
+  --page-exit: 120ms;
+  --page-enter: 200ms;
+}
+/* Clicks during the short fade reach the new page. */
+::view-transition { pointer-events: none; }
+/* Everything outside the page content (the footer, the page background) swaps at once. */
+::view-transition-old(root) { display: none; }
+::view-transition-new(root) { animation: none; }
+/* The header is the fixed point: it never fades or moves, and stays above the content. */
+.site-header { view-transition-name: site-header; }
+::view-transition-group(site-header) { animation: none; z-index: 100; }
+::view-transition-old(site-header) { display: none; }
+::view-transition-new(site-header) { animation: none; }
+/* The old page fades out where it was; the new one fades in, rising a few pixels. */
+::view-transition-old(.page-exit) { animation: var(--page-exit) ease-out both page-fade-out; }
+::view-transition-new(.page-enter) { animation: var(--page-enter) var(--ease) both page-fade-in; }
+/* A loading skeleton fades out as the page it stood in for fades in. */
+.nav-pending { view-transition-name: nav-pending; }
+::view-transition-old(nav-pending) { animation: 160ms ease-out both page-fade-out; }
+@keyframes page-fade-out { to { opacity: 0; } }
+@keyframes page-fade-in { from { opacity: 0; transform: translateY(6px); } }
+/* A swipe Back that the browser animates itself isn't animated a second time. */
+:root[data-ua-transition]::view-transition-group(*),
+:root[data-ua-transition]::view-transition-old(*),
+:root[data-ua-transition]::view-transition-new(*) { animation: none !important; }
+/* Reduced motion: an instant swap, nothing moves or fades. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation: none !important; }
+  ::view-transition-old(*) { display: none; }
+}
+
+/* Focus lands on a new page's heading; a ring shows only when it came from the keyboard. */
+[data-route-focus]:focus { outline: none; }
+[data-route-focus]:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
+
+/* Loading skeletons, shaped like the page they stand in for. They cover the old page below
+   the header (top is set from the header's height) without changing its layout or scroll.
+   They appear at once (never a blank moment) and fade out as the page fades in. */
+.nav-pending {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+  overflow: hidden; background: var(--bg-page);
+}
+/* The old page stays laid out (so Back finds it as it was) but isn't drawn behind the skeleton. */
+#main[data-nav-pending] > * { visibility: hidden; }
+.sk-line { height: 13px; border-radius: 6px; }
+.sk-title { height: clamp(30px, 4.2vw, 40px); border-radius: 10px; }
+.sk-pill { height: 40px; border-radius: var(--radius-sm); }
+.sk-chip { height: 22px; width: 88px; border-radius: var(--radius-pill); }
+.sk-row { display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
+/* On the page background the bars need a little more contrast than inside a card. */
+.nav-pending .skeleton { background: linear-gradient(90deg, var(--bg-sunken), var(--border), var(--bg-sunken)); background-size: 200% 100%; }
+/* Panels and cards look like the real ones: a card surface with a border. */
+.nav-pending .sk-panel, .nav-pending .sk-card, .nav-pending .sk-search, .nav-pending .sk-list-item {
+  background: var(--bg-card); border: 1px solid var(--border); animation: none;
+}
+.sk-panel { border-radius: var(--radius-lg); }
+.sk-card { height: 96px; border-radius: var(--radius-md); }
+.sk-search { height: 60px; border-radius: var(--radius-lg); width: 100%; max-width: 720px; margin: 0 auto; }
+.sk-center { margin-left: auto; margin-right: auto; }
+.sk-list-item { height: 46px; border-radius: var(--radius-sm); }
+.sk-result { display: flex; gap: var(--space-4); align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.sk-result:last-child { border-bottom: 0; }
+.sk-result > div:first-child { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+
+/* Search results keep their room while the next ones load, so the page doesn't jump. */
+.search-results[aria-busy='true'] { min-height: min(70vh, 640px); }
+
+/* The planner's steps fade in rather than snapping. */
+.step-panel { animation: page-fade-in var(--page-enter) var(--ease) both; }
+/* Before the planner has read this browser's saved state: returning visitors skip the welcome. */
+:root[data-planner='returning'] .planner-welcome-slot { display: none; }
+.planner-pending { min-height: 60vh; }

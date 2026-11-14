@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { absoluteUrl, isNavActive, NAV_ITEMS, SITE_URL } from './nav';
+import { absoluteUrl, isAccountPath, isNavActive, NAV_ITEMS, SITE_URL } from './nav';
 
 const item = (label: string) => NAV_ITEMS.find(i => i.label === label)!;
 
@@ -17,7 +17,7 @@ describe('NAV_ITEMS', () => {
 
 describe('isNavActive', () => {
     it('treats food and nutrient pages as part of Foods', () => {
-        for (const p of ['/', '/food/123-salmon', '/food/category', '/nutrients/iron']) {
+        for (const p of ['/', '/?q=salmon', '/food/123-salmon', '/food/category', '/food/category/finfish-and-shellfish-products', '/nutrients', '/nutrients/iron', '/methodology', '/methodology#sources']) {
             assert.equal(isNavActive(item('Foods'), p), true, p);
         }
     });
@@ -36,6 +36,24 @@ describe('isNavActive', () => {
     it('copes with a missing path', () => {
         assert.equal(isNavActive(item('Foods'), null), true);
         assert.equal(isNavActive(item('Plan'), undefined), false);
+    });
+});
+
+describe('isAccountPath', () => {
+    it('covers every account page, nested ones included', () => {
+        for (const p of ['/account', '/account/', '/account/history', '/account/sign-in', '/account/sign-in?next=/plan', '/account/sign-in/confirm']) {
+            assert.equal(isAccountPath(p), true, p);
+        }
+    });
+    it('is false elsewhere, including lookalikes', () => {
+        for (const p of ['/', '/accounts', '/plan', '/food/1-account', null, undefined]) {
+            assert.equal(isAccountPath(p), false, String(p));
+        }
+    });
+    it('never overlaps a header section, so only one thing is marked current', () => {
+        for (const p of ['/account/history', '/account/sign-in']) {
+            assert.equal(isAccountPath(p) && NAV_ITEMS.some(i => isNavActive(i, p)), false, p);
+        }
     });
 });
 

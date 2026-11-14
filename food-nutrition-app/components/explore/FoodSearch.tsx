@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { Food } from '@/lib/food-types';
+import { RecentCache } from '@/lib/navigation-ux';
 import Icon from '@/components/ui/Icon';
 import { FoodRowSkeleton } from '@/components/foods/FoodRow';
 import { fetchSearch } from '@/hooks/useFoodSearch';
@@ -25,6 +27,9 @@ const EMPTY: SearchData = { key: '', foods: [], page: 0, totalPages: 0, total: 0
 
 const keyFor = (trimmed: string, nonce: number) => `${trimmed.toLowerCase()}#${nonce}`;
 
+/** Results already shown in this visit, by lower-cased query. */
+const seenResults = new RecentCache<SearchData>(20);
+
 export interface InitialSearch {
     query: string;
     foods: Food[];
@@ -47,12 +52,22 @@ interface FoodSearchProps {
  * the box and the results. Without JavaScript the form still submits to /?q=.
  */
 export default function FoodSearch({ initial, foodCount, children }: FoodSearchProps) {
-    const initialQuery = initial?.query ?? '';
+    // Back to /?q=salmon renders the page the router cached for this entry, which can be the
+    // bare home page (the query was added to the address as you typed), so the address wins.
+    const addressQuery = (useSearchParams().get('q') ?? '').trim().slice(0, 200);
+    const initialQuery = initial?.query ?? addressQuery;
     const [query, setQuery] = useState(initialQuery);
     const [nonce, setNonce] = useState(0);
-    const [data, setData] = useState<SearchData>(initial
-        ? { key: keyFor(initial.query.trim(), 0), foods: initial.foods, page: 1, totalPages: initial.totalPages, total: initial.total }
-        : EMPTY);
+    const [data, setData] = useState<SearchData>(() => {
+        if (initial) return { key: keyFor(initial.query.trim(), 0), foods: initial.foods, page: 1, totalPages: initial.totalPages, total: initial.total };
+        // Results seen earlier in this visit come back at once, so Back lands where it left off.
+        const seen = initialQuery.trim().length >= MIN_CHARS ? seenResults.get(initialQuery.trim().toLowerCase()) : undefined;
+        return seen ? { ...seen, key: keyFor(initialQuery.trim(), 0) } : EMPTY;
+    });
+    // Remember what's on screen (including "Show more" pages) for Back.
+    useEffect(() => {
+        if (data.key && !data.error && data.foods.length) seenResults.set(data.key.replace(/#\d+$/, ''), data);
+    }, [data]);
     const [loadingMore, setLoadingMore] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLUListElement>(null);
@@ -219,7 +234,7 @@ export default function FoodSearch({ initial, foodCount, children }: FoodSearchP
             )}
 
             {active ? (
-                <section className="search-results" aria-label="Search results">
+                <section className="search-results" aria-label="Search results" aria-busy={loading}>
                     {loading && <FoodRowSkeleton count={5} />}
 
                     {current?.error && (

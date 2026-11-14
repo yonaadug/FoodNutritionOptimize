@@ -58,7 +58,7 @@ Further down:
 
 **Searching.**
 
-- Results start at 2 letters and update as you type. The address changes to `/?q=salmon`, so a search can be shared and the Back button returns to it.
+- Results start at 2 letters and update as you type. The address changes to `/?q=salmon`, so a search can be shared and the Back button returns to it, with the same results and scroll position.
 - Each row shows the name, category, a USDA dataset badge, the top three nutrients, and calories per typical serving. Clicking a row opens the food page. There's no Add button here; adding happens on the food page.
 - **Show more (N left)** loads the next 20.
 - Keyboard: `/` jumps to the box from anywhere on the page, ↓ moves into the results, Esc clears.
@@ -347,7 +347,7 @@ The bar along the bottom of steps 1 and 2 shows the food and goal counts and the
 
 After **Make my plan**, it appears in **What to eat** as "Recipe: Banana oat pancakes" with a Fixed amount tag, and the planner fills in the rest of the day around it. Anything the recipe couldn't count is called out at the top of the plan.
 
-The open recipe is in the address, so the browser's **Back** button, a reload and signing in all return to it.
+The open recipe is in the address, so the browser's **Back** button, a reload and signing in all return to it. Back from the planner shows it at once, scrolled where you left it.
 
 ---
 
@@ -451,7 +451,19 @@ At 390 px everything becomes one column and no page scrolled sideways.
 - The delete dialog holds focus inside it, and Esc closes it.
 - After a recipe is read, focus moves to "Check your recipe". **Change** opens its search with focus in the box, and Esc closes it and returns to **Change**.
 
-Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader was run.
+- After moving to another page, focus is on the new page's main heading, and the page's title is announced. After Back, focus returns to the link you followed (or the heading).
+
+One small gap is listed as [L10](#14-rough-edges-checklist). No screen reader was run.
+
+### 11.1 Moving between pages
+
+- **Pages cross-fade.** The old page fades out and the new one fades in, rising a few pixels, in about a fifth of a second. The header stays still throughout, and its tab moves to the new section at once. Changes within a page (search results, the planner's steps, a recipe opening) don't fade the page. The planner's steps fade in on their own when you move between them. With **reduce motion** turned on in the device's settings, pages and steps swap instantly, with no fading or movement.
+- **Something happens at once.** Pointing at a food card, search result, food link or header tab on a computer fetches that page ahead, so it usually opens with no wait. When a page still takes a moment (on a phone, or a slow connection), a grey outline shaped like that page (food, list, home or account) covers the old one within a tenth of a second, and the real page fades in over it. Pages built ahead of time (Plan, Recipes, methodology) always open at once.
+- **Where you land.** A new page starts at the top. **Back** returns to where you were, with what you had: the search and its results, the recipe you were editing, the planner step, and the same scroll position, even when part of the page loads a moment later (the contaminant panel is kept for this).
+- **Nothing jumps.** The planner no longer shows its welcome panel and then removes it for returning visitors, a signed-in browser doesn't show **Sign in** for a moment before the account button, and the footer's food count is in the page from the start.
+- **Where you are.** The header marks the current section on every page: **Foods** for food, category, nutrient and methodology pages, and the **Sign in** button or account button on account pages (and **Account** or **History** in its menu).
+
+The server still sends every page complete, so search engines and browsers without JavaScript see the full content; the outlines and fades exist only in the browser.
 
 ---
 
@@ -642,7 +654,7 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
   *Fixed. Account pages now carry the site name, and `/plan` always has a main heading.*
 - [ ] **L10. Keyboard gaps.** After **Add to my plan** the button is replaced and focus drops to the page, and **Open plan** in the message is the far end of the page by Tab. On the home page focus starts in search, so the skip link is only reachable with Shift+Tab.
 
-  *Partly fixed. After adding a food, focus moves to the link that replaces the button. **Still open:** the home page skip link is reachable only with Shift+Tab, because search takes focus first.*
+  *Partly fixed. After adding a food, focus moves to the link that replaces the button. After any page change focus moves to the new page's heading (L20), and the skip link works on every page. **Still open:** on the home page on a computer, search takes focus first, so the skip link is reachable only with Shift+Tab. Focus is already in the page content there, so nothing is skipped; dropping the autofocus would fix it but changes the search-first feel, which is the owner's call.*
 - [ ] **L11. Search order for "rice".** The first results are black and then red rice, ahead of everyday white or brown rice. Search `rice` on the home page.
 
   *Still open. Changing the ranking affects every search, so it needs its own test set.*
@@ -666,6 +678,24 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
 
   *Still open. A documentation job, outside this round.*
 
+The next items came from timing every main route in a headless browser (desktop 1440×900, and a 390×844 phone with a 4× slower CPU and a 150 ms connection). See [11.1](#111-moving-between-pages).
+
+- [x] **L17. Back to a search loses the results.** Search `salmon`, open a result, press Back. The address says `/?q=salmon` but the box is empty and the browse sections show.
+
+  *Fixed. The search box takes the query from the address, and results seen in this visit come back at once, at the same scroll position.*
+- [x] **L18. Back to a recipe loses your place.** Analyze the example, scroll to **Add a serving to my plan**, then **Open plan**, then Back. The editor reopens after a moment, at the top of the page.
+
+  *Fixed. The editor you left is shown at once, scrolled where it was. Back to a food page also keeps its position: the contaminant panel no longer reloads and pushes the page down.*
+- [x] **L19. The planner jumps as it loads.** Open `/plan` in a new tab. The foods step shows, then the welcome panel appears above it and pushes everything down (on a phone, most of the screen). A returning visitor sees step 1 before their own step.
+
+  *Fixed. Until it has read this browser's plan, the planner shows its frame with a placeholder, and the welcome panel only for first visits.*
+- [x] **L20. After a page change, focus is lost.** Click a food card or a header tab and press Tab: focus starts from the top of the document or stays on the header tab, and the page's content isn't announced as the place you're in.
+
+  *Fixed. Focus moves to the new page's heading, and back to the link you followed after Back. The page title is announced, as before.*
+- [x] **L21. Account pages don't show where you are.** On `/account/history` no header item is marked current. `/methodology` doesn't mark **Foods**, though its breadcrumb starts with Foods. `/plan#foods` from **Open plan** can open part-way down the page.
+
+  *Fixed. The Sign in button or account button (and its menu item) is marked current on account pages, methodology counts as Foods, and new pages always start at the top.*
+
 ## 15. What was checked, and what couldn't be
 
 **Checked and working:**
@@ -685,6 +715,21 @@ Two small gaps are listed as [L10](#14-rough-edges-checklist). No screen reader 
 | 404 pages | Friendly on food, nutrient, category and general addresses, each with a way back |
 | Console errors | None in normal use. The only ones were for the deliberate 404s, forced failures, and L8 |
 | Speed | Nothing over 1 second. Across the crawl, the typical page took 79 ms and the slowest 325 ms. Reading a recipe took about 0.4 s and a sample day about 0.1 s. This is on a laptop with no network in between, so a deployed site will be slower |
+
+**Moving between pages (13 November 2026).** Every main route was timed in headless Chromium against the production build, at 1440×900 (normal CPU, 40 ms round trips) and 390×844 (4× slower CPU, 150 ms round trips, 1.6 Mbps), median of three runs, before and after the work in [11.1](#111-moving-between-pages). "First change" is from the click to the first visible change; "settled" is when the screen stops changing, so it now includes the 0.2 s fade. Layout shift is the unexpected kind.
+
+| Route | Phone first change | Phone settled | What changed |
+|---|---|---|---|
+| Search result → food | 46 → 47 ms | 546 → 498 ms | Focus on the food's heading (was: lost) |
+| Back → search results | 26 → 34 ms | 26 → 101 ms | Results and query come back (were: empty box) |
+| Food → its category | 295 → 130 ms | 295 → 529 ms | A skeleton within 0.1 s, then the page fades in |
+| Header → Foods | 229 → 115 ms | 229 → 432 ms | Same |
+| Food → similar food | 263 → 129 ms | 263 → 479 ms | Same |
+| Back → recipe editor | 25 → 45 ms | 291 → 45 ms | Scroll 0 → 2,650 (where it was left); shift 0.26 → 0 |
+| Back → first food | 36 → 47 ms | 36 → 47 ms | Scroll back where it was; shift 0.20 → 0.09 |
+| Cold load of `/plan` | | | Layout shift 0.58 → 0.003 (desktop 0.20 → 0) |
+
+On a computer, pointing at a link fetches the page first, so the same routes open in 0.1 s and settle in about 0.3 s. Header and footer were never redrawn, there were no blank or white frames in light or dark, no theme flash on any first load, and no console errors or broken requests. With reduced motion, every swap is instant. The remaining shift on Back is the footer leaving the screen as a longer page replaces a short one. JavaScript on first load grew by about 1.8 KB gzipped per page (178.4 → 180.2 KB shared); the skeletons and the signed-in menu load separately, after the page.
 
 **Couldn't reach:**
 

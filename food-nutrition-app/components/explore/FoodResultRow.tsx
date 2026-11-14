@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import type { Food } from '@/lib/food-types';
 import { datasetInfo, fmt, foodPath, resultNutrients } from '@/lib/food-page';
 import { typicalServing } from '@/lib/servings';
@@ -31,7 +31,7 @@ export default function FoodResultRow({ food, highlight, onOpen }: FoodResultRow
     const kcal = nv(food, 'calories');
     return (
         <li className="result-item">
-            <Link href={foodPath(food)} className="result-link" onClick={onOpen}>
+            <IntentLink href={foodPath(food)} className="result-link" onClick={onOpen}>
                 <div className="result-main">
                     <div className="result-name" title={food.description}>
                         <span className="food-name">{name}</span>
@@ -64,7 +64,7 @@ export default function FoodResultRow({ food, highlight, onOpen }: FoodResultRow
                         <span className="result-stat-sub">per {serving.label}</span>
                     </div>
                 )}
-            </Link>
+            </IntentLink>
         </li>
     );
 }

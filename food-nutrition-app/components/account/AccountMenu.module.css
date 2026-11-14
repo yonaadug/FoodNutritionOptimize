@@ -25,6 +25,13 @@
 .avatar:hover { border-color: var(--primary); }
 .avatar[aria-expanded='true'] { border-color: var(--primary); }
 
+/* On an account page, the account control is the current section (like the header's tabs). */
+.signIn[aria-current='page'] { border-color: var(--primary); color: var(--primary); background: var(--primary-soft); }
+.avatar[data-current] { box-shadow: 0 0 0 2px var(--bg-page), 0 0 0 4px var(--primary); }
+.item[aria-current='page'] { color: var(--primary); font-weight: 650; }
+/* A browser that was signed in: hold the place, unseen, until the account button replaces it. */
+:global(html[data-signed-in]) .signIn[data-pending] { visibility: hidden; width: 40px; padding: 0; overflow: hidden; }
+
 .menu {
   position: absolute;
   top: calc(100% + 8px);

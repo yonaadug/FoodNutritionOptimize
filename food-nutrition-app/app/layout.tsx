@@ -3,6 +3,9 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import SiteHeader, { SkipLink } from '@/components/shell/SiteHeader';
 import SiteFooter from '@/components/shell/SiteFooter';
+import { Suspense } from 'react';
+import NavigationEffects from '@/components/shell/NavigationEffects';
+import RouteTransition from '@/components/shell/RouteTransition';
 import Toaster from '@/components/ui/Toaster';
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from '@/lib/nav';
 
@@ -35,7 +38,9 @@ export const viewport: Viewport = {
 };
 
 // Apply the saved theme (or the OS preference) before first paint to avoid a flash.
-const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','light')}})();`;
+const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.setAttribute('data-theme',t)}catch(e){document.documentElement.setAttribute('data-theme','light')}})();`
+    // Page changes: a browser that was signed in (lib/auth/client.ts's hint) keeps the header's account spot steady while it's checked.
+    + `(function(){try{if(localStorage.getItem('md.signedIn')!==null)document.documentElement.setAttribute('data-signed-in','')}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -47,7 +52,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <SkipLink />
                 <SiteHeader />
                 {/* Pages render their own <main>; this is the skip link's target. */}
-                <div id="main" tabIndex={-1} className="site-main">{children}</div>
+                {/* --- Page changes: cross-fade, scroll and focus (components/shell/RouteTransition.tsx, NavigationEffects.tsx) --- */}
+                <div id="main" tabIndex={-1} className="site-main"><RouteTransition>{children}</RouteTransition></div>
+                <Suspense fallback={null}><NavigationEffects /></Suspense>
+                {/* --- end page changes --- */}
                 <SiteFooter />
                 <Toaster />
             </body>

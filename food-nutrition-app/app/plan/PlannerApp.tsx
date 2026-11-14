@@ -22,6 +22,15 @@ import { loadSampleDay } from '@/components/planner/sampleDay';
 import { fetchHistoryItem, fetchLatestHistory, useCurrentUser } from '@/lib/auth/client';
 import { nextFromLocation, signInPath } from '@/lib/auth/next-path';
 import type { HistoryItem } from '@/lib/user-store/history';
+import { scrollBehavior } from '@/lib/navigation-ux';
+import InlineScript from '@/components/ui/InlineScript';
+
+/**
+ * Runs before the first paint of a full page load: marks a browser that already has a plan
+ * in progress, so the welcome panel (for first visits) isn't shown and then taken away.
+ * Mirrors what usePlannerState and useStep read.
+ */
+const RETURNING_SCRIPT = "try{var a=JSON.parse(localStorage.getItem('selectedFoods')||'[]'),b=JSON.parse(localStorage.getItem('guaranteedFoods')||'[]'),h=location.hash.slice(1),s=(h==='foods'||h==='goals'||h==='plan')?h:localStorage.getItem('nc.step');document.documentElement.setAttribute('data-planner',(a.length||b.length||s==='goals'||s==='plan')?'returning':'new')}catch(e){}";
 
 type OpenState = 'opening' | 'signed-out' | 'not-found' | 'too-long' | 'failed' | null;
 
@@ -46,6 +55,8 @@ export default function PlannerApp() {
     const [openState, setOpenState] = useState<OpenState>(null);
     const { user } = useCurrentUser();
     const [latestPlan, setLatestPlan] = useState<HistoryItem | null>(null);
+    // Steps fade in when the visitor moves between them, not on the first paint.
+    const [stepMoved, setStepMoved] = useState(false);
 
     // Arriving from another page ("Add to my plan" links to /plan#foods): honour the address.
     useEffect(() => { syncStepFromLocation(); }, []);
@@ -107,8 +118,9 @@ export default function PlannerApp() {
     const showWelcome = state.hydrated && foodsCount === 0 && step === 'foods' && !welcomeDismissed;
 
     const go = useCallback((s: StepId) => {
+        setStepMoved(true);
         setStep(s);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: scrollBehavior() });
     }, []);
 
     const isAdded = (id: number) => state.foods.some(f => f.id === id) || state.fixedFoods.some(f => f.food.id === id);
@@ -149,6 +161,23 @@ export default function PlannerApp() {
             : plan.status === 'loading' ? 'Working…'
                 : plan.status === 'error' ? 'Try again' : 'Not made yet';
 
+    // Until this browser's saved plan has been read (the server's HTML, and hydration), show the
+    // page's frame with a placeholder for the step, so nothing appears and then jumps away.
+    if (!state.hydrated) {
+        const noop = () => {};
+        return (
+            <main className="container main" data-step={step}>
+                <InlineScript html={RETURNING_SCRIPT} />
+                <div className="planner-welcome-slot">
+                    <Welcome onSample={noop} onScratch={noop} loading={false} error={null} />
+                </div>
+                <Stepper step={step} onStep={noop} foodsCount={0} goalsLabel={`${goalsLabel} · ${goalsCount} ${goalsCount === 1 ? 'goal' : 'goals'}`}
+                    planLabel={planLabel} planDone={false} />
+                <div className="skeleton sk-panel planner-pending" aria-hidden="true" />
+            </main>
+        );
+    }
+
     return (
         <>
             <main className="container main" data-step={step}>
@@ -187,13 +216,14 @@ export default function PlannerApp() {
                 <Stepper step={step} onStep={go} foodsCount={foodsCount} goalsLabel={`${goalsLabel} · ${goalsCount} ${goalsCount === 1 ? 'goal' : 'goals'}`}
                     planLabel={planLabel} planDone={plan.status === 'success' && !plan.stale} />
 
+                <div key={step} className={stepMoved ? 'step-panel' : undefined}>
                 {step === 'foods' && (
                     <div className="stack-lg">
                         <div className="layout-2col">
                             <FoodFinder isAdded={isAdded} onToggle={toggleFood} searchInputRef={searchRef} />
                             <div className="sticky-col">
                                 <YourFoods foods={state.foods} fixedFoods={state.fixedFoods} foodLimits={state.foodLimits}
-                                    onCompare={() => { setComparing(true); requestAnimationFrame(() => document.getElementById('compare')?.scrollIntoView({ behavior: 'smooth' })); }}
+                                    onCompare={() => { setComparing(true); requestAnimationFrame(() => document.getElementById('compare')?.scrollIntoView({ behavior: scrollBehavior() })); }}
                                     onCleared={() => setWelcomeDismissed(true)}
                                     onTrySample={trySample} sampleLoading={sampleLoading} sampleError={showWelcome ? null : sampleError} />
                             </div>
@@ -212,6 +242,7 @@ export default function PlannerApp() {
                         onRun={() => plan.run()} onEditFoods={() => go('foods')} onEditGoals={() => go('goals')}
                         onTrySample={trySample} sampleLoading={sampleLoading} sampleError={sampleError} />
                 )}
+                </div>
             </main>
 
             <ActionBar step={step} foodsCount={foodsCount} goalsLabel={goalsLabel} goalsCount={goalsCount}

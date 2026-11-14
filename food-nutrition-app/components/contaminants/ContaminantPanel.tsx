@@ -7,9 +7,13 @@ import {
     type BasedOn, type ContaminantGroup, type ContaminantItem, type ContaminantReport, type Meter as MeterData,
 } from '@/lib/contaminants-meter';
 import { formatGrams } from '@/lib/serving-scale';
+import { RecentCache } from '@/lib/navigation-ux';
 import styles from './ContaminantPanel.module.css';
 
 const FETCH_DELAY_MS = 200;
+
+/** Reports already shown in this visit, by food and serving, so Back shows the panel at once (and the page doesn't shift). */
+const seenReports = new RecentCache<ContaminantReport>(40);
 
 interface LoadState {
     key: string;
@@ -292,17 +296,20 @@ function Group({ group }: { group: ContaminantGroup }) {
  */
 export default function ContaminantPanel({ fdcId, servingGrams }: { fdcId: number; servingGrams: number }) {
     const titleId = useId();
-    const [state, setState] = useState<LoadState | null>(null);
     const [attempt, setAttempt] = useState(0);
     const key = `${fdcId}:${servingGrams}:${attempt}`;
+    const seen = attempt === 0 ? seenReports.get(`${fdcId}:${servingGrams}`) : undefined;
+    const [state, setState] = useState<LoadState | null>(null);
 
     useEffect(() => {
+        if (seen) return;
         const controller = new AbortController();
         const timer = setTimeout(async () => {
             try {
                 const res = await fetch(`/api/contaminants?fdcId=${encodeURIComponent(fdcId)}&grams=${encodeURIComponent(servingGrams)}`, { signal: controller.signal });
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const report = await res.json() as ContaminantReport;
+                seenReports.set(`${fdcId}:${servingGrams}`, report);
                 setState({ key, report, failed: false });
             } catch {
                 if (!controller.signal.aborted) setState({ key, report: null, failed: true });
@@ -312,12 +319,12 @@ export default function ContaminantPanel({ fdcId, servingGrams }: { fdcId: numbe
             clearTimeout(timer);
             controller.abort();
         };
-    }, [fdcId, servingGrams, key]);
+    }, [fdcId, servingGrams, key, seen]);
 
-    const loading = state?.key !== key;
-    const report = state?.report ?? null;
+    const loading = !seen && state?.key !== key;
+    const report = seen ?? state?.report ?? null;
 
-    if (state?.failed && !loading) {
+    if (!seen && state?.failed && !loading) {
         return (
             <section className={`panel ${styles.panel}`} aria-labelledby={titleId}>
                 <h2 className={styles.title} id={titleId}>Contaminants</h2>

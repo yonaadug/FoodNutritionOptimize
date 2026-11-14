@@ -1,3 +1,5 @@
+import type { EntitlementRecord } from '@/lib/billing/entitlements';
+import { ENT_SK, toEntitlementRecord, toUsageEntry, USAGE_PREFIX } from './entitlements';
 import { HISTORY_LIMITS, type HistoryInput, type HistoryItem } from './history';
 import { nowSeconds, type ItemKey, type SingleTable, type TableItem } from './table';
 
@@ -46,6 +48,10 @@ export interface AccountExport {
     profile: UserProfile | null;
     signInMethods: { providerId: string; createdAt: unknown }[];
     history: HistoryItem[];
+    /** The plan record (trial start, Stripe ids and status), when there is one. */
+    plan?: EntitlementRecord | null;
+    /** AI photo reads per counter, e.g. { counter: 'photo#free#2026-11', count: 2 }. */
+    usage?: { counter: string; count: number }[];
 }
 
 const iso = (value: unknown): string => {
@@ -216,10 +222,12 @@ export class UserStore {
     /** Everything we hold about a person, minus secrets (provider tokens are never exported). */
     async exportAccount(userId: string): Promise<AccountExport> {
         const pk = userPk(userId);
-        const [profile, accounts, history] = await Promise.all([
+        const [profile, accounts, history, ent, usage] = await Promise.all([
             this.getProfile(userId),
             this.readAll(pk, ACCOUNT_SK_PREFIX),
             this.readAll(pk, HIST_PREFIX),
+            this.table.get({ PK: pk, SK: ENT_SK }),
+            this.readAll(pk, USAGE_PREFIX),
         ]);
         return {
             format: 'nutrition-dictionary-account-export',
@@ -228,6 +236,8 @@ export class UserStore {
             profile,
             signInMethods: accounts.map(a => ({ providerId: String(a.providerId), createdAt: a.createdAt })),
             history: history.map(toHistoryItem).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+            plan: ent ? toEntitlementRecord(ent) : null,
+            usage: usage.map(toUsageEntry),
         };
     }
 

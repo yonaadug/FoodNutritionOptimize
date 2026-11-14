@@ -358,50 +358,23 @@ export class NutritionDictionaryStack extends Stack {
       ],
     }) : undefined;
 
-    // What CloudFront forwards to the app. Not the managed AllViewerExceptHostHeader policy:
-    // with origin access control on a Lambda URL, forwarding every viewer header made every
-    // request fail with AccessDeniedException (first dev deploy, 2026-11-14), while the
-    // static-file behavior, which forwards none, worked. So: all cookies and query strings,
-    // and only the headers the app reads (CloudFront allows 10 per policy):
-    //   cloudfront-viewer-address  client IP for rate limits (AUTH_IP_HEADERS)
-    //   origin, sec-fetch-site     same-origin checks on account routes
-    //   content-type               JSON bodies and raw photo uploads
-    // (x-amz-content-sha256, the body hash OAC needs for POST, can't be listed: CloudFront
-    // passes it to the signer itself; lib/same-origin-fetch.ts sends it.)
-    //   rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch,
-    //   next-url                   Next.js client-side navigation (React Server Components)
-    const originRequestPolicy = new cloudfront.OriginRequestPolicy(this, 'AppOriginRequest', {
-      originRequestPolicyName: `nutrition-dictionary-${props.stage}-app`,
-      comment: 'Cookies, query strings and the headers the app reads',
-      cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
-      queryStringBehavior: cloudfront.OriginRequestQueryStringBehavior.all(),
-      headerBehavior: cloudfront.OriginRequestHeaderBehavior.allowList(
-        'cloudfront-viewer-address', 'origin', 'sec-fetch-site', 'content-type',
-        'rsc', 'next-router-state-tree', 'next-router-prefetch', 'next-router-segment-prefetch', 'next-url',
-      ),
-    });
-    // How long CloudFront keeps a response: whatever the app's Cache-Control says (nothing
-    // when it says nothing), keyed on the query string only. Not the managed
-    // UseOriginCacheControlHeaders policy: its cache key includes the Host header, which
-    // CloudFront then forwards, so Lambda saw the site's hostname instead of its own URL and
-    // refused the signed request (AccessDeniedException). Next.js puts RSC variants in the
-    // `_rsc` query parameter, so the query string is enough to keep them apart; cookies are
-    // forwarded (above) but left out of the key, as signed-in responses are `private`.
-    const appCachePolicy = new cloudfront.CachePolicy(this, 'AppCache', {
-      cachePolicyName: `nutrition-dictionary-${props.stage}-app`,
-      comment: 'Honor origin Cache-Control; key on the query string only (never Host)',
-      minTtl: Duration.seconds(0),
-      defaultTtl: Duration.seconds(0),
-      maxTtl: Duration.days(365),
-      queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
-      headerBehavior: cloudfront.CacheHeaderBehavior.none(),
-      cookieBehavior: cloudfront.CacheCookieBehavior.none(),
-      enableAcceptEncodingGzip: true,
-      enableAcceptEncodingBrotli: true,
-    });
+    // What CloudFront forwards and caches for the app. Two constraints, both learned on the
+    // first dev deploys (2026-11-14):
+    //  - The Free flat-rate plan accepts only AWS-managed cache and origin request policies;
+    //    custom ones are Business tier and up ("not eligible for this subscription tier").
+    //  - With origin access control on a Lambda URL, the request must not carry the site's
+    //    Host: the managed UseOriginCacheControlHeaders* cache policies put Host in the cache
+    //    key, CloudFront then forwards it, and Lambda refuses the signed request
+    //    (AccessDeniedException on every page).
+    // So: managed CachingDisabled (no Host in the key) and managed AllViewerExceptHostHeader,
+    // which forwards cookies, query strings and every viewer header but Host, including
+    // CloudFront-Viewer-Address (the client IP for rate limits). Pages and API responses
+    // aren't cached at the edge; /_next/static/* below is.
+    const appCachePolicy = cloudfront.CachePolicy.CACHING_DISABLED;
+    const originRequestPolicy = cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
     // The Stripe webhook's origin has no OAC (Stripe can't sign for it) and needs
     // stripe-signature, so it keeps forwarding every viewer header.
-    const webhookOriginRequestPolicy = cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER;
+    const webhookOriginRequestPolicy = originRequestPolicy;
     const distribution = new cloudfront.Distribution(this, 'Cdn', {
       comment: `nutrition-dictionary-${props.stage}`,
       domainNames: [props.siteDomain, ...props.redirectDomains],

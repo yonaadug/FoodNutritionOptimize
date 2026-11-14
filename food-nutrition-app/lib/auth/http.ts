@@ -19,7 +19,12 @@ export type AccountErrorCode =
     | 'not_found'
     | 'rate_limited'
     | 'service_unavailable'
-    | 'internal_error';
+    | 'internal_error'
+    // Plans and billing (lib/billing)
+    | 'plus_required'
+    | 'billing_unavailable'
+    | 'conflict'
+    | 'subscription_cancel_failed';
 
 export class AccountError extends Error {
     status: number;

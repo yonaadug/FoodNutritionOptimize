@@ -67,6 +67,11 @@ for (const backend of backends) {
             assert.equal((await ents.get(id))?.stripeLivemode, false);
             assert.equal(await ents.userIdForCustomer(`cus_${id}`), id);
             assert.equal(await ents.userIdForCustomer('cus_nobody'), null);
+            // A customer in the other Stripe mode replaces the first, and the old pointer goes.
+            await ents.linkCustomer(id, `cus_live_${id}`, true);
+            assert.equal(await ents.userIdForCustomer(`cus_${id}`), null);
+            assert.equal(await ents.userIdForCustomer(`cus_live_${id}`), id);
+            assert.equal((await ents.get(id))?.stripeLivemode, true);
         });
 
         it('counts photo usage per counter, and can give a read back', async () => {

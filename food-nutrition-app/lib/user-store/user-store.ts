@@ -169,6 +169,12 @@ export class UserStore {
         return { items: page.items.map(toHistoryItem), nextCursor: page.cursor ?? null };
     }
 
+    /** How many items of a kind are stored (the cap counter). */
+    async countHistory(userId: string, kind: string): Promise<number> {
+        const item = await this.table.get({ PK: userPk(userId), SK: countSk(kind) });
+        return typeof item?.count === 'number' ? Math.max(0, item.count) : 0;
+    }
+
     /** One item, or null. Read directly by key, so it is never behind an index. */
     async getHistoryItem(userId: string, kind: string, itemId: string): Promise<HistoryItem | null> {
         const item = await this.table.get({ PK: userPk(userId), SK: histSk(kind, itemId) });

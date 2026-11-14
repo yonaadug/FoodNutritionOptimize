@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import { planSummary } from '@/lib/billing/summary';
 import type { CurrentUser } from './client';
 import { hasSessionCookie, publicUser } from './handlers';
 import { logError } from './log';
@@ -15,7 +16,8 @@ export async function getPageUser(): Promise<CurrentUser | null> {
         const deps = await getAccountDeps();
         const session = await deps.auth.api.getSession({ headers: requestHeaders });
         const profile = session?.user ? await deps.store.getProfile(session.user.id) : null;
-        return profile ? publicUser(profile) : null;
+        if (!profile) return null;
+        return { ...publicUser(profile), plan: await planSummary(deps.table, profile.id, Boolean(deps.stripe?.config.ok)) };
     } catch (err) {
         logError('account-page', err);
         return null;

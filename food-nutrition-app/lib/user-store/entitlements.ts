@@ -89,10 +89,16 @@ export class EntitlementStore {
         for (let attempt = 0; attempt < 6; attempt++) {
             const item = await this.table.get(entKey(userId));
             if (!item) return null;
-            const pointers = (Array.isArray(item._ptrs) ? (item._ptrs as ItemKey[]) : []).filter(p => !p.PK.startsWith('STRIPECUS#') || p.PK === customerKey(customerId).PK);
-            if (!pointers.some(p => p.PK === customerKey(customerId).PK)) pointers.push(customerKey(customerId));
+            const target = customerKey(customerId);
+            const old = Array.isArray(item._ptrs) ? (item._ptrs as ItemKey[]) : [];
+            // A customer from the other Stripe mode is replaced, and its pointer removed.
+            const stale = old.filter(p => p.PK.startsWith('STRIPECUS#') && p.PK !== target.PK);
+            const pointers = [...old.filter(p => !stale.includes(p) && p.PK !== target.PK), target];
             const record = { ...toEntitlementRecord(item), stripeCustomerId: customerId, stripeLivemode: livemode, updatedAt: new Date().toISOString() };
-            if (await this.table.put({ ...entKey(userId), ...record, _ptrs: pointers }, { ifVersion: item._v ?? 0 })) return record;
+            if (await this.table.put({ ...entKey(userId), ...record, _ptrs: pointers }, { ifVersion: item._v ?? 0 })) {
+                if (stale.length) await this.table.deleteMany(stale);
+                return record;
+            }
         }
         throw new Error('EntitlementStore.linkCustomer: too much contention');
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useSyncExternalStore } from 'react';
+import type { PlanSummary } from '@/lib/billing/types';
 import type { HistoryItem } from '@/lib/user-store/history';
 import { LOCAL_DATA_CLEARED_EVENT, reconcileLocalData } from '@/lib/local-data';
 import { afterSignInPath, signInPath } from './next-path';
@@ -20,6 +21,8 @@ export interface CurrentUser {
     displayName: string;
     preferences: Record<string, unknown>;
     createdAt: string;
+    /** The plan, trial and photo quota (lib/billing/types.ts). Absent from older responses. */
+    plan?: PlanSummary | null;
 }
 
 export interface HistoryRecord {

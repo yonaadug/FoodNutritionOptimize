@@ -53,6 +53,8 @@ const ELASTIC_FOOD_PENALTY = 10;
 const MIP_GAP = 0.05;
 /** One MILP solve's share of the request's time budget. */
 const SOLVE_MS = 2000;
+/** With the back-to-back penalty, a first plan can be slow to find: give up sooner and drop it. */
+const PENALISED_SOLVE_MS = 1500;
 
 function solve(model: JsModel, timeLimitMs?: number, mipGap = MIP_GAP): Promise<Solved> {
     return solveWithHighs(model, { timeLimit: timeLimitMs === undefined ? undefined : timeLimitMs / 1000, mipGap });
@@ -190,6 +192,8 @@ interface BuildOptions {
     relaxed?: boolean;
     /** Lift the general portion cap (diagnosis). */
     noGeneralCap?: boolean;
+    /** No back-to-back penalty (the fallback when a plan can't be found in time). */
+    noBackToBack?: boolean;
 }
 
 function nutrientRow(key: string, day: number | null): string {
@@ -298,7 +302,7 @@ export function buildWeekModel(p: Prepared, opts: BuildOptions = {}): BuiltWeekM
         }
         if (relaxed || exempt) continue;
         if (state.includes('var')) C[`v|${it.index}`] = { max: Math.max(0, K - lockedUses) };
-        if (settings.avoidBackToBack) {
+        if (settings.avoidBackToBack && !opts.noBackToBack) {
             for (let d = 0; d + 1 < days; d++) {
                 const pair = [d, d + 1];
                 const ones = pair.filter(e => state[e] === 'one').length;
@@ -559,24 +563,38 @@ export async function planWeek(params: WeekParams): Promise<WeekResult> {
     const budget = Math.min(WEEK_LIMITS.timeLimitMs, Math.max(200, params.timeLimitMs ?? WEEK_LIMITS.timeLimitMs));
     const deadline = started + budget;
     const left = (cap = budget) => Math.max(200, Math.min(cap, deadline - performance.now()));
-    const built = buildWeekModel(p);
-    const sol = await solve(built.model, left(SOLVE_MS));
-    const elapsed = performance.now() - started;
-    const timedOut = sol.timeLimited;
-
-    if (sol.feasible) {
-        const days = extractDays(built, sol);
-        const used = new Set(days.flatMap(d => d.entries.map(e => e.foodId)));
+    // A tight week can take HiGHS longer than the budget to find any plan with the back-to-back
+    // penalty; without it the search is much easier, so that's the fallback.
+    let lastBuilt: BuiltWeekModel | null = null;
+    let anyTimedOut = false;
+    const attempt = async (opts: BuildOptions) => {
+        let m = buildWeekModel(p, opts);
+        let s = await solve(m.model, left(p.settings.avoidBackToBack ? PENALISED_SOLVE_MS : SOLVE_MS));
+        if (!s.feasible && s.timeLimited && p.settings.avoidBackToBack) {
+            anyTimedOut = true;
+            m = buildWeekModel(p, { ...opts, noBackToBack: true });
+            s = await solve(m.model, left(SOLVE_MS));
+        }
+        if (!s.feasible && s.timeLimited) anyTimedOut = true;
+        lastBuilt = m;
+        return { m, s };
+    };
+    const success = (m: BuiltWeekModel, sol: Solved, varietyUsed?: number): WeekResult => {
+        const days = extractDays(m, sol);
         return {
             ...base,
             success: true,
             days,
             foods: foodsUsed(p, days),
             weekTotals: weekTotals(days),
-            solver: solverInfo(built, elapsed, timedOut ? 'time_limit' : 'optimal'),
-            warnings: warningsFor(p, used),
+            ...(varietyUsed !== undefined ? { varietyUsed } : {}),
+            solver: solverInfo(m, performance.now() - started, sol.timeLimited ? 'time_limit' : 'optimal'),
+            warnings: warningsFor(p, new Set(days.flatMap(d => d.entries.map(e => e.foodId)))),
         };
-    }
+    };
+
+    const first = await attempt({});
+    if (first.s.feasible) return success(first.m, first.s);
 
     // No week found: explain why, in the day planner's terms.
     const relaxed = await solve(buildWeekModel(p, { relaxed: true }).model, left());
@@ -585,10 +603,7 @@ export async function planWeek(params: WeekParams): Promise<WeekResult> {
     let issues: OptimizationIssue[] = [];
     let varietyNeeded: number | undefined;
     let portionCapBinding = false;
-    if (timedOut && relaxed.feasible) {
-        diagnosis = 'time';
-        message = 'The week planner ran out of time before it found a plan. Try fewer foods, a looser variety limit, or lock a day you like.';
-    } else if (!relaxed.feasible) {
+    if (!relaxed.feasible) {
         diagnosis = p.locks.length > 0 || p.lockedDays.size > 0 ? 'locks' : 'nutrients';
         ({ message, issues } = await diagnoseNutrients(p, left()));
         portionCapBinding = p.items.some(i => i.generalCap) && (await solve(buildWeekModel(p, { relaxed: true, noGeneralCap: true }).model, left())).feasible;
@@ -600,25 +615,18 @@ export async function planWeek(params: WeekParams): Promise<WeekResult> {
         const k = p.settings.maxDaysPerFood;
         for (const candidate of [k + 1, k + 2, p.settings.days]) {
             if (candidate <= k || candidate > p.settings.days || varietyNeeded !== undefined) continue;
-            const m = buildWeekModel(p, { maxDaysPerFood: candidate });
-            const s2 = await solve(m.model, left(SOLVE_MS));
-            if (!s2.feasible) continue;
-            varietyNeeded = candidate;
-            const days = extractDays(m, s2);
-            return {
-                ...base,
-                success: true,
-                days,
-                foods: foodsUsed(p, days),
-                weekTotals: weekTotals(days),
-                varietyUsed: candidate,
-                solver: solverInfo(m, performance.now() - started, s2.timeLimited ? 'time_limit' : 'optimal'),
-                warnings: warningsFor(p, new Set(days.flatMap(d => d.entries.map(e => e.foodId)))),
-            };
+            const r = await attempt({ maxDaysPerFood: candidate });
+            if (r.s.feasible) return success(r.m, r.s, candidate);
         }
-        diagnosis = 'portions';
-        message = 'Optimization Failed:\n• These foods can meet your goals only in very small amounts of some foods. The week planner uses at least half a serving of a food when it uses it at all. Add more foods, or loosen a goal.';
+        if (anyTimedOut) {
+            diagnosis = 'time';
+            message = 'The week planner ran out of time before it found a plan. Try again, use fewer foods, allow foods on more days, or lock a day you like.';
+        } else {
+            diagnosis = 'portions';
+            message = 'Optimization Failed:\n• These foods can meet your goals only in very small amounts of some foods. The week planner uses at least half a serving of a food when it uses it at all. Add more foods, or loosen a goal.';
+        }
     }
+    const built = lastBuilt ?? first.m;
     return {
         ...base,
         success: false,

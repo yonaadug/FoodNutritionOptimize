@@ -141,6 +141,32 @@ export async function solveWithHighs(model: JsModel, opts: SolveOptions = {}): P
             if (typeof v === 'number' && Number.isFinite(v)) out[name] = v;
         });
         out.result = res.ObjectiveValue;
+        // A stop at a limit can come back with values that aren't a solution (no incumbent yet).
+        if (res.Status !== 'Optimal' && !satisfies(model, out)) out.feasible = false;
     }
     return out;
+}
+
+/** Whether values meet every row and integrality of a model, within solver tolerances. */
+export function satisfies(model: JsModel, values: Record<string, number>, tol = 1e-5): boolean {
+    const activity: Record<string, number> = {};
+    for (const [name, coeffs] of Object.entries(model.variables)) {
+        const v = values[name] ?? 0;
+        if (v < -tol) return false;
+        if (!v) continue;
+        for (const [row, c] of Object.entries(coeffs)) activity[row] = (activity[row] ?? 0) + c * v;
+    }
+    for (const [row, b] of Object.entries(model.constraints)) {
+        const a = activity[row] ?? 0;
+        const slack = tol * Math.max(1, Math.abs(b.min ?? 0), Math.abs(b.max ?? 0), Math.abs(b.equal ?? 0));
+        if (b.equal !== undefined && Math.abs(a - b.equal) > slack) return false;
+        if (b.min !== undefined && a < b.min - slack) return false;
+        if (b.max !== undefined && a > b.max + slack) return false;
+    }
+    for (const name of [...Object.keys(model.ints ?? {}), ...Object.keys(model.binaries ?? {})]) {
+        const v = values[name] ?? 0;
+        if (Math.abs(v - Math.round(v)) > 1e-4) return false;
+        if (model.binaries?.[name] && v > 1 + 1e-4) return false;
+    }
+    return true;
 }

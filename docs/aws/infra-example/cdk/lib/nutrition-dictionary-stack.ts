@@ -91,6 +91,18 @@ export class NutritionDictionaryStack extends Stack {
       principals: [new iam.ServicePrincipal('budgets.amazonaws.com')],
       resources: [alerts.topicArn],
     }));
+    // And this account's CloudWatch alarms. Adding any statement replaces SNS's default
+    // policy, so without this every alarm action failed ("Failed to execute action"),
+    // found by a test alarm on prod, 2026-11-15.
+    alerts.addToResourcePolicy(new iam.PolicyStatement({
+      actions: ['sns:Publish'],
+      principals: [new iam.ServicePrincipal('cloudwatch.amazonaws.com')],
+      resources: [alerts.topicArn],
+      conditions: {
+        ArnLike: { 'aws:SourceArn': `arn:aws:cloudwatch:${this.region}:${this.account}:alarm:*` },
+        StringEquals: { 'aws:SourceAccount': this.account },
+      },
+    }));
     const alarmAction = new cwActions.SnsAction(alerts);
 
     // ------------------------------------------------------------ data store
@@ -558,6 +570,70 @@ export class NutritionDictionaryStack extends Stack {
       namespace: 'NutritionDictionary', metricName: 'AiSpendMicroUsd',
       dimensionsMap: { Stage: props.stage }, statistic: 'Sum', period: Duration.days(1),
     }), Math.round(props.aiDailyBudgetUsd * 0.8 * 1_000_000));
+
+    // ---------------------------------------------------------- sign-in email (prod)
+    // The tracker promised to AWS in the SES production-access case: SES publishes
+    // account-level metrics (no dimensions) to AWS/SES. Any complaint emails the owner,
+    // and the rate alarms fire before AWS's own thresholds (it warns at 5% bounces and
+    // 0.1% complaints, and reviews the account at 10% and 0.5%). Dev sends no real email.
+    if (isProd) {
+      const ses = (metricName: string, statistic: string, period: Duration, label?: string) =>
+        new cw.Metric({ namespace: 'AWS/SES', metricName, statistic, period, label });
+      alarm('EmailComplaint', ses('Complaint', 'Sum', Duration.hours(1)), 0);
+      alarm('EmailBounceRate', ses('Reputation.BounceRate', 'Maximum', Duration.hours(1)), 0.04);
+      alarm('EmailComplaintRate', ses('Reputation.ComplaintRate', 'Maximum', Duration.hours(1)), 0.0008);
+
+      const daily = (name: string, label: string) => ses(name, 'Sum', Duration.days(1), label);
+      const week = (name: string, label: string) => ses(name, 'Sum', Duration.days(7), label);
+      new cw.Dashboard(this, 'EmailDashboard', {
+        dashboardName: `nutrition-dictionary-${props.stage}-email`,
+        defaultInterval: Duration.days(30),
+        widgets: [
+          [new cw.TextWidget({
+            width: 24, height: 2,
+            markdown: '### Sign-in email health\nEvery email is a sign-in link someone asked for. **Any complaint** emails an alert. '
+              + 'Bounce and complaint rates alert at 4% and 0.08%, before AWS warns (5% and 0.1%) or reviews the account (10% and 0.5%). '
+              + 'Addresses that bounced or complained are in SES → Suppression list, and get no more email.',
+          })],
+          [new cw.SingleValueWidget({
+            title: 'Last 7 days', width: 24, height: 4, setPeriodToTimeRange: true,
+            metrics: [week('Send', 'Sent'), week('Delivery', 'Delivered'), week('Bounce', 'Bounced'), week('Complaint', 'Complaints')],
+          })],
+          [
+            new cw.GraphWidget({
+              title: 'Emails per day', width: 24, height: 6,
+              left: [daily('Send', 'Sent'), daily('Delivery', 'Delivered'), daily('Bounce', 'Bounced'), daily('Complaint', 'Complaints')],
+              leftYAxis: { min: 0 },
+            }),
+          ],
+          [
+            new cw.GraphWidget({
+              title: 'Bounce rate', width: 12, height: 6,
+              left: [ses('Reputation.BounceRate', 'Maximum', Duration.hours(1), 'Bounce rate')],
+              leftYAxis: { min: 0 },
+              leftAnnotations: [
+                { value: 0.04, label: 'Alert (4%)', color: '#ff7f0e' },
+                { value: 0.05, label: 'AWS warns (5%)', color: '#d62728' },
+                { value: 0.10, label: 'AWS reviews (10%)', color: '#7f0000' },
+              ],
+            }),
+            new cw.GraphWidget({
+              title: 'Complaint rate', width: 12, height: 6,
+              left: [ses('Reputation.ComplaintRate', 'Maximum', Duration.hours(1), 'Complaint rate')],
+              leftYAxis: { min: 0 },
+              leftAnnotations: [
+                { value: 0.0008, label: 'Alert (0.08%)', color: '#ff7f0e' },
+                { value: 0.001, label: 'AWS warns (0.1%)', color: '#d62728' },
+                { value: 0.005, label: 'AWS reviews (0.5%)', color: '#7f0000' },
+              ],
+            }),
+          ],
+        ],
+      });
+      new CfnOutput(this, 'EmailDashboardUrl', {
+        value: `https://${this.region}.console.aws.amazon.com/cloudwatch/home?region=${this.region}#dashboards/dashboard/nutrition-dictionary-${props.stage}-email`,
+      });
+    }
 
     // ---------------------------------------------------------------- budget
     // Whole-account cost (includes Claude's AWS Marketplace charges). Budgets data lags by

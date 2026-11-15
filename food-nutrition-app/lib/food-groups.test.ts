@@ -56,12 +56,46 @@ describe('foodGroupOf: the grouping key', () => {
         assert.notEqual(key('Salmon nuggets, breaded, frozen, heated'), 'salmon');
     });
 
-    it('groups rice by name; wild rice and rice cakes are other foods', () => {
-        assert.equal(key('Rice, white, long-grain, regular, enriched, cooked'), 'rice');
-        assert.equal(key('Rice, white, long grain, unenriched, raw'), 'rice');
-        assert.equal(key('Rice, brown, long-grain, cooked (Includes foods for USDA\'s Food Distribution Program)'), 'rice');
-        assert.notEqual(key('Wild rice, cooked'), 'rice');
+    it('splits rice by kind: white, brown, wild; rice cakes are another food', () => {
+        assert.equal(key('Rice, white, long-grain, regular, enriched, cooked'), 'white rice');
+        assert.equal(key('Rice, white, long grain, unenriched, raw'), 'white rice');
+        assert.equal(foodGroupOf('Rice, white, long grain, unenriched, raw').name, 'White rice');
+        assert.equal(foodGroupOf('Rice, white, long grain, unenriched, raw').detail, 'long grain, unenriched, raw');
+        assert.equal(key('Rice, brown, long-grain, cooked (Includes foods for USDA\'s Food Distribution Program)'), 'brown rice');
+        assert.equal(foodGroupOf('Rice, brown, long-grain, cooked').name, 'Brown rice');
+        assert.equal(key('Wild rice, cooked'), 'wild rice');
+        assert.equal(key('Rice, fried, with chicken'), 'fried rice');
+        assert.equal(key('Rice, cooked with coconut milk'), 'rice');
         assert.notEqual(key('Rice cake, cracker (include hain mini rice cakes)'), 'rice');
+    });
+
+    it('groups meat and poultry by cut, not by animal', () => {
+        assert.equal(foodGroupOf('Beef, ground, 85% lean meat / 15% fat, raw').name, 'Ground beef');
+        assert.equal(foodGroupOf('Beef, ground, 85% lean meat / 15% fat, raw').detail, '85% lean meat / 15% fat, raw');
+        assert.equal(foodGroupOf('Beef, round, top round, separable lean only, trimmed to 0" fat, select, raw').name, 'Beef round');
+        assert.notEqual(key('Beef, ground, 80% lean meat / 20% fat, raw'), key('Beef, round, eye of round, raw'));
+        assert.equal(foodGroupOf('Beef, variety meats and by-products, liver, raw').name, 'Beef liver');
+        assert.equal(foodGroupOf('Pork, fresh, loin, whole, separable lean only, raw').name, 'Pork loin');
+        assert.equal(foodGroupOf('Lamb, New Zealand, imported, leg chop/steak, separable lean only, raw').name, 'Lamb leg chop/steak');
+        assert.equal(foodGroupOf('Lamb, New Zealand, imported, leg chop/steak, separable lean only, raw').detail, 'New Zealand, imported, separable lean only, raw');
+        assert.equal(foodGroupOf('Turkey, whole, breast, meat only, raw').name, 'Turkey breast');
+        assert.equal(foodGroupOf('Veal, leg (top round), separable lean only, raw').name, 'Veal leg');
+        assert.equal(foodGroupOf('Game meat, deer, ground, raw').name, 'Ground deer');
+        // Chicken breast from every USDA dataset is one food.
+        const breast = key('Chicken, broilers or fryers, breast, meat only, cooked, roasted');
+        assert.equal(breast, 'chicken breast');
+        assert.equal(key('Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw'), breast);
+        assert.equal(key('Chicken, breast, boneless, skinless, raw'), breast);
+        assert.equal(key('Chicken breast, baked, coated, skin / coating eaten'), breast);
+        assert.equal(key('Chicken, broiler, rotisserie, BBQ, breast, meat only'), breast);
+        assert.equal(foodGroupOf('Chicken, dark meat, thigh, meat only, cooked').name, 'Chicken thigh');
+        assert.equal(foodGroupOf('Chicken, dark meat, thigh, meat only, cooked').detail, 'dark meat, meat only, cooked');
+        assert.equal(foodGroupOf('Chicken, broilers or fryers, dark meat, meat only, raw').name, 'Chicken dark meat');
+        // Compound products stay their own food.
+        assert.notEqual(key('Chicken breast tenders, breaded, cooked, microwaved'), breast);
+        // No cut named: the animal itself.
+        assert.equal(foodGroupOf('Chicken, broilers or fryers, meat only, cooked, roasted').name, 'Chicken');
+        assert.equal(foodGroupOf('Beef, composite of trimmed retail cuts, separable lean only, trimmed to 0" fat, all grades, raw').name, 'Beef');
     });
 
     it('keeps each cheese its own food (Cheddar vs Swiss), across USDA datasets', () => {
@@ -79,8 +113,18 @@ describe('foodGroupOf: the grouping key', () => {
         assert.notEqual(key('Beans, black, mature seeds, raw'), key('Beans, snap, green, raw'));
     });
 
-    it('treats singular and plural names as one food (Egg / Eggs)', () => {
-        assert.equal(key('Egg, whole, raw, fresh'), key('Eggs, Grade A, Large, egg whole'));
+    it('treats Egg / Eggs as one food, split by part, and other birds\' eggs apart', () => {
+        const whole = key('Eggs, Grade A, Large, egg whole');
+        assert.equal(key('Egg, whole, raw, frozen, pasteurized'), whole);
+        assert.equal(key('Egg, whole, cooked, hard-boiled'), whole);
+        assert.equal(foodGroupOf('Eggs, Grade A, Large, egg whole').name, 'Egg');
+        assert.equal(foodGroupOf('Eggs, Grade A, Large, egg whole').detail, 'Grade A, Large');
+        assert.equal(foodGroupOf('Eggs, Grade A, Large, egg white').name, 'Egg white');
+        assert.equal(key('Egg, white, raw, frozen, pasteurized'), key('Eggs, Grade A, Large, egg white'));
+        assert.equal(foodGroupOf('Egg, yolk, dried').name, 'Egg yolk');
+        assert.notEqual(key('Egg, yolk, dried'), whole);
+        assert.equal(foodGroupOf('Egg, duck, whole, fresh, raw').name, 'Duck egg');
+        assert.notEqual(key('Egg white sandwich'), key('Eggs, Grade A, Large, egg white'));
     });
 
     it('splits catch-all names (Soup, Oil, Snacks, ...) by the food they name', () => {
@@ -98,7 +142,7 @@ describe('foodGroupOf: the grouping key', () => {
         assert.equal(key("McDONALD'S, Big Mac"), key("McDONALD'S, Big Mac (without sauce)"));
         assert.notEqual(key('QUAKER, Instant Oatmeal, apple and cinnamon'), key('QUAKER, Oatmeal Squares cereal'));
         // A brand in the detail does not split the food: this is still brown rice.
-        assert.equal(key('Rice, brown, parboiled, cooked, UNCLE BENS'), 'rice');
+        assert.equal(key('Rice, brown, parboiled, cooked, UNCLE BENS'), 'brown rice');
     });
 
     it('a food with no comma is its own group', () => {
@@ -118,6 +162,10 @@ describe('typeKind', () => {
         assert.equal(typeKind('Rice, white, glutinous, unenriched, uncooked'), 'raw');
         assert.equal(typeKind('Rice, white, with peas, fat added'), 'other');
         assert.equal(typeKind('Peas, green, frozen, cooked, boiled, drained, without salt'), 'cooked');
+        // Dry milk and dry pasta are not "raw".
+        assert.equal(typeKind('Milk, dry, nonfat, regular, without added vitamin A and vitamin D'), 'other');
+        assert.equal(typeKind('Pasta, dry, enriched'), 'other');
+        assert.equal(typeKind('Milk, whole, 3.25% milkfat, with added vitamin D'), 'other');
     });
 });
 
@@ -161,18 +209,58 @@ describe('pickRepresentative: the most typical entry', () => {
         assert.equal(pickRepresentative([empty, ok]).id, ok.id);
     });
 
-    it('picks white rice for rice: the variety most entries share breaks the tie between Foundation raw rices', () => {
+    it('picks cooked for grains and pasta, eaten cooked (even over Foundation raw)', () => {
         const rices = [
-            entry('Rice, black, unenriched, raw', foundation),
-            entry('Rice, brown, long grain, unenriched, raw', foundation),
-            entry('Rice, red, unenriched, dry, raw', foundation),
             entry('Rice, white, long grain, unenriched, raw', foundation),
             entry('Rice, white, puffed', foundation),
             entry('Rice, white, long-grain, regular, enriched, cooked'),
             entry('Rice, white, medium-grain, enriched, cooked'),
-            entry('Rice, brown, long-grain, cooked'),
+            entry('Rice, white, with peas, fat added', survey),
         ];
-        assert.equal(pickRepresentative(rices).description, 'Rice, white, long grain, unenriched, raw');
+        assert.equal(pickRepresentative(rices).description, 'Rice, white, long-grain, regular, enriched, cooked');
+        const pasta = [
+            entry('Pasta, dry, enriched, spaghetti', foundation),
+            entry('Pasta, whole grain, 51% whole wheat, remaining unenriched semolina, cooked'),
+            entry('Pasta, whole grain, 51% whole wheat, remaining enriched semolina, cooked'),
+            entry('Pasta, cooked, enriched, with added salt'),
+            entry('Pasta, cooked, enriched, without added salt'),
+        ];
+        assert.equal(pickRepresentative(pasta).description, 'Pasta, cooked, enriched, without added salt');
+        const quinoa = [entry('Quinoa, uncooked'), entry('Quinoa, cooked')];
+        assert.equal(pickRepresentative(quinoa).description, 'Quinoa, cooked');
+        // Still raw first for everything else.
+        const fish = [entry('Fish, cod, Atlantic, cooked, dry heat'), entry('Fish, cod, Atlantic, raw')];
+        assert.equal(pickRepresentative(fish).description, 'Fish, cod, Atlantic, raw');
+    });
+
+    it('prefers skinless over meat and skin, and an unbranded entry over a brand', () => {
+        const breasts = [entry('Chicken, breast, meat and skin, raw', foundation), entry('Chicken, breast, boneless, skinless, raw', foundation)];
+        assert.equal(pickRepresentative(breasts).description, 'Chicken, breast, boneless, skinless, raw');
+        const brown = [entry('Rice, brown, parboiled, cooked, UNCLE BENS'), entry('Rice, brown, long-grain, cooked')];
+        assert.equal(pickRepresentative(brown).description, 'Rice, brown, long-grain, cooked');
+    });
+
+    it('picks the Foundation large egg, not frozen pasteurized or dried egg', () => {
+        const eggs = [
+            entry('Egg, whole, dried', foundation),
+            entry('Egg, whole, raw, frozen, pasteurized', foundation),
+            entry('Eggs, Grade A, Large, egg whole', foundation),
+            entry('Egg, whole, cooked, hard-boiled'),
+            entry('Egg, whole, raw, frozen, salted, pasteurized'),
+        ];
+        assert.equal(pickRepresentative(eggs).description, 'Eggs, Grade A, Large, egg whole');
+    });
+
+    it('picks whole fluid milk for milk', () => {
+        const milks = [
+            entry('Milk, lowfat, fluid, 1% milkfat, with added vitamin A and vitamin D', foundation),
+            entry('Milk, nonfat, fluid, with added vitamin A and vitamin D (fat free or skim)', foundation),
+            entry('Milk, reduced fat, fluid, 2% milkfat, with added vitamin A and vitamin D', foundation),
+            entry('Milk, whole, 3.25% milkfat, with added vitamin D', foundation),
+            entry('Milk, dry, whole, with added vitamin D'),
+            entry('Milk, canned, evaporated, with added vitamin A'),
+        ];
+        assert.equal(pickRepresentative(milks).description, 'Milk, whole, 3.25% milkfat, with added vitamin D');
     });
 
     it('is deterministic whatever the input order', () => {

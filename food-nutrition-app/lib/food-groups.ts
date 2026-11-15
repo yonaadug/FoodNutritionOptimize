@@ -63,12 +63,75 @@ function normalise(name: string): string {
     return words(name).map(singular).join(' ');
 }
 
+/** Meat and poultry named by the animal first ("Beef, round, ..."): they group by cut. */
+const MEATS = new Set([
+    'beef', 'pork', 'lamb', 'veal', 'mutton', 'chicken', 'turkey', 'duck', 'goose', 'bison', 'buffalo', 'deer', 'elk',
+    'venison', 'goat', 'rabbit', 'moose', 'caribou', 'antelope', 'boar', 'emu', 'ostrich', 'quail', 'pheasant', 'squab',
+]);
+
+/** Segments between the animal and the cut that say which animal, not which cut. */
+const MEAT_CLASS = /^(broilers?( or fryers)?|fryers|roasting|stewing|capons|whole|retail parts|all classes|new zealand|australian|imported|domestic|fresh|cured|composite of trimmed retail cuts|variety meats and by-products|grass-fed|wild|farmed|young|mature|light or dark meat|rotisserie|bbq|original seasoning)$/i;
+/** "dark meat" / "light meat" name the cut only when no part follows ("dark meat, thigh" is thigh). */
+const MEAT_COLOUR = /^(dark|light) meat$/i;
+
+/** A segment that says how the meat is prepared or trimmed, not which cut it is. */
+function isMeatState(segment: string): boolean {
+    if (/\d/.test(segment)) return true;
+    if (/^(meat only|meat and skin\b.*|separable\b.*|lean\b.*|trimmed\b.*|choice|select|prime|all grades|meatless|with added solution)$/i.test(segment)) return true;
+    return typeKind(segment) !== 'other';
+}
+
+/** "Beef, ground, ..." -> "Ground beef"; "Chicken, breast, ..." -> "Chicken breast"; no cut -> "Chicken". */
+function meatGroup(animal: string, rest: string[]): { name: string; rest: string[] } {
+    let i = 0;
+    while (i < rest.length && MEAT_CLASS.test(rest[i])) i++;
+    if (rest[i] && MEAT_COLOUR.test(rest[i]) && rest[i + 1] && !isMeatState(rest[i + 1])) i++;
+    const cut = rest[i];
+    if (!cut || isMeatState(cut)) return { name: animal, rest };
+    const plainCut = cut.replace(/\s*\([^)]*\)/g, '').trim();
+    const lowerCut = isBrand(plainCut) ? plainCut : plainCut.toLowerCase();
+    const animalWord = animal.toLowerCase();
+    const name = lowerCut === 'ground' ? `Ground ${animalWord}`
+        : words(lowerCut).includes(animalWord) ? lowerCut[0].toUpperCase() + lowerCut.slice(1)
+            : `${animal} ${lowerCut}`;
+    return { name, rest: [...rest.slice(0, i), ...rest.slice(i + 1)] };
+}
+
+/** Kinds of rice that are foods of their own ("Rice, white" -> "White rice"). */
+const RICE_KINDS = /^(white|brown|black|red|wild|fried|jasmine|basmati|glutinous|arborio|sweet)$/i;
+
+const BIRD_EGGS = /^(duck|goose|quail|turkey)$/i;
+const EGG_PART = /^(egg )?(whole|white|yolk)$/i;
+
+/** "Eggs, Grade A, Large, egg white" -> "Egg white"; duck eggs apart; whole egg is "Egg". */
+function eggGroup(rest: string[]): { name: string; rest: string[] } {
+    let bird = '';
+    if (rest[0] && BIRD_EGGS.test(rest[0])) { bird = rest[0].toLowerCase(); rest = rest.slice(1); }
+    const at = rest.findIndex(s => EGG_PART.test(s));
+    const part = at >= 0 ? rest[at].toLowerCase().replace(/^egg /, '') : 'whole';
+    if (at >= 0) rest = [...rest.slice(0, at), ...rest.slice(at + 1)];
+    const base = bird ? `${bird[0].toUpperCase()}${bird.slice(1)} egg` : 'Egg';
+    return { name: part === 'whole' ? base : `${base} ${part}`, rest };
+}
+
 /** The group a USDA description belongs to, its display name and the entry's own detail. */
 export function foodGroupOf(description: string): FoodGroupName {
     const { name, detail } = splitFoodName(description);
     const lower = name.toLowerCase();
     if (NEVER_GROUP.has(lower)) return { key: `=${description.toLowerCase().trim()}`, name, detail };
     let rest = detail ? detail.split(',').map(s => s.trim()).filter(Boolean) : [];
+    if (MEATS.has(lower)) {
+        const m = meatGroup(name, rest);
+        return { key: normalise(m.name), name: m.name, detail: m.rest.join(', ') };
+    }
+    if (lower === 'egg' || lower === 'eggs') {
+        const e = eggGroup(rest);
+        return { key: normalise(e.name), name: e.name, detail: e.rest.join(', ') };
+    }
+    if (lower === 'rice' && rest[0] && RICE_KINDS.test(rest[0])) {
+        const riceName = `${rest[0][0].toUpperCase()}${rest[0].slice(1).toLowerCase()} rice`;
+        return { key: normalise(riceName), name: riceName, detail: rest.slice(1).join(', ') };
+    }
     let groupName = name;
     const take = () => { groupName = `${groupName}, ${rest[0]}`; rest = rest.slice(1); };
     if (CATCH_ALL.has(lower) && rest.length) {
@@ -93,13 +156,20 @@ const COOKED = new Set([
     'cooked', 'baked', 'boiled', 'broiled', 'grilled', 'roasted', 'fried', 'steamed', 'braised', 'stewed', 'poached',
     'microwaved', 'sauteed', 'simmered', 'toasted', 'heated', 'prepared', 'scrambled', 'heat', 'roast', 'barbecued', 'stir',
 ]);
-const RAW = new Set(['raw', 'fresh', 'uncooked', 'unprepared', 'frozen', 'dry']);
+// "dry" is not raw: dry milk, dry pasta and dry mixes are their own forms.
+const RAW = new Set(['raw', 'fresh', 'uncooked', 'unprepared', 'frozen']);
 /** Words that mark the plain, everyday form. */
 const PLAIN = new Set(['raw', 'fresh', 'plain', 'whole']);
 /** Unusual forms that should not stand for the whole food unless the search asked for them. */
 const ATYPICAL = new Set([
     'alaska', 'babyfood', 'infant', 'imitation', 'industrial', 'restaurant', 'liver', 'giblets', 'additives', 'puffed',
-    'substitute', 'breaded', 'nuggets',
+    'substitute', 'breaded', 'nuggets', 'pasteurized', 'sugared', 'stabilized', 'evaporated', 'condensed',
+    // "meat and skin" (but not "skinless"): the skinless cut is the everyday one
+    'skin',
+]);
+/** Grains and pasta, eaten cooked: their most common type is a cooked one. */
+const COOKED_STAPLES = new Set([
+    'rice', 'pasta', 'noodle', 'spaghetti', 'macaroni', 'quinoa', 'barley', 'couscous', 'bulgur', 'millet',
 ]);
 
 /** Raw (raw, fresh, frozen, uncooked), cooked, preserved (canned, dried, smoked, cured...) or other. */
@@ -174,6 +244,21 @@ interface Facts {
     /** The first qualifier ("Atlantic" in "Atlantic, raw"), normalised: the variety. */
     variety: string;
     plain: boolean;
+    /** A grain or pasta, eaten cooked (COOKED_STAPLES). */
+    staple: boolean;
+    /** A brand in the qualifiers ("Rice, brown, parboiled, cooked, UNCLE BENS"). */
+    branded: boolean;
+    /** "with salt" / "with added salt": the unsalted entry is the everyday one. */
+    salted: boolean;
+}
+
+/** The variety of an entry with no qualifier before its preparation: the plain food, ranked first. */
+const BASE_VARIETY = '\u0000base';
+
+/** A qualifier that only says how the food is prepared ("cooked", "dry", "canned", "raw"), not which one. */
+function isPreparation(segment: string): boolean {
+    const w = words(segment);
+    return w.length > 0 && w.every(x => COOKED.has(x) || RAW.has(x) || PRESERVED.has(x) || x === 'dry' || x === 'and');
 }
 
 const factsMemo = new Map<string, Facts>();
@@ -181,14 +266,19 @@ const factsMemo = new Map<string, Facts>();
 function facts(description: string): Facts {
     let f = factsMemo.get(description);
     if (!f) {
-        const { detail } = foodGroupOf(description);
+        const { detail, key } = foodGroupOf(description);
         const w = words(description);
+        const first = (detail.split(',')[0] ?? '').trim();
         f = {
             words: w,
             kind: typeKind(description),
             label: typeLabel(detail),
-            variety: normalise(detail.split(',')[0] ?? ''),
+            // "Pasta, cooked, enriched": the first qualifier is a preparation, so this is the plain food itself.
+            variety: first && !isPreparation(first) ? normalise(first) : BASE_VARIETY,
             plain: w.some(x => PLAIN.has(x)),
+            staple: key.split(' ').some(x => COOKED_STAPLES.has(x)),
+            branded: detail.split(',').some(s => isBrand(s.trim())),
+            salted: /\bwith (added )?salt\b/i.test(description),
         };
         // The database has ~10k descriptions; the bound only guards against unexpected input.
         if (factsMemo.size > 50_000) factsMemo.clear();
@@ -200,12 +290,17 @@ function facts(description: string): Facts {
 /**
  * Entries best first, by the representative rule:
  *   1. has calories or macros (a "Limited data" entry never stands for the food);
- *   2. no canned, dried, smoked, cured or other unusual form the search didn't ask for;
- *   3. USDA Foundation, then SR Legacy, then survey (FNDDS) data;
- *   4. raw or plain ("raw", "fresh", "plain", "whole"), then other uncooked forms, then
+ *   2. no canned, dried, smoked, cured, pasteurized, with-skin or other unusual form the
+ *      search didn't ask for, and no brand in the qualifiers;
+ *   3. grains and pasta (rice, pasta, noodles, quinoa, barley, couscous, bulgur, millet)
+ *      only: cooked first, since that's how they're eaten;
+ *   4. USDA Foundation, then SR Legacy, then survey (FNDDS) data;
+ *   5. raw or plain ("raw", "fresh", "plain", "whole"), then other uncooked forms, then
  *      cooked, then preserved;
- *   5. the variety most entries share (Atlantic cod, white rice, sockeye salmon);
- *   6. the shortest description, then the lowest id.
+ *   6. the plain food ("Pasta, cooked, ...": no variety before the preparation), else the
+ *      variety most entries share (Atlantic cod, long-grain white rice, sockeye salmon);
+ *      "with (added) salt" counts as unusual in step 2 unless the search says salt;
+ *   7. the shortest description, then the lowest id.
  */
 export function rankTypes<T extends TypeEntry>(entries: readonly T[], queryTokens: readonly string[] = []): T[] {
     const asked = queryForms(queryTokens);
@@ -213,10 +308,13 @@ export function rankTypes<T extends TypeEntry>(entries: readonly T[], queryToken
     const all = entries.map(e => facts(e.description));
     for (const f of all) counts.set(f.variety, (counts.get(f.variety) ?? 0) + 1);
     const keyed = entries.map((e, i) => {
-        const { words: w, kind, plain, variety } = all[i];
-        const unasked = w.some(x => (PRESERVED.has(x) || ATYPICAL.has(x)) && !asked.has(x)) ? 1 : 0;
+        const { words: w, kind, plain, variety, staple, branded, salted } = all[i];
+        const unasked = branded || (salted && !asked.has('salt'))
+            || w.some(x => (PRESERVED.has(x) || ATYPICAL.has(x)) && !asked.has(x)) ? 1 : 0;
         const form = kind === 'preserved' ? 3 : kind === 'cooked' ? 2 : plain ? 0 : 1;
-        return { e, key: [hasCore(e) ? 0 : 1, unasked, dataRank(e), form, -(counts.get(variety) ?? 0), e.description.length, e.id] };
+        const eatenAs = staple ? (kind === 'cooked' ? 0 : kind === 'preserved' ? 3 : kind === 'other' ? 1 : 2) : 0;
+        const common = variety === BASE_VARIETY ? -1e9 : -(counts.get(variety) ?? 0);
+        return { e, key: [hasCore(e) ? 0 : 1, unasked, eatenAs, dataRank(e), form, common, e.description.length, e.id] };
     });
     keyed.sort((a, b) => {
         for (let i = 0; i < a.key.length; i++) if (a.key[i] !== b.key[i]) return a.key[i] - b.key[i];
@@ -349,6 +447,9 @@ export function servingForType(
 
 /** Types sent with a search row; a larger group's full list loads when its picker opens. */
 export const INLINE_TYPES = 60;
+/** Types sent for a whole page of rows; past it, each row sends INLINE_TYPES_SMALL. */
+export const INLINE_TYPES_PAGE = 150;
+export const INLINE_TYPES_SMALL = 6;
 
 /** One food in grouped search: its most typical entry in full, and its matched types. */
 export interface FoodGroupResult {

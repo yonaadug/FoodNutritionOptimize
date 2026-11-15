@@ -192,12 +192,61 @@ describe('grouped search on the real database', { skip: !hasDb && 'nutrition.db 
         assert.ok(g.some(x => /Salmon cake|Salmon nuggets/i.test(x.name)), 'salmon dishes stay separate');
     });
 
-    it('white rice: one Rice group of white rices, represented by plain white rice', () => {
+    it('white rice: one White rice group, represented by cooked white rice', () => {
         const g = groups('white rice');
-        const rice = g.find(x => x.key === 'rice')!;
-        assert.ok(rice.count >= 20, `white rice has ${rice.count} types`);
-        assert.ok(rice.types.every(t => /white/i.test(t.description)));
-        assert.match(rice.food.description, /^Rice, white, long.grain/);
+        assert.equal(g[0].name, 'White rice');
+        assert.ok(g[0].count >= 20, `white rice has ${g[0].count} types`);
+        assert.ok(g[0].types.every(t => /white/i.test(t.description)));
+        assert.match(g[0].food.description, /^Rice, white, long.grain.*cooked/);
+        assert.equal(g.filter(x => x.key === 'white rice').length, 1);
+    });
+
+    it('rice: White rice and Brown rice are separate rows with cooked representatives', () => {
+        const g = groups('rice');
+        const white = g.find(x => x.name === 'White rice')!;
+        const brown = g.find(x => x.name === 'Brown rice')!;
+        assert.ok(white && brown, g.map(x => x.name).join(' | '));
+        assert.ok(g.indexOf(white) < 5 && g.indexOf(brown) < 5, g.slice(0, 5).map(x => x.name).join(' | '));
+        assert.match(white.food.description, /cooked/);
+        assert.match(brown.food.description, /cooked/);
+        assert.ok(white.food.calories! < 200, `white rice row shows ${white.food.calories} kcal per 100 g`);
+    });
+
+    it('beef: several cut rows, ground beef among the first', () => {
+        const g = groups('beef');
+        const top = g.slice(0, 5).map(x => x.name);
+        assert.ok(top.includes('Ground beef'), top.join(' | '));
+        assert.ok(g.filter(x => /beef/i.test(x.name) && x.count > 1).length >= 8, g.map(x => x.name).join(' | '));
+        assert.ok(g.every(x => x.count < 300), 'no row holds every beef entry');
+    });
+
+    it('chicken breast: one row, with "Chicken, breast" and "Chicken breast, deli" entries alike', () => {
+        const g = groups('chicken breast');
+        assert.equal(g[0].name, 'Chicken breast');
+        assert.equal(g.filter(x => x.name === 'Chicken breast').length, 1);
+        assert.ok(!g.some(x => x.name === 'Chicken'), g.map(x => x.name).join(' | '));
+        assert.ok(g[0].types.some(t => t.data_type === 'foundation_food'));
+        assert.ok(g[0].types.some(t => t.description.startsWith('Chicken breast, ')));
+        assert.ok(g[0].types.some(t => t.description.startsWith('Chicken, broiler, rotisserie')), 'rotisserie breast is chicken breast');
+        assert.equal(g[0].food.description, 'Chicken, breast, boneless, skinless, raw');
+        assert.ok(g.some(x => x.name === 'Chicken breast tenders'), 'breaded tenders stay their own row');
+    });
+
+    it('eggs: the Foundation large egg is the most common, white and yolk are their own rows', () => {
+        const g = groups('eggs');
+        const egg = g.find(x => x.name === 'Egg')!;
+        assert.equal(g.indexOf(egg), 0, g.slice(0, 5).map(x => x.name).join(' | '));
+        assert.equal(egg.food.description, 'Eggs, Grade A, Large, egg whole');
+        assert.ok(g.some(x => x.name === 'Egg white'));
+        assert.ok(g.some(x => x.name === 'Egg yolk'));
+    });
+
+    it('milk: one group, whole fluid milk most common, dry and canned milks not listed as raw', () => {
+        const milk = groups('milk').find(x => x.name === 'Milk')!;
+        assert.equal(milk.food.description, 'Milk, whole, 3.25% milkfat, with added vitamin D');
+        for (const t of milk.types.filter(t => /\b(dry|evaporated|condensed)\b/i.test(t.description))) {
+            assert.notEqual(t.kind, 'raw', t.description);
+        }
     });
 
     it('cheese: Cheddar and Swiss are separate rows', () => {
@@ -222,15 +271,15 @@ describe('grouped search on the real database', { skip: !hasDb && 'nutrition.db 
         assert.equal(flat.foods.length, 5);
     });
 
-    it('keeps a huge group light: beef sends its first 60 types, the rest load by key', async () => {
+    it('keeps a large group light: beef round sends its first 60 types, the rest load by key', async () => {
         const res = await searchRoute(new NextRequest('http://localhost/api/search?q=beef&group=1'));
         const text = await res.text();
-        const beef = JSON.parse(text).groups.find((g: { key: string }) => g.key === 'beef');
-        assert.ok(beef.count > 300);
-        assert.equal(beef.types.length, 60);
+        const round = JSON.parse(text).groups.find((g: { key: string }) => g.key === 'beef round');
+        assert.ok(round.count > 60);
+        assert.equal(round.types.length, 60);
         assert.ok(text.length < 120_000, `${text.length} bytes`);
-        const more = await (await searchRoute(new NextRequest('http://localhost/api/search?q=beef&group=1&key=beef'))).json();
-        assert.equal(more.types.length, beef.count);
-        assert.deepEqual(more.types.slice(0, 60), beef.types);
+        const more = await (await searchRoute(new NextRequest('http://localhost/api/search?q=beef&group=1&key=beef%20round'))).json();
+        assert.equal(more.types.length, round.count);
+        assert.deepEqual(more.types.slice(0, 60), round.types);
     });
 });

@@ -7,7 +7,7 @@ import { fillFromOlderEntries } from './nutrient-fill';
 import { pickSources, scoreSources, type RankedSource, type RankOptions } from './best-sources';
 import { basePrefixes, categorySlug, rankRelated, type RelatedResult } from './food-page';
 import {
-    INLINE_TYPES, foodGroupOf, groupRanked, pickRepresentative, typeOptions,
+    INLINE_TYPES, INLINE_TYPES_PAGE, INLINE_TYPES_SMALL, foodGroupOf, groupRanked, pickRepresentative, typeOptions,
     type FoodGroupResult, type FoodTypeOption, type GroupedSearchResult, type TypeEntry,
 } from './food-groups';
 
@@ -275,10 +275,10 @@ export function searchFoodsIn(conn: Connection, query: string, page = 1, limit =
 }
 
 /** Every match for a query, best first (see searchFoodsIn), with the query's tokens. */
-function rankedMatchesIn(conn: Connection, query: string, options: SearchOptions): { ranked: SearchCandidate[]; tokens: string[] } {
+function rankedMatchesIn(conn: Connection, query: string, options: SearchOptions): { ranked: SearchCandidate[]; tokens: string[]; fit: Map<number, number[]> } {
     const q = query.trim().toLowerCase().slice(0, SEARCH_MAX_QUERY_LENGTH);
     const tokens = tokenizeQuery(q);
-    if (tokens.length === 0) return { ranked: [], tokens };
+    if (tokens.length === 0) return { ranked: [], tokens, fit: new Map() };
 
     const params: Record<string, string | number> = { q };
     tokens.forEach((t, i) => {
@@ -329,7 +329,8 @@ function rankedMatchesIn(conn: Connection, query: string, options: SearchOptions
         FROM ${from}
         WHERE ${where}
     `).all(params) as SearchCandidate[];
-    return { ranked: rankCandidates(candidates, tokens), tokens };
+    const keyed = rankKeyed(candidates, tokens);
+    return { ranked: keyed.map(k => k.c), tokens, fit: new Map(keyed.map(k => [k.c.id, k.key.slice(0, FIT_KEYS)])) };
 }
 
 /** What grouping needs about every food, loaded once per connection (the DB is read-only). */
@@ -377,9 +378,19 @@ export interface GroupSearchOptions extends SearchOptions {
 }
 
 function matchedGroupsIn(conn: Connection, query: string, options: SearchOptions) {
-    const { ranked, tokens } = rankedMatchesIn(conn, query, options);
+    const { ranked, tokens, fit } = rankedMatchesIn(conn, query, options);
     const index = typeIndexIn(conn);
-    const groups = groupRanked(ranked, c => index.byId.get(c.id)?.key ?? foodGroupOf(c.description).key);
+    const grouped = groupRanked(ranked, c => index.byId.get(c.id)?.key ?? foodGroupOf(c.description).key);
+    // A group ranks by its best entry. Among groups whose best entries fit the query
+    // equally well (same tier, naming, specialty words and dataset), the food USDA lists
+    // most ways comes first: "beef" opens with round, chuck, loin and ground beef rather
+    // than whichever cut has the shortest name.
+    const order = new Map(grouped.map((g, i) => [g, i]));
+    const groups = [...grouped].sort((a, b) => {
+        const fa = fit.get(a.members[0].id) ?? [], fb = fit.get(b.members[0].id) ?? [];
+        for (let i = 0; i < FIT_KEYS; i++) if ((fa[i] ?? 0) !== (fb[i] ?? 0)) return (fa[i] ?? 0) - (fb[i] ?? 0);
+        return b.members.length - a.members.length || order.get(a)! - order.get(b)!;
+    });
     const entriesOf = (g: { members: SearchCandidate[] }) =>
         g.members.map(m => index.byId.get(m.id)).filter((e): e is NonNullable<typeof e> => e !== undefined);
     return { ranked, tokens, groups, entriesOf };
@@ -391,7 +402,9 @@ function matchedGroupsIn(conn: Connection, query: string, options: SearchOptions
  * group ranks by its best entry. Paging counts groups. Each group carries its most
  * typical matched entry in full (the row's calories, nutrients and main action) and its
  * matched types, light, in picker order: all of them up to `inlineTypes`, else the first
- * `inlineTypes` (searchGroupTypesIn has the rest), so "beef" stays a small response.
+ * `inlineTypes` (searchGroupTypesIn has the rest). The page shares a budget of
+ * INLINE_TYPES_PAGE types; once it is spent, groups carry INLINE_TYPES_SMALL. So "beef"
+ * (20 cuts of up to 161 types) stays a small response.
  */
 export function searchFoodGroupsIn(conn: Connection, query: string, page = 1, limit = 20, options: GroupSearchOptions = {}): GroupedSearchResult {
     const safeLimit = Math.min(Math.max(1, Math.floor(limit) || 20), SEARCH_MAX_LIMIT);
@@ -405,10 +418,14 @@ export function searchFoodGroupsIn(conn: Connection, query: string, page = 1, li
         return { key: g.key, entries, rep: pickRepresentative(entries, tokens) };
     });
     const full = new Map(getFoodsByIdsIn(conn, onPage.map(g => g.rep.id)).map(f => [f.id, f]));
+    let budget = Math.max(inline, INLINE_TYPES_PAGE);
     const groups = onPage.flatMap((g): FoodGroupResult[] => {
         const food = full.get(g.rep.id);
         if (!food) return [];
-        const types = typeOptions(g.entries, food.id).slice(0, inline);
+        // A page of large groups ("beef": round, chuck, loin...) shares a budget, so the response stays small.
+        const room = Math.min(inline, Math.max(INLINE_TYPES_SMALL, budget));
+        const types = typeOptions(g.entries, food.id).slice(0, room);
+        budget -= types.length;
         return [{ key: g.key, name: foodGroupOf(food.description).name, count: g.entries.length, food, types }];
     });
     return { groups, total: all.length, entries: ranked.length, page: safePage, totalPages: Math.ceil(all.length / safeLimit), limit: safeLimit };
@@ -492,6 +509,13 @@ const PLAIN_WORDS = new Set(['raw', 'whole', 'plain', 'fresh']);
  *   7. shorter description, then bm25 relevance (FTS only), then description and id
  */
 export function rankCandidates<T extends SearchCandidate>(candidates: T[], tokens: string[]): T[] {
+    return rankKeyed(candidates, tokens).map(k => k.c);
+}
+
+/** Leading sort keys that say how well a match fits the query (tier, head, named words, specialty, data type). */
+const FIT_KEYS = 5;
+
+function rankKeyed<T extends SearchCandidate>(candidates: T[], tokens: string[]): { c: T; key: number[] }[] {
     const tokenForms = tokens.map(t => new Set(wordForms(t)));
     const queryForms = new Set(tokens.flatMap(wordForms));
     const keyed = candidates.map(c => {
@@ -517,7 +541,7 @@ export function rankCandidates<T extends SearchCandidate>(candidates: T[], token
         }
         return a.c.description.localeCompare(b.c.description) || a.c.id - b.c.id;
     });
-    return keyed.map(k => k.c);
+    return keyed;
 }
 
 

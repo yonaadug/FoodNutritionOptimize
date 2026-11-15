@@ -87,6 +87,10 @@ describe('foodGroupOf: the grouping key', () => {
         assert.equal(key('Chicken, broiler or fryers, breast, skinless, boneless, meat only, raw'), breast);
         assert.equal(key('Chicken, breast, boneless, skinless, raw'), breast);
         assert.equal(key('Chicken breast, baked, coated, skin / coating eaten'), breast);
+        assert.equal(key('Chicken, broiler, rotisserie, BBQ, breast, meat only'), breast);
+        assert.equal(foodGroupOf('Chicken, dark meat, thigh, meat only, cooked').name, 'Chicken thigh');
+        assert.equal(foodGroupOf('Chicken, dark meat, thigh, meat only, cooked').detail, 'dark meat, meat only, cooked');
+        assert.equal(foodGroupOf('Chicken, broilers or fryers, dark meat, meat only, raw').name, 'Chicken dark meat');
         // Compound products stay their own food.
         assert.notEqual(key('Chicken breast tenders, breaded, cooked, microwaved'), breast);
         // No cut named: the animal itself.
@@ -214,13 +218,26 @@ describe('pickRepresentative: the most typical entry', () => {
             entry('Rice, white, with peas, fat added', survey),
         ];
         assert.equal(pickRepresentative(rices).description, 'Rice, white, long-grain, regular, enriched, cooked');
-        const pasta = [entry('Pasta, dry, enriched, spaghetti', foundation), entry('Pasta, cooked, enriched, without added salt')];
+        const pasta = [
+            entry('Pasta, dry, enriched, spaghetti', foundation),
+            entry('Pasta, whole grain, 51% whole wheat, remaining unenriched semolina, cooked'),
+            entry('Pasta, whole grain, 51% whole wheat, remaining enriched semolina, cooked'),
+            entry('Pasta, cooked, enriched, with added salt'),
+            entry('Pasta, cooked, enriched, without added salt'),
+        ];
         assert.equal(pickRepresentative(pasta).description, 'Pasta, cooked, enriched, without added salt');
         const quinoa = [entry('Quinoa, uncooked'), entry('Quinoa, cooked')];
         assert.equal(pickRepresentative(quinoa).description, 'Quinoa, cooked');
         // Still raw first for everything else.
         const fish = [entry('Fish, cod, Atlantic, cooked, dry heat'), entry('Fish, cod, Atlantic, raw')];
         assert.equal(pickRepresentative(fish).description, 'Fish, cod, Atlantic, raw');
+    });
+
+    it('prefers skinless over meat and skin, and an unbranded entry over a brand', () => {
+        const breasts = [entry('Chicken, breast, meat and skin, raw', foundation), entry('Chicken, breast, boneless, skinless, raw', foundation)];
+        assert.equal(pickRepresentative(breasts).description, 'Chicken, breast, boneless, skinless, raw');
+        const brown = [entry('Rice, brown, parboiled, cooked, UNCLE BENS'), entry('Rice, brown, long-grain, cooked')];
+        assert.equal(pickRepresentative(brown).description, 'Rice, brown, long-grain, cooked');
     });
 
     it('picks the Foundation large egg, not frozen pasteurized or dried egg', () => {

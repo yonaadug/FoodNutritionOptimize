@@ -220,12 +220,15 @@ describe('grouped search on the real database', { skip: !hasDb && 'nutrition.db 
         assert.ok(g.every(x => x.count < 300), 'no row holds every beef entry');
     });
 
-    it('chicken breast: one row, from every USDA dataset', () => {
+    it('chicken breast: one row, with "Chicken, breast" and "Chicken breast, deli" entries alike', () => {
         const g = groups('chicken breast');
         assert.equal(g[0].name, 'Chicken breast');
         assert.equal(g.filter(x => x.name === 'Chicken breast').length, 1);
+        assert.ok(!g.some(x => x.name === 'Chicken'), g.map(x => x.name).join(' | '));
         assert.ok(g[0].types.some(t => t.data_type === 'foundation_food'));
-        assert.ok(g[0].types.some(t => t.data_type === 'survey_fndds_food'));
+        assert.ok(g[0].types.some(t => t.description.startsWith('Chicken breast, ')));
+        assert.ok(g[0].types.some(t => t.description.startsWith('Chicken, broiler, rotisserie')), 'rotisserie breast is chicken breast');
+        assert.equal(g[0].food.description, 'Chicken, breast, boneless, skinless, raw');
         assert.ok(g.some(x => x.name === 'Chicken breast tenders'), 'breaded tenders stay their own row');
     });
 
@@ -268,15 +271,15 @@ describe('grouped search on the real database', { skip: !hasDb && 'nutrition.db 
         assert.equal(flat.foods.length, 5);
     });
 
-    it('keeps a huge group light: beef sends its first 60 types, the rest load by key', async () => {
+    it('keeps a large group light: beef round sends its first 60 types, the rest load by key', async () => {
         const res = await searchRoute(new NextRequest('http://localhost/api/search?q=beef&group=1'));
         const text = await res.text();
-        const beef = JSON.parse(text).groups.find((g: { key: string }) => g.key === 'beef');
-        assert.ok(beef.count > 300);
-        assert.equal(beef.types.length, 60);
+        const round = JSON.parse(text).groups.find((g: { key: string }) => g.key === 'beef round');
+        assert.ok(round.count > 60);
+        assert.equal(round.types.length, 60);
         assert.ok(text.length < 120_000, `${text.length} bytes`);
-        const more = await (await searchRoute(new NextRequest('http://localhost/api/search?q=beef&group=1&key=beef'))).json();
-        assert.equal(more.types.length, beef.count);
-        assert.deepEqual(more.types.slice(0, 60), beef.types);
+        const more = await (await searchRoute(new NextRequest('http://localhost/api/search?q=beef&group=1&key=beef%20round'))).json();
+        assert.equal(more.types.length, round.count);
+        assert.deepEqual(more.types.slice(0, 60), round.types);
     });
 });

@@ -10,6 +10,8 @@
 import type { openDatabase } from '../db';
 import { readTextBuiltin } from './builtin';
 import { BUILTIN_RULE, type Verdict } from './confidence';
+import type { MatchResult } from './match';
+import type { ParsedIngredient } from './types';
 import { convertToGrams } from './grams';
 import { computeRecipeNutrition } from './nutrition';
 import type { FixtureRecipe } from './fixtures';
@@ -53,7 +55,21 @@ export interface RecipeScore {
 export function scorePasted(conn: Connection, recipe: PastedRecipe, rule = BUILTIN_RULE): RecipeScore {
     // The same code path /api/recipes/parse runs before deciding whether to call AI.
     const { read, matches, verdict } = readTextBuiltin(conn, recipe.text, rule);
-    const analyzed = read.recipe.ingredients.map((ing, i) => ({ ing, food: matches[i].food, conversion: convertToGrams(ing, matches[i].food) }));
+    return scoreIngredients(recipe, read.recipe.ingredients, matches.map(m => m.food), verdict);
+}
+
+/**
+ * Score any read (built-in or a model's) against a recipe's labels, given the
+ * USDA food matched to each ingredient. Used by scorePasted and by the paid
+ * model benchmark (lib/ai/eval/bench.ts), so both are scored the same way.
+ */
+export function scoreIngredients(
+    recipe: PastedRecipe,
+    ingredients: ParsedIngredient[],
+    foods: MatchResult['food'][],
+    verdict: Verdict = { confident: false, reasons: [] },
+): RecipeScore {
+    const analyzed = ingredients.map((ing, i) => ({ ing, food: foods[i], conversion: convertToGrams(ing, foods[i]) }));
 
     // Line each expectation up with the first unused ingredient whose name fits it.
     const used = new Set<number>();
@@ -70,10 +86,10 @@ export function scorePasted(conn: Connection, recipe: PastedRecipe, rule = BUILT
         const a = analyzed[i];
         const desc = a.food?.description ?? '(none)';
         if (e.food.test(desc)) foodHits++;
-        else misses.push(`FOOD "${a.ing.original}" -> ${desc}`);
+        else misses.push(`FOOD "${a.ing.original ?? a.ing.name}" -> ${desc}`);
         const g = a.conversion.grams;
         if (e.grams === null ? g === null : g !== null && g >= e.grams[0] && g <= e.grams[1]) gramHits++;
-        else misses.push(`GRAMS "${a.ing.original}" -> ${g} want ${JSON.stringify(e.grams)}`);
+        else misses.push(`GRAMS "${a.ing.original ?? `${a.ing.quantity ?? ''} ${a.ing.unit ?? ''} ${a.ing.name}`.trim()}" -> ${g} want ${JSON.stringify(e.grams)}`);
     }
     const items = analyzed.map(a => ({ name: a.ing.name, food: a.food, grams: a.conversion.grams }));
     const kcal = computeRecipeNutrition(items, recipe.servings).perServing.calories.value ?? 0;
@@ -91,7 +107,7 @@ export interface GroupStats {
     kcalOk: number;
 }
 
-function stats(scores: RecipeScore[]): GroupStats {
+export function stats(scores: RecipeScore[]): GroupStats {
     const lines = scores.reduce((s, r) => s + r.lines, 0);
     const pct = (n: number) => (lines ? (n / lines) * 100 : null);
     return {

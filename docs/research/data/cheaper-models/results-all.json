@@ -1,0 +1,5284 @@
+{
+ "ranAt": "2026-11-15T03:17:13.460Z",
+ "region": "us-east-1",
+ "cap": 0.99,
+ "totalSpentAllRuns": 0.22498880000000004,
+ "builtinOnTextSet": {
+  "recipes": 20,
+  "lines": 126,
+  "foodPct": 74.60317460317461,
+  "gramPct": 65.07936507936508,
+  "kcalOk": 11
+ },
+ "textItems": [
+  "Chocolate chip cookies",
+  "Thai green curry",
+  "Caesar salad",
+  "Tuna pasta bake",
+  "Peanut butter banana smoothie",
+  "Baked salmon",
+  "Lemon garlic pasta",
+  "Weeknight chicken and rice (prose)",
+  "Crepes (one line)",
+  "Victoria sponge (name first)",
+  "Pancakes (OCR slips)",
+  "Pasta with tomato sauce (British kitchen units)",
+  "Shortbread (dotted table)",
+  "Tortilla de patatas (Spanish)",
+  "Bread dough (instructions only)",
+  "Beef chili",
+  "Blueberry muffins",
+  "Shakshuka",
+  "Peanut butter smoothie",
+  "Mashed potatoes"
+ ],
+ "imageItems": [
+  "Classic pancakes",
+  "Thai green curry",
+  "Spaghetti bolognese",
+  "Shakshuka",
+  "Black bean tacos",
+  "Peanut butter smoothie",
+  "Lentil soup",
+  "Tuna pasta bake"
+ ],
+ "results": [
+  {
+   "model": "us.meta.llama4-scout-17b-instruct-v1:0",
+   "label": "Llama 4 Scout",
+   "notInvocable": "ResourceNotFoundException: Access denied. This Model is marked by provider as Legacy and you have not been actively using the model in the last 30 "
+  },
+  {
+   "model": "us.meta.llama4-maverick-17b-instruct-v1:0",
+   "label": "Llama 4 Maverick",
+   "notInvocable": "ResourceNotFoundException: Access denied. This Model is marked by provider as Legacy and you have not been actively using the model in the last 30 "
+  },
+  {
+   "model": "amazon.nova-micro-v1:0",
+   "label": "Nova Micro",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 92.06349206349206,
+    "gramPct": 80.95238095238095,
+    "kcalOk": 17
+   },
+   "latencyP50": 1099,
+   "latencyP95": 1636,
+   "meanInputTokens": 1179.9,
+   "meanOutputTokens": 276.6,
+   "promptOverheadTokens": 1118,
+   "imageTokens": null,
+   "meanCostPerRead": 0.0000800205,
+   "spend": 0.00160041,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 1072,
+     "in": 1181,
+     "out": 234,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 1544,
+     "in": 1182,
+     "out": 391,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 1308,
+     "in": 1163,
+     "out": 304,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2 piece anchovy fillets\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 1234,
+     "in": 1171,
+     "out": 283,
+     "misses": [
+      "GRAMS \"2 can tuna in water\" -> 344 want [280,300]",
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 938,
+     "in": 1156,
+     "out": 192,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 1309,
+     "in": 1279,
+     "out": 320,
+     "misses": [
+      "GRAMS \"4  salmon fillets\" -> 1584 want [650,700]",
+      "KCAL 871 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 1072,
+     "in": 1181,
+     "out": 241,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 1007,
+     "in": 1177,
+     "out": 198,
+     "misses": [
+      "GRAMS \"1 head broccoli\" -> null want [250,650]",
+      "GRAMS \"1  soy sauce\" -> null want [5,20]",
+      "MISSING /oil/"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 1201,
+     "in": 1159,
+     "out": 270,
+     "misses": [
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 1199,
+     "in": 1170,
+     "out": 272,
+     "misses": [
+      "GRAMS \"4 tbsp Strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 1123,
+     "in": 1166,
+     "out": 250,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 1057,
+     "in": 1153,
+     "out": 231,
+     "misses": [
+      "GRAMS \"0.5 tbsp butter\" -> 7.1 want [10,20]",
+      "FOOD \"chopped tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"1 handful basil\" -> 30 want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 185 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 880,
+     "in": 1155,
+     "out": 188,
+     "misses": [
+      "GRAMS \"0.5 cup Sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 1092,
+     "in": 1155,
+     "out": 248,
+     "misses": [
+      "FOOD \"patatas medianas\" -> (none)",
+      "GRAMS \"4  patatas medianas\" -> null want [600,900]",
+      "FOOD \"cebolla\" -> (none)",
+      "GRAMS \"1  cebolla\" -> null want [90,150]",
+      "FOOD \"huevos\" -> (none)",
+      "GRAMS \"6  huevos\" -> null want [280,330]",
+      "FOOD \"aceite de oliva\" -> (none)",
+      "GRAMS \"0.5  aceite de oliva\" -> null want [105,112]",
+      "FOOD \"sal\" -> Fish, salmon, Atlantic, farm raised, raw",
+      "GRAMS \"0.01  sal\" -> 3.96 want [5,7]",
+      "KCAL 2 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 1037,
+     "in": 1186,
+     "out": 226,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 1761,
+     "in": 1216,
+     "out": 449,
+     "misses": [
+      "GRAMS \"1 can kidney beans\" -> 266 want [420,430]",
+      "GRAMS \"1 can diced tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 1464,
+     "in": 1199,
+     "out": 357,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 1636,
+     "in": 1205,
+     "out": 410,
+     "misses": [
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1045,
+     "in": 1168,
+     "out": 224,
+     "misses": []
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 1099,
+     "in": 1176,
+     "out": 244,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "qwen.qwen3-32b-v1:0",
+   "label": "Qwen3 32B",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 91.26984126984127,
+    "gramPct": 83.33333333333334,
+    "kcalOk": 16
+   },
+   "latencyP50": 1578,
+   "latencyP95": 2041,
+   "meanInputTokens": 931.6,
+   "meanOutputTokens": 351.2,
+   "promptOverheadTokens": 869,
+   "imageTokens": null,
+   "meanCostPerRead": 0.00035046000000000003,
+   "spend": 0.0070092,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 2041,
+     "in": 934,
+     "out": 477,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 1740,
+     "in": 933,
+     "out": 478,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 1645,
+     "in": 920,
+     "out": 379,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillet\" -> Vegetarian fillets",
+      "GRAMS \"2 piece anchovy fillet\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 1859,
+     "in": 924,
+     "out": 351,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1024,
+     "in": 907,
+     "out": 229,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 1585,
+     "in": 1014,
+     "out": 380,
+     "misses": [
+      "GRAMS \"6 oz salmon fillet\" -> 170.09699999999998 want [650,700]",
+      "KCAL 153 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 1401,
+     "in": 935,
+     "out": 284,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 1510,
+     "in": 925,
+     "out": 289,
+     "misses": [
+      "FOOD \"white rice\" -> Rice, white, long-grain, regular, enriched, cooked",
+      "GRAMS \"1 cup white rice\" -> 158 want [180,200]",
+      "FOOD \"broccoli\" -> Broccoli, cooked, boiled, drained, with salt",
+      "GRAMS \"1 head broccoli\" -> null want [250,650]",
+      "KCAL 359 want 450-900"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 1360,
+     "in": 911,
+     "out": 318,
+     "misses": [
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 1578,
+     "in": 924,
+     "out": 329,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 1740,
+     "in": 919,
+     "out": 428,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 1150,
+     "in": 904,
+     "out": 293,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"2  olive oil\" -> null want [20,40]",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"handful basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 37 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 901,
+     "in": 906,
+     "out": 231,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 1307,
+     "in": 913,
+     "out": 275,
+     "misses": [
+      "MISSING /patata/i",
+      "MISSING /cebolla/i",
+      "MISSING /huevos/i",
+      "MISSING /aceite/i",
+      "MISSING /sal\\b/i",
+      "KCAL 525 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 1535,
+     "in": 937,
+     "out": 273,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 1913,
+     "in": 967,
+     "out": 528,
+     "misses": []
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 2180,
+     "in": 953,
+     "out": 428,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 1674,
+     "in": 960,
+     "out": 484,
+     "misses": [
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1675,
+     "in": 919,
+     "out": 287,
+     "misses": [
+      "MISSING /bananas/"
+     ]
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 1348,
+     "in": 927,
+     "out": 283,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "us.amazon.nova-2-lite-v1:0",
+   "label": "Nova 2 Lite (current fallback)",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 90.47619047619048,
+    "gramPct": 80.15873015873017,
+    "kcalOk": 17
+   },
+   "latencyP50": 1387,
+   "latencyP95": 1872,
+   "meanInputTokens": 1671.85,
+   "meanOutputTokens": 325.65,
+   "promptOverheadTokens": 1614,
+   "imageTokens": null,
+   "meanCostPerRead": 0.0014472480000000002,
+   "spend": 0.028944960000000002,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 1683,
+     "in": 1677,
+     "out": 439,
+     "misses": [
+      "MISSING /eggs/"
+     ]
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 1685,
+     "in": 1677,
+     "out": 446,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 1872,
+     "in": 1658,
+     "out": 349,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "GRAMS \"0.125 cup mayonnaise\" -> 27.5 want [100,125]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2  anchovy fillets\" -> 170 want [5,15]",
+      "GRAMS \"0.125 cup Parmesan cheese\" -> 12.5 want [40,65]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 1676,
+     "in": 1657,
+     "out": 315,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1244,
+     "in": 1650,
+     "out": 229,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 1696,
+     "in": 1747,
+     "out": 340,
+     "misses": [
+      "GRAMS \"4  salmon fillet\" -> 1584 want [650,700]",
+      "GRAMS \"1 tsp dill\" -> 0.18541666666666667 want [0.5,2]",
+      "KCAL 870 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 1251,
+     "in": 1675,
+     "out": 268,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 1793,
+     "in": 1669,
+     "out": 263,
+     "misses": [
+      "GRAMS \"1 head broccoli\" -> null want [250,650]",
+      "GRAMS \"soy sauce\" -> null want [5,20]"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 1332,
+     "in": 1653,
+     "out": 300,
+     "misses": [
+      "MISSING /eggs/",
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 1347,
+     "in": 1656,
+     "out": 311,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 1797,
+     "in": 1662,
+     "out": 385,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 1231,
+     "in": 1648,
+     "out": 259,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"olive oil\" -> null want [20,40]",
+      "FOOD \"tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"can tomatoes\" -> null want [390,410]",
+      "GRAMS \"basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 0 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 1225,
+     "in": 1649,
+     "out": 225,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 1387,
+     "in": 1652,
+     "out": 260,
+     "misses": [
+      "MISSING /patata/i",
+      "MISSING /cebolla/i",
+      "MISSING /huevos/i",
+      "MISSING /aceite/i",
+      "MISSING /sal\\b/i",
+      "KCAL 525 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 1129,
+     "in": 1677,
+     "out": 267,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 2229,
+     "in": 1708,
+     "out": 490,
+     "misses": []
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 1552,
+     "in": 1693,
+     "out": 397,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 1762,
+     "in": 1697,
+     "out": 429,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1247,
+     "in": 1661,
+     "out": 275,
+     "misses": [
+      "MISSING /bananas/"
+     ]
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 1314,
+     "in": 1671,
+     "out": 266,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "us.amazon.nova-2-lite-v1:0",
+   "label": "Nova 2 Lite (current fallback)",
+   "kind": "image",
+   "mode": "tool",
+   "reads": 8,
+   "schemaValid": 8,
+   "accuracy": {
+    "recipes": 8,
+    "lines": 65,
+    "foodPct": 92.3076923076923,
+    "gramPct": 92.3076923076923,
+    "kcalOk": 8
+   },
+   "latencyP50": 1988,
+   "latencyP95": 2390,
+   "meanInputTokens": 1839,
+   "meanOutputTokens": 382.875,
+   "promptOverheadTokens": 1614,
+   "imageTokens": 225,
+   "meanCostPerRead": 0.0016597762499999998,
+   "spend": 0.013278209999999999,
+   "errors": [],
+   "details": [
+    {
+     "item": "Classic pancakes",
+     "ok": true,
+     "error": null,
+     "ms": 1865,
+     "in": 1839,
+     "out": 336,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 2300,
+     "in": 1839,
+     "out": 414,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Spaghetti bolognese",
+     "ok": true,
+     "error": null,
+     "ms": 2390,
+     "in": 1839,
+     "out": 483,
+     "misses": [
+      "GRAMS \"1 can crushed tomatoes\" -> 411 want [780,800]"
+     ]
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 1988,
+     "in": 1839,
+     "out": 413,
+     "misses": [
+      "FOOD \"garlic cloves\" -> Spices, cloves, ground",
+      "FOOD \"whole tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Black bean tacos",
+     "ok": true,
+     "error": null,
+     "ms": 2178,
+     "in": 1839,
+     "out": 412,
+     "misses": [
+      "GRAMS \"2 can black beans\" -> 822 want [840,860]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1696,
+     "in": 1839,
+     "out": 257,
+     "misses": []
+    },
+    {
+     "item": "Lentil soup",
+     "ok": true,
+     "error": null,
+     "ms": 2216,
+     "in": 1839,
+     "out": 447,
+     "misses": [
+      "FOOD \"diced tomatoes\" -> Tomatoes, red, ripe, raw, year round average"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 1762,
+     "in": 1839,
+     "out": 301,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    }
+   ]
+  },
+  {
+   "model": "amazon.nova-lite-v1:0",
+   "label": "Nova Lite v1",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 87.3015873015873,
+    "gramPct": 79.36507936507937,
+    "kcalOk": 15
+   },
+   "latencyP50": 1666,
+   "latencyP95": 2524,
+   "meanInputTokens": 1179.9,
+   "meanOutputTokens": 257.1,
+   "promptOverheadTokens": 1118,
+   "imageTokens": null,
+   "meanCostPerRead": 0.000132498,
+   "spend": 0.00264996,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 2576,
+     "in": 1181,
+     "out": 408,
+     "misses": [
+      "GRAMS \"2 cup unsalted butter\" -> 454 want [215,235]",
+      "KCAL 303 want 130-260"
+     ]
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 2524,
+     "in": 1182,
+     "out": 406,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 2240,
+     "in": 1163,
+     "out": 300,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2 piece anchovy fillets\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 1809,
+     "in": 1171,
+     "out": 275,
+     "misses": [
+      "FOOD \"penne\" -> Pasta, cooked, enriched, without added salt",
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1225,
+     "in": 1156,
+     "out": 160,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 2070,
+     "in": 1279,
+     "out": 331,
+     "misses": [
+      "GRAMS \"4 piece salmon fillets\" -> 1584 want [650,700]",
+      "GRAMS \"1 pinch salt\" -> 0.38125 want null",
+      "KCAL 871 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 1620,
+     "in": 1181,
+     "out": 230,
+     "misses": [
+      "FOOD \"spaghetti\" -> Pasta, cooked, enriched, without added salt",
+      "KCAL 348 want 450-800"
+     ]
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 1473,
+     "in": 1177,
+     "out": 225,
+     "misses": [
+      "FOOD \"chicken breast\" -> Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+      "FOOD \"white rice\" -> Rice, white, long-grain, regular, enriched, cooked",
+      "GRAMS \"1 cup white rice\" -> 158 want [180,200]",
+      "FOOD \"broccoli\" -> Broccoli, cooked, boiled, drained, with salt",
+      "GRAMS \"1 head broccoli\" -> null want [250,650]"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 1864,
+     "in": 1159,
+     "out": 268,
+     "misses": []
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 1878,
+     "in": 1170,
+     "out": 280,
+     "misses": [
+      "GRAMS \"4 tbsp Strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 1754,
+     "in": 1166,
+     "out": 269,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 1135,
+     "in": 1153,
+     "out": 161,
+     "misses": [
+      "GRAMS \"1  butter\" -> null want [10,20]",
+      "GRAMS \"2  olive oil\" -> null want [20,40]",
+      "FOOD \"chopped tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"1 handful basil\" -> 30 want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 40 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 1261,
+     "in": 1155,
+     "out": 176,
+     "misses": [
+      "GRAMS \"0.5 cup Sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 1384,
+     "in": 1155,
+     "out": 198,
+     "misses": [
+      "FOOD \"patatas medianas\" -> (none)",
+      "GRAMS \"4 piece patatas medianas\" -> null want [600,900]",
+      "FOOD \"cebolla\" -> (none)",
+      "GRAMS \"1 piece cebolla\" -> null want [90,150]",
+      "FOOD \"huevos\" -> (none)",
+      "GRAMS \"6 piece huevos\" -> null want [280,330]",
+      "FOOD \"aceite de oliva\" -> (none)",
+      "GRAMS \"0.5 cup aceite de oliva\" -> null want [105,112]",
+      "FOOD \"sal\" -> Fish, salmon, Atlantic, farm raised, raw",
+      "GRAMS \"1 tsp sal\" -> 4.92892 want [5,7]",
+      "KCAL 3 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 1526,
+     "in": 1186,
+     "out": 201,
+     "misses": [
+      "GRAMS \"0.0125 cup salt\" -> 3.650000000000001 want [10,13]"
+     ]
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 2005,
+     "in": 1216,
+     "out": 297,
+     "misses": [
+      "GRAMS \"1 can kidney beans\" -> 266 want [420,430]",
+      "FOOD \"diced tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can diced tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 1735,
+     "in": 1199,
+     "out": 251,
+     "misses": [
+      "GRAMS \"0.02 tsp baking powder\" -> 0.092 want [7,11]",
+      "GRAMS \"0.005 tsp kosher salt\" -> 0.0305 want [2,3.5]"
+     ]
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 1666,
+     "in": 1205,
+     "out": 266,
+     "misses": [
+      "FOOD \"whole tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1534,
+     "in": 1168,
+     "out": 239,
+     "misses": []
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 1386,
+     "in": 1176,
+     "out": 201,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "amazon.nova-lite-v1:0",
+   "label": "Nova Lite v1",
+   "kind": "image",
+   "mode": "tool",
+   "reads": 8,
+   "schemaValid": 8,
+   "accuracy": {
+    "recipes": 8,
+    "lines": 65,
+    "foodPct": 93.84615384615384,
+    "gramPct": 87.6923076923077,
+    "kcalOk": 8
+   },
+   "latencyP50": 1935,
+   "latencyP95": 2817,
+   "meanInputTokens": 2777,
+   "meanOutputTokens": 306.25,
+   "promptOverheadTokens": 1118,
+   "imageTokens": 1659,
+   "meanCostPerRead": 0.00024012000000000003,
+   "spend": 0.0019209600000000002,
+   "errors": [],
+   "details": [
+    {
+     "item": "Classic pancakes",
+     "ok": true,
+     "error": null,
+     "ms": 2226,
+     "in": 2777,
+     "out": 313,
+     "misses": [
+      "GRAMS \"1 tsp white sugar\" -> 4 want [10,15]",
+      "GRAMS \"0.25 cup milk\" -> 62.25 want [290,320]"
+     ]
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 2659,
+     "in": 2777,
+     "out": 375,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste"
+     ]
+    },
+    {
+     "item": "Spaghetti bolognese",
+     "ok": true,
+     "error": null,
+     "ms": 2698,
+     "in": 2777,
+     "out": 388,
+     "misses": [
+      "GRAMS \"1 can crushed tomatoes\" -> 411 want [780,800]",
+      "GRAMS \"1 pinch salt\" -> 0.38125 want null"
+     ]
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 1894,
+     "in": 2777,
+     "out": 257,
+     "misses": [
+      "FOOD \"garlic cloves\" -> Spices, cloves, ground",
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Black bean tacos",
+     "ok": true,
+     "error": null,
+     "ms": 2817,
+     "in": 2777,
+     "out": 377,
+     "misses": [
+      "GRAMS \"2 can black beans\" -> 822 want [840,860]",
+      "GRAMS \"1 tsp olive oil\" -> 4.5 want [12,15]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1575,
+     "in": 2777,
+     "out": 209,
+     "misses": []
+    },
+    {
+     "item": "Lentil soup",
+     "ok": true,
+     "error": null,
+     "ms": 1935,
+     "in": 2777,
+     "out": 280,
+     "misses": []
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 1830,
+     "in": 2777,
+     "out": 251,
+     "misses": [
+      "FOOD \"penne\" -> Pasta, cooked, enriched, without added salt",
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    }
+   ]
+  },
+  {
+   "model": "qwen.qwen3-next-80b-a3b",
+   "label": "Qwen3 Next 80B",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 92.85714285714286,
+    "gramPct": 78.57142857142857,
+    "kcalOk": 17
+   },
+   "latencyP50": 5579,
+   "latencyP95": 9108,
+   "meanInputTokens": 927.6,
+   "meanOutputTokens": 345.95,
+   "promptOverheadTokens": 865,
+   "imageTokens": null,
+   "meanCostPerRead": 0.0005450039999999999,
+   "spend": 0.010900079999999998,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 9899,
+     "in": 930,
+     "out": 476,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 7956,
+     "in": 929,
+     "out": 476,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 7015,
+     "in": 916,
+     "out": 379,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2  anchovy fillets\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 6716,
+     "in": 920,
+     "out": 335,
+     "misses": [
+      "GRAMS \"2 can tuna in water\" -> 344 want [280,300]",
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 3310,
+     "in": 903,
+     "out": 228,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 6810,
+     "in": 1010,
+     "out": 372,
+     "misses": [
+      "GRAMS \"6 oz salmon fillets\" -> 170.09699999999998 want [650,700]",
+      "GRAMS \"lemon\" -> null want [50,120]",
+      "KCAL 149 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 4708,
+     "in": 931,
+     "out": 283,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 3148,
+     "in": 921,
+     "out": 281,
+     "misses": [
+      "GRAMS \"1 head broccoli\" -> null want [250,650]",
+      "GRAMS \"soy sauce\" -> null want [5,20]"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 5561,
+     "in": 907,
+     "out": 319,
+     "misses": [
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 4068,
+     "in": 920,
+     "out": 328,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 5807,
+     "in": 915,
+     "out": 384,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 4877,
+     "in": 900,
+     "out": 285,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"olive oil\" -> null want [20,40]",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 37 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 3382,
+     "in": 902,
+     "out": 228,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 5320,
+     "in": 909,
+     "out": 273,
+     "misses": [
+      "MISSING /patata/i",
+      "MISSING /cebolla/i",
+      "MISSING /huevos/i",
+      "MISSING /aceite/i",
+      "MISSING /sal\\b/i",
+      "KCAL 525 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 4364,
+     "in": 933,
+     "out": 271,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 9096,
+     "in": 963,
+     "out": 526,
+     "misses": [
+      "GRAMS \"green bell pepper\" -> null want [70,180]",
+      "GRAMS \"1 can kidney beans\" -> 266 want [420,430]",
+      "FOOD \"diced tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can diced tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 7134,
+     "in": 949,
+     "out": 427,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 9108,
+     "in": 956,
+     "out": 481,
+     "misses": [
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 6286,
+     "in": 915,
+     "out": 284,
+     "misses": [
+      "GRAMS \"2 large frozen bananas\" -> 272 want [200,260]"
+     ]
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 5579,
+     "in": 923,
+     "out": 283,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "qwen.qwen3-vl-235b-a22b",
+   "label": "Qwen3 VL 235B",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 89.68253968253968,
+    "gramPct": 78.57142857142857,
+    "kcalOk": 17
+   },
+   "latencyP50": 4714,
+   "latencyP95": 7477,
+   "meanInputTokens": 927.6,
+   "meanOutputTokens": 288.1,
+   "promptOverheadTokens": 865,
+   "imageTokens": null,
+   "meanCostPerRead": 0.0012579740000000002,
+   "spend": 0.025159480000000005,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 6845,
+     "in": 930,
+     "out": 404,
+     "misses": [
+      "MISSING /eggs/"
+     ]
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 6823,
+     "in": 929,
+     "out": 411,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 4992,
+     "in": 916,
+     "out": 324,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2  anchovy fillets\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 6305,
+     "in": 920,
+     "out": 266,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 3953,
+     "in": 903,
+     "out": 179,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 7159,
+     "in": 1010,
+     "out": 317,
+     "misses": [
+      "GRAMS \"6 oz salmon fillets\" -> 170.09699999999998 want [650,700]",
+      "KCAL 153 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 6240,
+     "in": 931,
+     "out": 242,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 3092,
+     "in": 921,
+     "out": 230,
+     "misses": [
+      "GRAMS \"1 head broccoli\" -> null want [250,650]",
+      "GRAMS \"soy sauce\" -> null want [5,20]"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 3643,
+     "in": 907,
+     "out": 249,
+     "misses": [
+      "MISSING /eggs/",
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 3359,
+     "in": 920,
+     "out": 259,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 4288,
+     "in": 915,
+     "out": 317,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 3432,
+     "in": 900,
+     "out": 232,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"2  olive oil\" -> null want [20,40]",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"handful basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 37 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 2988,
+     "in": 902,
+     "out": 191,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 7255,
+     "in": 909,
+     "out": 214,
+     "misses": [
+      "MISSING /patata/i",
+      "MISSING /cebolla/i",
+      "MISSING /huevos/i",
+      "MISSING /aceite/i",
+      "MISSING /sal\\b/i",
+      "KCAL 525 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 3326,
+     "in": 933,
+     "out": 230,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 7429,
+     "in": 963,
+     "out": 455,
+     "misses": [
+      "GRAMS \"1 can kidney beans\" -> 266 want [420,430]",
+      "GRAMS \"1 can diced tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 7477,
+     "in": 949,
+     "out": 362,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 7889,
+     "in": 956,
+     "out": 418,
+     "misses": [
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]",
+      "MISSING /eggs/"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 3872,
+     "in": 915,
+     "out": 226,
+     "misses": [
+      "MISSING /bananas/",
+      "FOOD \"milk\" -> Milk, whole, 3.25% milkfat, with added vitamin D"
+     ]
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 4714,
+     "in": 923,
+     "out": 236,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "qwen.qwen3-vl-235b-a22b",
+   "label": "Qwen3 VL 235B",
+   "kind": "image",
+   "mode": "tool",
+   "reads": 8,
+   "schemaValid": 8,
+   "accuracy": {
+    "recipes": 8,
+    "lines": 65,
+    "foodPct": 92.3076923076923,
+    "gramPct": 92.3076923076923,
+    "kcalOk": 8
+   },
+   "latencyP50": 7369,
+   "latencyP95": 12158,
+   "meanInputTokens": 2673,
+   "meanOutputTokens": 379.25,
+   "promptOverheadTokens": 865,
+   "imageTokens": 1808,
+   "meanCostPerRead": 0.002425495,
+   "spend": 0.01940396,
+   "errors": [],
+   "details": [
+    {
+     "item": "Classic pancakes",
+     "ok": true,
+     "error": null,
+     "ms": 5109,
+     "in": 2673,
+     "out": 317,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 12158,
+     "in": 2673,
+     "out": 379,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Spaghetti bolognese",
+     "ok": true,
+     "error": null,
+     "ms": 7175,
+     "in": 2673,
+     "out": 451,
+     "misses": [
+      "GRAMS \"1 can crushed tomatoes\" -> 411 want [780,800]"
+     ]
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 8410,
+     "in": 2673,
+     "out": 380,
+     "misses": [
+      "FOOD \"garlic cloves\" -> Spices, cloves, ground",
+      "FOOD \"whole tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Black bean tacos",
+     "ok": true,
+     "error": null,
+     "ms": 10931,
+     "in": 2673,
+     "out": 515,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 4574,
+     "in": 2673,
+     "out": 225,
+     "misses": [
+      "GRAMS \"2 large frozen bananas\" -> 272 want [200,260]"
+     ]
+    },
+    {
+     "item": "Lentil soup",
+     "ok": true,
+     "error": null,
+     "ms": 7453,
+     "in": 2673,
+     "out": 417,
+     "misses": [
+      "FOOD \"diced tomatoes\" -> Tomatoes, red, ripe, raw, year round average"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 7369,
+     "in": 2673,
+     "out": 350,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    }
+   ]
+  },
+  {
+   "model": "google.gemma-3-4b-it",
+   "label": "Gemma 3 4B",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 15,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 59.523809523809526,
+    "gramPct": 48.41269841269841,
+    "kcalOk": 9
+   },
+   "latencyP50": 1102,
+   "latencyP95": 1922,
+   "meanInputTokens": 281.46666666666664,
+   "meanOutputTokens": 318.6,
+   "promptOverheadTokens": 224,
+   "imageTokens": null,
+   "meanCostPerRead": 0.000036746666666666665,
+   "spend": 0.00224888,
+   "errors": [
+    "Chocolate chip cookies: ai_bad_output",
+    "Caesar salad: ai_bad_output",
+    "Bread dough (instructions only): ai_bad_output",
+    "Beef chili: ai_bad_output",
+    "Shakshuka: ai_bad_output"
+   ],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 14632,
+     "in": 288,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 1922,
+     "in": 288,
+     "out": 580,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 14184,
+     "in": 267,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 1283,
+     "in": 276,
+     "out": 308,
+     "misses": [
+      "GRAMS \"2 can tuna in water\" -> 344 want [280,300]",
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 963,
+     "in": 261,
+     "out": 250,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 1186,
+     "in": 373,
+     "out": 311,
+     "misses": [
+      "GRAMS \"4 fillet salmon\" -> 1584 want [650,700]",
+      "KCAL 871 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 1259,
+     "in": 289,
+     "out": 351,
+     "misses": [
+      "FOOD \"spaghetti\" -> Pasta, cooked, enriched, without added salt",
+      "KCAL 348 want 450-800"
+     ]
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 1480,
+     "in": 282,
+     "out": 275,
+     "misses": [
+      "FOOD \"chicken breasts\" -> Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+      "FOOD \"white rice\" -> Rice, white, long-grain, regular, enriched, cooked",
+      "GRAMS \"1  white rice\" -> null want [180,200]",
+      "FOOD \"broccoli\" -> Broccoli, cooked, boiled, drained, with salt",
+      "GRAMS \"1  broccoli\" -> null want [250,650]",
+      "GRAMS \"1  soy sauce\" -> null want [5,20]",
+      "GRAMS \"1  oil\" -> null want [13,15]",
+      "KCAL 284 want 450-900"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 1102,
+     "in": 266,
+     "out": 261,
+     "misses": [
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 1047,
+     "in": 273,
+     "out": 296,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 1545,
+     "in": 272,
+     "out": 377,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 946,
+     "in": 258,
+     "out": 245,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"2  olive oil\" -> null want [20,40]",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"handful basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 37 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 806,
+     "in": 258,
+     "out": 194,
+     "misses": [
+      "GRAMS \"0.5 cup Sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 932,
+     "in": 261,
+     "out": 254,
+     "misses": [
+      "FOOD \"patatas\" -> (none)",
+      "GRAMS \"4  patatas\" -> null want [600,900]",
+      "FOOD \"cebolla\" -> (none)",
+      "GRAMS \"1  cebolla\" -> null want [90,150]",
+      "FOOD \"huevos\" -> (none)",
+      "GRAMS \"6  huevos\" -> null want [280,330]",
+      "FOOD \"aceite de oliva\" -> (none)",
+      "GRAMS \"0.5  aceite de oliva\" -> null want [105,112]",
+      "FOOD \"sal\" -> Fish, salmon, Atlantic, farm raised, raw",
+      "GRAMS \"1  sal\" -> 396 want [5,7]",
+      "KCAL 201 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 14050,
+     "in": 294,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 14014,
+     "in": 321,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 1903,
+     "in": 307,
+     "out": 547,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 15117,
+     "in": 312,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1043,
+     "in": 275,
+     "out": 285,
+     "misses": [
+      "GRAMS \"frozen bananas\" -> null want [200,260]",
+      "GRAMS \"creamy peanut butter\" -> null want [28,36]",
+      "GRAMS \"skim milk\" -> null want [240,250]",
+      "GRAMS \"maple syrup\" -> null want [18,22]",
+      "GRAMS \"ground cinnamon\" -> null want [1,2]",
+      "KCAL 0 want 200-450"
+     ]
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 935,
+     "in": 283,
+     "out": 245,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "google.gemma-3-4b-it",
+   "label": "Gemma 3 4B",
+   "kind": "image",
+   "mode": "tool",
+   "reads": 8,
+   "schemaValid": 6,
+   "accuracy": {
+    "recipes": 8,
+    "lines": 65,
+    "foodPct": 69.23076923076923,
+    "gramPct": 56.92307692307692,
+    "kcalOk": 5
+   },
+   "latencyP50": 2460,
+   "latencyP95": 2793,
+   "meanInputTokens": 474,
+   "meanOutputTokens": 535.3333333333334,
+   "promptOverheadTokens": 224,
+   "imageTokens": 250,
+   "meanCostPerRead": 0.00006178666666666668,
+   "spend": 0.001064,
+   "errors": [
+    "Lentil soup: ai_bad_output",
+    "Tuna pasta bake: ai_bad_output"
+   ],
+   "details": [
+    {
+     "item": "Classic pancakes",
+     "ok": true,
+     "error": null,
+     "ms": 2086,
+     "in": 474,
+     "out": 469,
+     "misses": [
+      "GRAMS \"1.125 cup milk\" -> 280.125 want [290,320]"
+     ]
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 2592,
+     "in": 474,
+     "out": 637,
+     "misses": [
+      "FOOD \"chicken thighs, boneless and skinless\" -> Chicken, broiler or fryers, breast, skinless, boneless, meat only, cooked, braised",
+      "FOOD \"green curry paste\" -> Nuts, almond paste"
+     ]
+    },
+    {
+     "item": "Spaghetti bolognese",
+     "ok": true,
+     "error": null,
+     "ms": 2793,
+     "in": 474,
+     "out": 631,
+     "misses": [
+      "GRAMS \"1  ground beef\" -> null want [450,456]",
+      "GRAMS \"1  crushed tomatoes\" -> 123 want [780,800]",
+      "GRAMS \"2  tomato paste\" -> 246 want [25,40]",
+      "GRAMS \"2  olive oil\" -> null want [25,30]",
+      "GRAMS \"1  dried oregano\" -> null want [0.5,3]",
+      "FOOD \"spaghetti\" -> Pasta, cooked, enriched, without added salt",
+      "GRAMS \"1  spaghetti\" -> null want [450,456]",
+      "GRAMS \"0.25  grated parmesan\" -> null want [15,35]",
+      "KCAL 52 want 350-800"
+     ]
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 2656,
+     "in": 474,
+     "out": 565,
+     "misses": [
+      "GRAMS \"onion\" -> null want [90,150]",
+      "GRAMS \"red bell pepper\" -> null want [70,180]",
+      "FOOD \"garlic cloves\" -> Spices, cloves, ground",
+      "GRAMS \"garlic cloves\" -> null want [7,12]"
+     ]
+    },
+    {
+     "item": "Black bean tacos",
+     "ok": true,
+     "error": null,
+     "ms": 2460,
+     "in": 474,
+     "out": 574,
+     "misses": [
+      "GRAMS \"2 can black beans\" -> 822 want [840,860]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1733,
+     "in": 474,
+     "out": 336,
+     "misses": []
+    },
+    {
+     "item": "Lentil soup",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 16466,
+     "in": 474,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 17625,
+     "in": 474,
+     "out": 4096,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "mistral.ministral-3-3b-instruct",
+   "label": "Ministral 3 3B",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 88.09523809523809,
+    "gramPct": 60.317460317460316,
+    "kcalOk": 12
+   },
+   "latencyP50": 896,
+   "latencyP95": 1535,
+   "meanInputTokens": 867.2,
+   "meanOutputTokens": 295.15,
+   "promptOverheadTokens": 800,
+   "imageTokens": null,
+   "meanCostPerRead": 0.00011623500000000001,
+   "spend": 0.0023247000000000003,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 1482,
+     "in": 870,
+     "out": 407,
+     "misses": [
+      "GRAMS \"2 cup unsalted butter\" -> 454 want [215,235]",
+      "KCAL 294 want 130-260"
+     ]
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 974,
+     "in": 872,
+     "out": 435,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 896,
+     "in": 854,
+     "out": 313,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2 fillet anchovy fillets\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 808,
+     "in": 859,
+     "out": 319,
+     "misses": [
+      "GRAMS \"2 can tuna in water\" -> 344 want [280,300]",
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 799,
+     "in": 840,
+     "out": 202,
+     "misses": [
+      "GRAMS \"banana\" -> null want [100,135]",
+      "GRAMS \"1  milk\" -> null want [235,250]",
+      "GRAMS \"2  peanut butter\" -> null want [30,34]",
+      "GRAMS \"1  honey\" -> null want [6,8]",
+      "KCAL 0 want 330-650"
+     ]
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 1334,
+     "in": 959,
+     "out": 308,
+     "misses": [
+      "GRAMS \"4 piece salmon fillets\" -> 1584 want [650,700]",
+      "KCAL 871 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 921,
+     "in": 872,
+     "out": 260,
+     "misses": [
+      "GRAMS \"8  spaghetti\" -> null want [225,228]",
+      "GRAMS \"2  butter\" -> null want [26,30]",
+      "MISSING /parmesan/",
+      "KCAL 15 want 450-800"
+     ]
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 689,
+     "in": 861,
+     "out": 207,
+     "misses": [
+      "FOOD \"chicken breast\" -> Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+      "GRAMS \"chicken breast\" -> null want [300,700]",
+      "FOOD \"white rice\" -> Rice, white, long-grain, regular, enriched, cooked",
+      "GRAMS \"white rice\" -> null want [180,200]",
+      "FOOD \"broccoli\" -> Broccoli, cooked, boiled, drained, with salt",
+      "GRAMS \"broccoli\" -> null want [250,650]",
+      "GRAMS \"soy sauce\" -> null want [5,20]",
+      "MISSING /oil/",
+      "KCAL 0 want 450-900"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 954,
+     "in": 844,
+     "out": 270,
+     "misses": [
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 1020,
+     "in": 857,
+     "out": 266,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 1121,
+     "in": 854,
+     "out": 309,
+     "misses": [
+      "GRAMS \"1  all-purpose flour\" -> null want [115,130]",
+      "GRAMS \"2  sugar\" -> null want [24,26]",
+      "GRAMS \"2  baking powder\" -> null want [7,10]",
+      "GRAMS \"0.5  salt\" -> null want [2.5,3.5]",
+      "GRAMS \"1  milk\" -> null want [235,250]",
+      "GRAMS \"2  butter\" -> null want [26,30]",
+      "KCAL 19 want 200-420"
+     ]
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 823,
+     "in": 836,
+     "out": 260,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"2  olive oil\" -> null want [20,40]",
+      "GRAMS \"1 can chopped tomatoes, canned\" -> 411 want [390,410]",
+      "GRAMS \"1 handful basil\" -> 30 want [5,15]",
+      "FOOD \"penne pasta, cooked\" -> Pasta, cooked, enriched, with added salt",
+      "GRAMS \"2  penne pasta, cooked\" -> null want [150,250]",
+      "KCAL 70 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 621,
+     "in": 843,
+     "out": 190,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 809,
+     "in": 842,
+     "out": 243,
+     "misses": [
+      "MISSING /patata/i",
+      "MISSING /cebolla/i",
+      "MISSING /huevos/i",
+      "MISSING /aceite/i",
+      "MISSING /sal\\b/i"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 651,
+     "in": 871,
+     "out": 236,
+     "misses": [
+      "GRAMS \"2  salt\" -> null want [10,13]"
+     ]
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 1600,
+     "in": 908,
+     "out": 437,
+     "misses": [
+      "GRAMS \"1 can kidney beans\" -> 266 want [420,430]",
+      "GRAMS \"1 can diced tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 935,
+     "in": 889,
+     "out": 366,
+     "misses": [
+      "GRAMS \"2  all purpose flour\" -> null want [240,270]",
+      "GRAMS \"2  baking powder\" -> null want [7,11]",
+      "GRAMS \"0.5  kosher salt\" -> null want [2,3.5]",
+      "GRAMS \"0.5  unsalted butter\" -> null want [105,120]",
+      "GRAMS \"1  caster sugar\" -> null want [180,210]",
+      "GRAMS \"0.5  buttermilk\" -> null want [115,130]",
+      "GRAMS \"1.5  fresh blueberries\" -> null want [200,240]",
+      "KCAL 12 want 150-330"
+     ]
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 1535,
+     "in": 897,
+     "out": 406,
+     "misses": [
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 606,
+     "in": 856,
+     "out": 229,
+     "misses": [
+      "MISSING /bananas/"
+     ]
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 724,
+     "in": 860,
+     "out": 240,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "mistral.ministral-3-3b-instruct",
+   "label": "Ministral 3 3B",
+   "kind": "image",
+   "mode": "tool",
+   "reads": 8,
+   "schemaValid": 8,
+   "accuracy": {
+    "recipes": 8,
+    "lines": 65,
+    "foodPct": 95.38461538461539,
+    "gramPct": 90.76923076923077,
+    "kcalOk": 8
+   },
+   "latencyP50": 1663,
+   "latencyP95": 1889,
+   "meanInputTokens": 3145,
+   "meanOutputTokens": 365.875,
+   "promptOverheadTokens": 800,
+   "imageTokens": 2345,
+   "meanCostPerRead": 0.0003510875,
+   "spend": 0.0028087,
+   "errors": [],
+   "details": [
+    {
+     "item": "Classic pancakes",
+     "ok": true,
+     "error": null,
+     "ms": 1630,
+     "in": 3145,
+     "out": 312,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 1663,
+     "in": 3145,
+     "out": 402,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Spaghetti bolognese",
+     "ok": true,
+     "error": null,
+     "ms": 1675,
+     "in": 3145,
+     "out": 473,
+     "misses": [
+      "GRAMS \"1  crushed tomatoes\" -> 123 want [780,800]"
+     ]
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 1889,
+     "in": 3145,
+     "out": 399,
+     "misses": [
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Black bean tacos",
+     "ok": true,
+     "error": null,
+     "ms": 1710,
+     "in": 3145,
+     "out": 394,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1059,
+     "in": 3145,
+     "out": 231,
+     "misses": []
+    },
+    {
+     "item": "Lentil soup",
+     "ok": true,
+     "error": null,
+     "ms": 1751,
+     "in": 3145,
+     "out": 434,
+     "misses": [
+      "MISSING /carrots/"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 1518,
+     "in": 3145,
+     "out": 282,
+     "misses": [
+      "GRAMS \"2.9 can tuna in water\" -> 498.8 want [280,300]",
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    }
+   ]
+  },
+  {
+   "model": "google.gemma-3-27b-it",
+   "label": "Gemma 3 27B",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 88.88888888888889,
+    "gramPct": 80.95238095238095,
+    "kcalOk": 13
+   },
+   "latencyP50": 3122,
+   "latencyP95": 4888,
+   "meanInputTokens": 285.2,
+   "meanOutputTokens": 285.15,
+   "promptOverheadTokens": 224,
+   "imageTokens": null,
+   "meanCostPerRead": 0.000173953,
+   "spend": 0.00347906,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 4159,
+     "in": 288,
+     "out": 394,
+     "misses": [
+      "GRAMS \"2 cup unsalted butter\" -> 454 want [215,235]",
+      "KCAL 294 want 130-260"
+     ]
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 5349,
+     "in": 288,
+     "out": 397,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "FOOD \"jasmine rice\" -> Rice, white, long-grain, regular, raw, enriched",
+      "KCAL 753 want 300-700"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 3921,
+     "in": 267,
+     "out": 288,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2  anchovy fillets\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 3892,
+     "in": 276,
+     "out": 284,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 4585,
+     "in": 261,
+     "out": 188,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 3711,
+     "in": 373,
+     "out": 294,
+     "misses": [
+      "GRAMS \"4  salmon fillets\" -> 1584 want [650,700]",
+      "KCAL 871 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 2868,
+     "in": 289,
+     "out": 234,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 2731,
+     "in": 282,
+     "out": 225,
+     "misses": [
+      "FOOD \"white rice\" -> Rice, white, long-grain, regular, enriched, cooked",
+      "GRAMS \"1 cup white rice\" -> 158 want [180,200]",
+      "FOOD \"broccoli\" -> Broccoli, cooked, boiled, drained, with salt",
+      "GRAMS \"1 head broccoli\" -> null want [250,650]",
+      "GRAMS \"soy sauce\" -> null want [5,20]",
+      "KCAL 354 want 450-900"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 2969,
+     "in": 266,
+     "out": 260,
+     "misses": [
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 2980,
+     "in": 273,
+     "out": 272,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 4433,
+     "in": 272,
+     "out": 302,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 2774,
+     "in": 258,
+     "out": 218,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"2  olive oil\" -> null want [20,40]",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"handful basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 37 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 2356,
+     "in": 258,
+     "out": 184,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 2760,
+     "in": 261,
+     "out": 230,
+     "misses": [
+      "MISSING /patata/i",
+      "MISSING /cebolla/i",
+      "MISSING /huevos/i",
+      "MISSING /aceite/i",
+      "MISSING /sal\\b/i",
+      "KCAL 525 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 2512,
+     "in": 294,
+     "out": 223,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 4888,
+     "in": 321,
+     "out": 439,
+     "misses": [
+      "GRAMS \"green bell pepper\" -> null want [70,180]",
+      "FOOD \"garlic cloves\" -> Spices, cloves, ground",
+      "GRAMS \"15 can kidney beans\" -> 3990 want [420,430]",
+      "GRAMS \"28 can diced tomatoes\" -> 11508 want [790,800]",
+      "KCAL 1496 want 250-550"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 4217,
+     "in": 307,
+     "out": 348,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 4842,
+     "in": 312,
+     "out": 397,
+     "misses": [
+      "FOOD \"garlic cloves\" -> Spices, cloves, ground"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 2897,
+     "in": 275,
+     "out": 245,
+     "misses": []
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 3122,
+     "in": 283,
+     "out": 281,
+     "misses": [
+      "FOOD \"russet potatoes\" -> Potatoes, boiled, cooked without skin, flesh, with salt"
+     ]
+    }
+   ]
+  },
+  {
+   "model": "google.gemma-3-27b-it",
+   "label": "Gemma 3 27B",
+   "kind": "image",
+   "mode": "tool",
+   "reads": 8,
+   "schemaValid": 8,
+   "accuracy": {
+    "recipes": 8,
+    "lines": 65,
+    "foodPct": 95.38461538461539,
+    "gramPct": 98.46153846153847,
+    "kcalOk": 8
+   },
+   "latencyP50": 5876,
+   "latencyP95": 11162,
+   "meanInputTokens": 474,
+   "meanOutputTokens": 377,
+   "promptOverheadTokens": 224,
+   "imageTokens": 250,
+   "meanCostPerRead": 0.00025227999999999996,
+   "spend": 0.0020182399999999997,
+   "errors": [],
+   "details": [
+    {
+     "item": "Classic pancakes",
+     "ok": true,
+     "error": null,
+     "ms": 5994,
+     "in": 474,
+     "out": 316,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 6871,
+     "in": 474,
+     "out": 401,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste"
+     ]
+    },
+    {
+     "item": "Spaghetti bolognese",
+     "ok": true,
+     "error": null,
+     "ms": 8809,
+     "in": 474,
+     "out": 482,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 5304,
+     "in": 474,
+     "out": 406,
+     "misses": [
+      "FOOD \"garlic cloves\" -> Spices, cloves, ground"
+     ]
+    },
+    {
+     "item": "Black bean tacos",
+     "ok": true,
+     "error": null,
+     "ms": 11162,
+     "in": 474,
+     "out": 416,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 5071,
+     "in": 474,
+     "out": 242,
+     "misses": []
+    },
+    {
+     "item": "Lentil soup",
+     "ok": true,
+     "error": null,
+     "ms": 5876,
+     "in": 474,
+     "out": 448,
+     "misses": []
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 5284,
+     "in": 474,
+     "out": 305,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    }
+   ]
+  },
+  {
+   "model": "deepseek.v3.2",
+   "label": "DeepSeek V3.2",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 93.65079365079364,
+    "gramPct": 81.74603174603175,
+    "kcalOk": 17
+   },
+   "latencyP50": 8496,
+   "latencyP95": 15193,
+   "meanInputTokens": 1093.9,
+   "meanOutputTokens": 280.7,
+   "promptOverheadTokens": 1033,
+   "imageTokens": null,
+   "meanCostPerRead": 0.001197513,
+   "spend": 0.02395026,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 7911,
+     "in": 1099,
+     "out": 381,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 8780,
+     "in": 1097,
+     "out": 386,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 13266,
+     "in": 1081,
+     "out": 304,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2  anchovy fillets\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 11250,
+     "in": 1077,
+     "out": 270,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 8589,
+     "in": 1072,
+     "out": 183,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 11442,
+     "in": 1181,
+     "out": 301,
+     "misses": [
+      "GRAMS \"4  salmon fillets\" -> 1584 want [650,700]",
+      "KCAL 871 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 8496,
+     "in": 1098,
+     "out": 227,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 6085,
+     "in": 1089,
+     "out": 216,
+     "misses": [
+      "GRAMS \"1 head broccoli\" -> null want [250,650]",
+      "GRAMS \"soy sauce\" -> null want [5,20]"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 4037,
+     "in": 1073,
+     "out": 251,
+     "misses": [
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 3534,
+     "in": 1079,
+     "out": 255,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 5431,
+     "in": 1081,
+     "out": 319,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 6938,
+     "in": 1068,
+     "out": 249,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"2  olive oil\" -> null want [20,40]",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"handful basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 37 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 10998,
+     "in": 1070,
+     "out": 193,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 8733,
+     "in": 1077,
+     "out": 243,
+     "misses": [
+      "FOOD \"patatas\" -> (none)",
+      "GRAMS \"4  patatas\" -> null want [600,900]",
+      "FOOD \"cebolla\" -> (none)",
+      "GRAMS \"1  cebolla\" -> null want [90,150]",
+      "FOOD \"huevos\" -> (none)",
+      "GRAMS \"6  huevos\" -> null want [280,330]",
+      "FOOD \"aceite de oliva\" -> (none)",
+      "GRAMS \"0.5 cup aceite de oliva\" -> null want [105,112]",
+      "FOOD \"sal\" -> Fish, salmon, Atlantic, farm raised, raw",
+      "GRAMS \"1 tsp sal\" -> 4.92892 want [5,7]",
+      "KCAL 3 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 3593,
+     "in": 1098,
+     "out": 236,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 43372,
+     "in": 1128,
+     "out": 423,
+     "misses": [
+      "GRAMS \"1 can kidney beans\" -> 266 want [420,430]",
+      "GRAMS \"1 can diced tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 15193,
+     "in": 1116,
+     "out": 339,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 10029,
+     "in": 1121,
+     "out": 386,
+     "misses": [
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 7992,
+     "in": 1082,
+     "out": 226,
+     "misses": []
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 4824,
+     "in": 1091,
+     "out": 226,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "mistral.ministral-3-14b-instruct",
+   "label": "Ministral 3 14B",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 91.26984126984127,
+    "gramPct": 80.15873015873017,
+    "kcalOk": 16
+   },
+   "latencyP50": 1669,
+   "latencyP95": 2692,
+   "meanInputTokens": 867.2,
+   "meanOutputTokens": 308.15,
+   "promptOverheadTokens": 800,
+   "imageTokens": null,
+   "meanCostPerRead": 0.00023507000000000004,
+   "spend": 0.0047014000000000005,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 2692,
+     "in": 870,
+     "out": 491,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 2240,
+     "in": 872,
+     "out": 399,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"13.5 can coconut milk\" -> 5548.5 want [380,385]",
+      "KCAL 3520 want 300-700"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 1760,
+     "in": 854,
+     "out": 314,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2  anchovy fillets\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 1315,
+     "in": 859,
+     "out": 281,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1228,
+     "in": 840,
+     "out": 186,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 1669,
+     "in": 959,
+     "out": 309,
+     "misses": [
+      "GRAMS \"4 piece salmon fillet\" -> 1584 want [650,700]",
+      "GRAMS \"1 tsp dill\" -> 0.18541666666666667 want [0.5,2]",
+      "KCAL 870 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 1611,
+     "in": 872,
+     "out": 234,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 3047,
+     "in": 861,
+     "out": 283,
+     "misses": [
+      "GRAMS \"1  broccoli\" -> null want [250,650]",
+      "GRAMS \"soy sauce\" -> null want [5,20]"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 1455,
+     "in": 844,
+     "out": 257,
+     "misses": [
+      "GRAMS \"salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 1513,
+     "in": 857,
+     "out": 268,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 2035,
+     "in": 854,
+     "out": 379,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 1251,
+     "in": 836,
+     "out": 286,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"olive oil\" -> null want [20,40]",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 37 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 1099,
+     "in": 843,
+     "out": 187,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 1710,
+     "in": 842,
+     "out": 299,
+     "misses": [
+      "MISSING /patata/i",
+      "MISSING /cebolla/i",
+      "MISSING /huevos/i",
+      "MISSING /aceite/i",
+      "MISSING /sal\\b/i",
+      "KCAL 525 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 1554,
+     "in": 871,
+     "out": 280,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 2348,
+     "in": 908,
+     "out": 440,
+     "misses": [
+      "GRAMS \"1 can kidney beans\" -> 266 want [420,430]",
+      "GRAMS \"1 can diced tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 1869,
+     "in": 889,
+     "out": 351,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 2191,
+     "in": 897,
+     "out": 397,
+     "misses": [
+      "MISSING /eggs/"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1633,
+     "in": 856,
+     "out": 234,
+     "misses": [
+      "MISSING /bananas/",
+      "FOOD \"milk\" -> Milk, whole, 3.25% milkfat, with added vitamin D"
+     ]
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 2132,
+     "in": 860,
+     "out": 288,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "mistral.ministral-3-14b-instruct",
+   "label": "Ministral 3 14B",
+   "kind": "image",
+   "mode": "tool",
+   "reads": 8,
+   "schemaValid": 8,
+   "accuracy": {
+    "recipes": 8,
+    "lines": 65,
+    "foodPct": 90.76923076923077,
+    "gramPct": 87.6923076923077,
+    "kcalOk": 8
+   },
+   "latencyP50": 3141,
+   "latencyP95": 4448,
+   "meanInputTokens": 3145,
+   "meanOutputTokens": 448.625,
+   "promptOverheadTokens": 800,
+   "imageTokens": 2345,
+   "meanCostPerRead": 0.000718725,
+   "spend": 0.0057498,
+   "errors": [],
+   "details": [
+    {
+     "item": "Classic pancakes",
+     "ok": true,
+     "error": null,
+     "ms": 3129,
+     "in": 3145,
+     "out": 386,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 4116,
+     "in": 3145,
+     "out": 496,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Spaghetti bolognese",
+     "ok": true,
+     "error": null,
+     "ms": 3949,
+     "in": 3145,
+     "out": 589,
+     "misses": [
+      "GRAMS \"1 can crushed tomatoes\" -> 411 want [780,800]"
+     ]
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 2709,
+     "in": 3145,
+     "out": 497,
+     "misses": [
+      "GRAMS \"1 can whole tomatoes, canned\" -> 411 want [790,800]",
+      "MISSING /eggs/"
+     ]
+    },
+    {
+     "item": "Black bean tacos",
+     "ok": true,
+     "error": null,
+     "ms": 4223,
+     "in": 3145,
+     "out": 501,
+     "misses": [
+      "GRAMS \"2 can black beans\" -> 822 want [840,860]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1983,
+     "in": 3145,
+     "out": 234,
+     "misses": [
+      "MISSING /bananas/",
+      "FOOD \"milk\" -> Milk, whole, 3.25% milkfat, with added vitamin D"
+     ]
+    },
+    {
+     "item": "Lentil soup",
+     "ok": true,
+     "error": null,
+     "ms": 4448,
+     "in": 3145,
+     "out": 539,
+     "misses": [
+      "MISSING /carrots/"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 3141,
+     "in": 3145,
+     "out": 347,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    }
+   ]
+  },
+  {
+   "model": "openai.gpt-oss-120b-1:0",
+   "label": "gpt-oss-120b",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 88.88888888888889,
+    "gramPct": 80.15873015873017,
+    "kcalOk": 17
+   },
+   "latencyP50": 1977,
+   "latencyP95": 4056,
+   "meanInputTokens": 738,
+   "meanOutputTokens": 605.95,
+   "promptOverheadTokens": 679,
+   "imageTokens": null,
+   "meanCostPerRead": 0.00047427,
+   "spend": 0.0094854,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 4073,
+     "in": 744,
+     "out": 829,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 1857,
+     "in": 742,
+     "out": 949,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 1760,
+     "in": 725,
+     "out": 635,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillet\" -> Vegetarian fillets",
+      "GRAMS \"2 fillet anchovy fillet\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 1853,
+     "in": 721,
+     "out": 507,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 2191,
+     "in": 715,
+     "out": 395,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 2445,
+     "in": 820,
+     "out": 708,
+     "misses": [
+      "GRAMS \"4 piece salmon fillet\" -> 1584 want [650,700]",
+      "KCAL 871 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 1485,
+     "in": 742,
+     "out": 522,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 2665,
+     "in": 734,
+     "out": 517,
+     "misses": [
+      "GRAMS \"1  broccoli\" -> null want [250,650]",
+      "GRAMS \"soy sauce\" -> null want [5,20]"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 1977,
+     "in": 719,
+     "out": 548,
+     "misses": [
+      "MISSING /eggs/",
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 1727,
+     "in": 723,
+     "out": 510,
+     "misses": [
+      "MISSING /eggs/i",
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 1955,
+     "in": 727,
+     "out": 620,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 2791,
+     "in": 713,
+     "out": 598,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"2  olive oil\" -> null want [20,40]",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 37 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 902,
+     "in": 714,
+     "out": 352,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 3385,
+     "in": 717,
+     "out": 467,
+     "misses": [
+      "MISSING /patata/i",
+      "MISSING /cebolla/i",
+      "MISSING /huevos/i",
+      "MISSING /aceite/i",
+      "MISSING /sal\\b/i",
+      "KCAL 525 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 1121,
+     "in": 743,
+     "out": 398,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 4056,
+     "in": 774,
+     "out": 1114,
+     "misses": [
+      "GRAMS \"1 can kidney beans\" -> 266 want [420,430]",
+      "FOOD \"diced tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can diced tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 2247,
+     "in": 759,
+     "out": 685,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 2648,
+     "in": 766,
+     "out": 783,
+     "misses": [
+      "FOOD \"garlic cloves\" -> Spices, cloves, ground",
+      "FOOD \"whole tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 882,
+     "in": 726,
+     "out": 491,
+     "misses": [
+      "MISSING /bananas/"
+     ]
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 2049,
+     "in": 736,
+     "out": 491,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "mistral.ministral-3-8b-instruct",
+   "label": "Ministral 3 8B",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 88.09523809523809,
+    "gramPct": 73.80952380952381,
+    "kcalOk": 16
+   },
+   "latencyP50": 2643,
+   "latencyP95": 5080,
+   "meanInputTokens": 867.2,
+   "meanOutputTokens": 365.7,
+   "promptOverheadTokens": 800,
+   "imageTokens": null,
+   "meanCostPerRead": 0.000184935,
+   "spend": 0.0036987,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 4825,
+     "in": 870,
+     "out": 488,
+     "misses": [
+      "MISSING /eggs/"
+     ]
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 5791,
+     "in": 872,
+     "out": 528,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"3  green curry paste\" -> null want [30,60]",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 5080,
+     "in": 854,
+     "out": 415,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "GRAMS \"0.5 tbsp mayonnaise\" -> 6.9 want [100,125]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2  anchovy fillets\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 4036,
+     "in": 859,
+     "out": 356,
+     "misses": [
+      "GRAMS \"2 can tuna in water\" -> 344 want [280,300]",
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 2675,
+     "in": 840,
+     "out": 234,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 3552,
+     "in": 959,
+     "out": 387,
+     "misses": [
+      "GRAMS \"4 piece salmon fillets\" -> 1584 want [650,700]",
+      "KCAL 871 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 2913,
+     "in": 872,
+     "out": 290,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 3256,
+     "in": 861,
+     "out": 284,
+     "misses": [
+      "FOOD \"white rice\" -> Rice, white, long-grain, regular, enriched, cooked",
+      "GRAMS \"1 cup white rice\" -> 158 want [180,200]",
+      "GRAMS \"1 head broccoli\" -> null want [250,650]",
+      "GRAMS \"soy sauce\" -> null want [5,20]",
+      "KCAL 354 want 450-900"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 3543,
+     "in": 844,
+     "out": 324,
+     "misses": [
+      "GRAMS \"salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 3449,
+     "in": 857,
+     "out": 335,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 2643,
+     "in": 854,
+     "out": 405,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 1486,
+     "in": 836,
+     "out": 295,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"olive oil\" -> null want [20,40]",
+      "FOOD \"tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"basil\" -> null want [5,15]",
+      "GRAMS \"2 cup penne\" -> 473.17632 want [150,250]",
+      "KCAL 915 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 1219,
+     "in": 843,
+     "out": 246,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 1370,
+     "in": 842,
+     "out": 281,
+     "misses": [
+      "MISSING /patata/i",
+      "MISSING /cebolla/i",
+      "MISSING /huevos/i",
+      "MISSING /aceite/i",
+      "MISSING /sal\\b/i",
+      "KCAL 525 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 1447,
+     "in": 871,
+     "out": 295,
+     "misses": [
+      "GRAMS \"1  instant yeast\" -> null want [6,8]"
+     ]
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 2629,
+     "in": 908,
+     "out": 576,
+     "misses": [
+      "GRAMS \"1 can kidney beans\" -> 266 want [420,430]",
+      "GRAMS \"1 can diced tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 2116,
+     "in": 889,
+     "out": 458,
+     "misses": [
+      "MISSING /eggs/",
+      "MISSING /blueberries/"
+     ]
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 2415,
+     "in": 897,
+     "out": 528,
+     "misses": [
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]",
+      "MISSING /eggs/"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1392,
+     "in": 856,
+     "out": 287,
+     "misses": [
+      "MISSING /bananas/"
+     ]
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 1476,
+     "in": 860,
+     "out": 302,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "mistral.ministral-3-8b-instruct",
+   "label": "Ministral 3 8B",
+   "kind": "image",
+   "mode": "tool",
+   "reads": 8,
+   "schemaValid": 8,
+   "accuracy": {
+    "recipes": 8,
+    "lines": 65,
+    "foodPct": 93.84615384615384,
+    "gramPct": 89.23076923076924,
+    "kcalOk": 8
+   },
+   "latencyP50": 2507,
+   "latencyP95": 3452,
+   "meanInputTokens": 3145,
+   "meanOutputTokens": 411.125,
+   "promptOverheadTokens": 800,
+   "imageTokens": 2345,
+   "meanCostPerRead": 0.0005334187500000001,
+   "spend": 0.0042673500000000005,
+   "errors": [],
+   "details": [
+    {
+     "item": "Classic pancakes",
+     "ok": true,
+     "error": null,
+     "ms": 2119,
+     "in": 3145,
+     "out": 309,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 2507,
+     "in": 3145,
+     "out": 400,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Spaghetti bolognese",
+     "ok": true,
+     "error": null,
+     "ms": 3452,
+     "in": 3145,
+     "out": 591,
+     "misses": [
+      "GRAMS \"1  crushed tomatoes\" -> 123 want [780,800]"
+     ]
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 3156,
+     "in": 3145,
+     "out": 533,
+     "misses": [
+      "GRAMS \"1  tomatoes\" -> 123 want [790,800]",
+      "MISSING /eggs/"
+     ]
+    },
+    {
+     "item": "Black bean tacos",
+     "ok": true,
+     "error": null,
+     "ms": 2889,
+     "in": 3145,
+     "out": 497,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 1816,
+     "in": 3145,
+     "out": 231,
+     "misses": []
+    },
+    {
+     "item": "Lentil soup",
+     "ok": true,
+     "error": null,
+     "ms": 2668,
+     "in": 3145,
+     "out": 437,
+     "misses": [
+      "MISSING /carrots/",
+      "GRAMS \"1  tomatoes\" -> 123 want [405,415]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 2036,
+     "in": 3145,
+     "out": 291,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    }
+   ]
+  },
+  {
+   "model": "us.mistral.pixtral-large-2502-v1:0",
+   "label": "Pixtral Large",
+   "kind": "text",
+   "mode": "any",
+   "reads": 20,
+   "schemaValid": 2,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 10.317460317460316,
+    "gramPct": 9.523809523809524,
+    "kcalOk": 2
+   },
+   "latencyP50": 4170,
+   "latencyP95": 5539,
+   "meanInputTokens": 913,
+   "meanOutputTokens": 322.5,
+   "promptOverheadTokens": 853,
+   "imageTokens": null,
+   "meanCostPerRead": 0.0037609999999999996,
+   "spend": 0.007521999999999999,
+   "errors": [
+    "Thai green curry: ThrottlingException",
+    "Caesar salad: ThrottlingException",
+    "Tuna pasta bake: ThrottlingException",
+    "Peanut butter banana smoothie: ThrottlingException",
+    "Baked salmon: ThrottlingException",
+    "Lemon garlic pasta: ThrottlingException",
+    "Weeknight chicken and rice (prose): ThrottlingException",
+    "Crepes (one line): ThrottlingException",
+    "Victoria sponge (name first): ThrottlingException",
+    "Pancakes (OCR slips): ThrottlingException",
+    "Pasta with tomato sauce (British kitchen units): ThrottlingException",
+    "Tortilla de patatas (Spanish): ThrottlingException",
+    "Bread dough (instructions only): ThrottlingException",
+    "Beef chili: ThrottlingException",
+    "Blueberry muffins: ThrottlingException",
+    "Shakshuka: ThrottlingException",
+    "Peanut butter smoothie: ThrottlingException",
+    "Mashed potatoes: ThrottlingException"
+   ],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 5539,
+     "in": 928,
+     "out": 432,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 1576,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Caesar salad",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 2522,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 2156,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 3307,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 1181,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 3235,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 666,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 1564,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 2397,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 1579,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 2108,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 4170,
+     "in": 898,
+     "out": 213,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 2132,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 2238,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 1046,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 1463,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 1989,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 1518,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 3351,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "us.mistral.pixtral-large-2502-v1:0",
+   "label": "Pixtral Large",
+   "kind": "image",
+   "mode": "any",
+   "reads": 8,
+   "schemaValid": 1,
+   "accuracy": {
+    "recipes": 8,
+    "lines": 65,
+    "foodPct": 6.153846153846154,
+    "gramPct": 6.153846153846154,
+    "kcalOk": 1
+   },
+   "latencyP50": 6910,
+   "latencyP95": 6910,
+   "meanInputTokens": 3961,
+   "meanOutputTokens": 264,
+   "promptOverheadTokens": 853,
+   "imageTokens": 3108,
+   "meanCostPerRead": 0.009506,
+   "spend": 0.009506,
+   "errors": [
+    "Classic pancakes: ThrottlingException",
+    "Thai green curry: ThrottlingException",
+    "Spaghetti bolognese: ThrottlingException",
+    "Shakshuka: ThrottlingException",
+    "Black bean tacos: ThrottlingException",
+    "Lentil soup: ThrottlingException",
+    "Tuna pasta bake: ThrottlingException"
+   ],
+   "details": [
+    {
+     "item": "Classic pancakes",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 1451,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 1532,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Spaghetti bolognese",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 3223,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 2430,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Black bean tacos",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 3058,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 6910,
+     "in": 3961,
+     "out": 264,
+     "misses": [
+      "MISSING /bananas/"
+     ]
+    },
+    {
+     "item": "Lentil soup",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 2682,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": false,
+     "error": "ThrottlingException",
+     "ms": 3258,
+     "in": 0,
+     "out": 0,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "openai.gpt-oss-20b-1:0",
+   "label": "gpt-oss-20b",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 20,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 88.88888888888889,
+    "gramPct": 78.57142857142857,
+    "kcalOk": 17
+   },
+   "latencyP50": 2269,
+   "latencyP95": 12153,
+   "meanInputTokens": 738,
+   "meanOutputTokens": 749.8,
+   "promptOverheadTokens": 679,
+   "imageTokens": null,
+   "meanCostPerRead": 0.0002766,
+   "spend": 0.0055320000000000005,
+   "errors": [],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 1473,
+     "in": 744,
+     "out": 783,
+     "misses": [
+      "MISSING /eggs/"
+     ]
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 1645,
+     "in": 742,
+     "out": 820,
+     "misses": [
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1 can coconut milk\" -> 411 want [380,385]"
+     ]
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 1377,
+     "in": 725,
+     "out": 926,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillet\" -> Vegetarian fillets",
+      "GRAMS \"2  anchovy fillet\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 7000,
+     "in": 721,
+     "out": 682,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 3083,
+     "in": 715,
+     "out": 275,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 12661,
+     "in": 820,
+     "out": 1384,
+     "misses": [
+      "GRAMS \"4 piece salmon fillet\" -> 1584 want [650,700]",
+      "GRAMS \"1 tsp dill\" -> 0.18541666666666667 want [0.5,2]",
+      "KCAL 870 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": true,
+     "error": null,
+     "ms": 5301,
+     "in": 742,
+     "out": 560,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": true,
+     "error": null,
+     "ms": 7635,
+     "in": 734,
+     "out": 759,
+     "misses": [
+      "GRAMS \"1 head broccoli\" -> null want [250,650]",
+      "GRAMS \"1  soy sauce\" -> null want [5,20]"
+     ]
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": true,
+     "error": null,
+     "ms": 1866,
+     "in": 719,
+     "out": 698,
+     "misses": [
+      "GRAMS \"pinch salt\" -> null want [0.2,0.6]"
+     ]
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 1198,
+     "in": 723,
+     "out": 559,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": true,
+     "error": null,
+     "ms": 9861,
+     "in": 727,
+     "out": 983,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 2269,
+     "in": 713,
+     "out": 1133,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"2  olive oil\" -> null want [20,40]",
+      "GRAMS \"1  chopped tomatoes\" -> 123 want [390,410]",
+      "GRAMS \"basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 11 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": true,
+     "error": null,
+     "ms": 973,
+     "in": 714,
+     "out": 260,
+     "misses": [
+      "GRAMS \"0.5 cup sugar\" -> 94 want [95,105]"
+     ]
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 967,
+     "in": 717,
+     "out": 427,
+     "misses": [
+      "MISSING /patata/i",
+      "MISSING /cebolla/i",
+      "MISSING /huevos/i",
+      "MISSING /aceite/i",
+      "MISSING /sal\\b/i",
+      "KCAL 525 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": true,
+     "error": null,
+     "ms": 1596,
+     "in": 743,
+     "out": 789,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 12153,
+     "in": 774,
+     "out": 1303,
+     "misses": [
+      "GRAMS \"1 can kidney beans\" -> 266 want [420,430]",
+      "FOOD \"diced tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can diced tomatoes\" -> 411 want [790,800]"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": true,
+     "error": null,
+     "ms": 5213,
+     "in": 759,
+     "out": 540,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": true,
+     "error": null,
+     "ms": 3373,
+     "in": 766,
+     "out": 1172,
+     "misses": [
+      "FOOD \"whole tomatoes\" -> Tomatoes, red, ripe, raw, year round average",
+      "GRAMS \"1 can whole tomatoes\" -> 411 want [790,800]",
+      "MISSING /eggs/"
+     ]
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 913,
+     "in": 726,
+     "out": 445,
+     "misses": [
+      "MISSING /bananas/",
+      "FOOD \"milk\" -> Milk, whole, 3.25% milkfat, with added vitamin D"
+     ]
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": true,
+     "error": null,
+     "ms": 4797,
+     "in": 736,
+     "out": 498,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "google.gemma-3-12b-it",
+   "label": "Gemma 3 12B",
+   "kind": "text",
+   "mode": "tool",
+   "reads": 20,
+   "schemaValid": 9,
+   "accuracy": {
+    "recipes": 20,
+    "lines": 126,
+    "foodPct": 39.682539682539684,
+    "gramPct": 34.12698412698413,
+    "kcalOk": 6
+   },
+   "latencyP50": 2642,
+   "latencyP95": 6028,
+   "meanInputTokens": 286.44444444444446,
+   "meanOutputTokens": 326.3333333333333,
+   "promptOverheadTokens": 224,
+   "imageTokens": null,
+   "meanCostPerRead": 0.00012041666666666668,
+   "spend": 0.014431330000000001,
+   "errors": [
+    "Thai green curry: ai_bad_output",
+    "Lemon garlic pasta: ai_bad_output",
+    "Weeknight chicken and rice (prose): ai_bad_output",
+    "Crepes (one line): ai_bad_output",
+    "Pancakes (OCR slips): ai_bad_output",
+    "Shortbread (dotted table): ai_bad_output",
+    "Bread dough (instructions only): ai_bad_output",
+    "Blueberry muffins: ai_bad_output",
+    "Shakshuka: ai_bad_output",
+    "Peanut butter smoothie: ai_bad_output",
+    "Mashed potatoes: ai_bad_output"
+   ],
+   "details": [
+    {
+     "item": "Chocolate chip cookies",
+     "ok": true,
+     "error": null,
+     "ms": 3819,
+     "in": 288,
+     "out": 400,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 43718,
+     "in": 288,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Caesar salad",
+     "ok": true,
+     "error": null,
+     "ms": 2408,
+     "in": 267,
+     "out": 341,
+     "misses": [
+      "GRAMS \"2 head romaine lettuce\" -> null want [500,1300]",
+      "FOOD \"anchovy fillets\" -> Vegetarian fillets",
+      "GRAMS \"2  anchovy fillets\" -> 170 want [5,15]"
+     ]
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 2642,
+     "in": 276,
+     "out": 306,
+     "misses": [
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    },
+    {
+     "item": "Peanut butter banana smoothie",
+     "ok": true,
+     "error": null,
+     "ms": 2125,
+     "in": 261,
+     "out": 208,
+     "misses": []
+    },
+    {
+     "item": "Baked salmon",
+     "ok": true,
+     "error": null,
+     "ms": 2962,
+     "in": 373,
+     "out": 321,
+     "misses": [
+      "GRAMS \"4  salmon fillets\" -> 1584 want [650,700]",
+      "KCAL 871 want 280-520"
+     ]
+    },
+    {
+     "item": "Lemon garlic pasta",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 27794,
+     "in": 289,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Weeknight chicken and rice (prose)",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 34239,
+     "in": 282,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Crepes (one line)",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 42006,
+     "in": 266,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Victoria sponge (name first)",
+     "ok": true,
+     "error": null,
+     "ms": 3346,
+     "in": 273,
+     "out": 294,
+     "misses": [
+      "GRAMS \"4 tbsp strawberry jam\" -> 68 want [70,90]"
+     ]
+    },
+    {
+     "item": "Pancakes (OCR slips)",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 28667,
+     "in": 272,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Pasta with tomato sauce (British kitchen units)",
+     "ok": true,
+     "error": null,
+     "ms": 2587,
+     "in": 258,
+     "out": 336,
+     "misses": [
+      "GRAMS \"butter\" -> null want [10,20]",
+      "GRAMS \"olive oil\" -> null want [20,40]",
+      "GRAMS \"1 can chopped tomatoes\" -> 411 want [390,410]",
+      "GRAMS \"basil\" -> null want [5,15]",
+      "GRAMS \"2  penne\" -> null want [150,250]",
+      "KCAL 37 want 400-900"
+     ]
+    },
+    {
+     "item": "Shortbread (dotted table)",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 41378,
+     "in": 258,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Tortilla de patatas (Spanish)",
+     "ok": true,
+     "error": null,
+     "ms": 2220,
+     "in": 261,
+     "out": 253,
+     "misses": [
+      "FOOD \"patatas medianas\" -> (none)",
+      "GRAMS \"4  patatas medianas\" -> null want [600,900]",
+      "FOOD \"cebolla\" -> (none)",
+      "GRAMS \"1  cebolla\" -> null want [90,150]",
+      "FOOD \"huevos\" -> (none)",
+      "GRAMS \"6  huevos\" -> null want [280,330]",
+      "FOOD \"aceite de oliva\" -> (none)",
+      "GRAMS \"0.5  aceite de oliva\" -> null want [105,112]",
+      "FOOD \"sal\" -> Fish, salmon, Atlantic, farm raised, raw",
+      "GRAMS \"1  sal\" -> 396 want [5,7]",
+      "KCAL 201 want 250-500"
+     ]
+    },
+    {
+     "item": "Bread dough (instructions only)",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 31043,
+     "in": 294,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Beef chili",
+     "ok": true,
+     "error": null,
+     "ms": 6028,
+     "in": 321,
+     "out": 478,
+     "misses": [
+      "FOOD \"garlic cloves\" -> Spices, cloves, ground"
+     ]
+    },
+    {
+     "item": "Blueberry muffins",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 41940,
+     "in": 307,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 26396,
+     "in": 312,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 28139,
+     "in": 275,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Mashed potatoes",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 34847,
+     "in": 283,
+     "out": 4096,
+     "misses": []
+    }
+   ]
+  },
+  {
+   "model": "google.gemma-3-12b-it",
+   "label": "Gemma 3 12B",
+   "kind": "image",
+   "mode": "tool",
+   "reads": 8,
+   "schemaValid": 4,
+   "accuracy": {
+    "recipes": 8,
+    "lines": 65,
+    "foodPct": 43.07692307692308,
+    "gramPct": 46.15384615384615,
+    "kcalOk": 4
+   },
+   "latencyP50": 3407,
+   "latencyP95": 13007,
+   "meanInputTokens": 474,
+   "meanOutputTokens": 389.75,
+   "promptOverheadTokens": 224,
+   "imageTokens": 250,
+   "meanCostPerRead": 0.00015568749999999998,
+   "spend": 0.00554475,
+   "errors": [
+    "Spaghetti bolognese: ai_bad_output",
+    "Shakshuka: ai_bad_output",
+    "Black bean tacos: ai_bad_output",
+    "Peanut butter smoothie: ai_bad_output"
+   ],
+   "details": [
+    {
+     "item": "Classic pancakes",
+     "ok": true,
+     "error": null,
+     "ms": 13007,
+     "in": 474,
+     "out": 340,
+     "misses": []
+    },
+    {
+     "item": "Thai green curry",
+     "ok": true,
+     "error": null,
+     "ms": 4516,
+     "in": 474,
+     "out": 436,
+     "misses": [
+      "FOOD \"chicken thighs\" -> Chicken, dark meat, thigh, meat only, with added solution, cooked, roasted",
+      "FOOD \"green curry paste\" -> Nuts, almond paste",
+      "GRAMS \"1  coconut milk\" -> null want [380,385]"
+     ]
+    },
+    {
+     "item": "Spaghetti bolognese",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 46853,
+     "in": 474,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Shakshuka",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 28673,
+     "in": 474,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Black bean tacos",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 35670,
+     "in": 474,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Peanut butter smoothie",
+     "ok": false,
+     "error": "ai_bad_output",
+     "ms": 27919,
+     "in": 474,
+     "out": 4096,
+     "misses": []
+    },
+    {
+     "item": "Lentil soup",
+     "ok": true,
+     "error": null,
+     "ms": 3407,
+     "in": 474,
+     "out": 469,
+     "misses": []
+    },
+    {
+     "item": "Tuna pasta bake",
+     "ok": true,
+     "error": null,
+     "ms": 2987,
+     "in": 474,
+     "out": 314,
+     "misses": [
+      "FOOD \"penne\" -> Pasta, cooked, enriched, without added salt",
+      "FOOD \"passata\" -> (none)",
+      "GRAMS \"400 ml passata\" -> null want [380,430]"
+     ]
+    }
+   ]
+  }
+ ]
+}

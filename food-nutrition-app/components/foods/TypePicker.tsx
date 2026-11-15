@@ -235,16 +235,16 @@ export default function TypePicker({ id, name, count, types, more, mode, onClose
     );
 }
 
-/** A word from the types worth filtering by ("sockeye, canned"). */
+/** The two varieties most types share, to show what filtering is for ("sockeye, chinook"). */
 function placeholderHint(types: FoodTypeOption[]): string {
-    const words = new Map<string, number>();
+    const counts = new Map<string, number>();
     for (const t of types) {
-        for (const w of t.label.toLowerCase().split(/[^a-z]+/)) {
-            if (w.length >= 4 && !['with', 'without', 'from', 'added', 'plain'].includes(w)) words.set(w, (words.get(w) ?? 0) + 1);
-        }
+        const variety = t.label.split(' · ')[0].replace(/\([^)]*\)/g, '').trim().toLowerCase();
+        if (variety && variety.length <= 16 && !['raw', 'cooked', 'plain'].includes(variety)) counts.set(variety, (counts.get(variety) ?? 0) + 1);
     }
-    const top = Array.from(words.entries()).filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 2).map(([w]) => w);
-    return top.length ? top.join(', ') : 'raw, cooked';
+    const top = Array.from(counts.entries()).filter(([, n]) => n >= 2)
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 2).map(([w]) => w);
+    return top.length === 2 ? top.join(', ') : 'raw, canned';
 }
 
 interface TypesToggleProps {

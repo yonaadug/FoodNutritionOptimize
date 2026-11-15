@@ -10,8 +10,8 @@ Decisions the owner made, newest first. Agents and docs follow these; change the
 
 **Recipe AI** (being built)
 - Pasted text goes through the built-in reader first, and AI is used only when the reader is unsure.
-- Claude Haiku 5.5 is the default. Sonnet 5.5 is used only for photos of plated food or reads that fail validation.
-- Amazon Nova Lite is the fallback while the account's Claude quota is 0.
+- Since 2026-11-15: Google Gemma 3 27B on Bedrock reads photos and unsure text, and Amazon Nova Lite v1 is the fallback when Gemma errors, times out or fails validation. No escalation model, and no Claude ([research/CHEAPER_MODELS.md](research/CHEAPER_MODELS.md)). The code keeps Claude support, so switching back is settings and IAM.
+- Before that (2026-11-14): Claude Haiku 5.5 by default, Sonnet 5.5 for plated food and failed reads, Amazon Nova 2 Lite while the account's Claude quota was 0.
 
 **Plus** ([STRIPE_PLAN.md](STRIPE_PLAN.md))
 - **Unlocks:**

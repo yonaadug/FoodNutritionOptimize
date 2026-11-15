@@ -317,12 +317,12 @@ You need one Google Cloud project with an OAuth consent screen, and two OAuth cl
 
 ### 12. Bedrock (recipe AI)
 
-**Cost:** pay per use. Each running copy of the app stops calling AI after $5 of estimated spend a day (`AI_DAILY_BUDGET_USD`), and the budget's kill switch is the account-wide backstop. About $0.001 per Nova read ([BEDROCK_SETUP.md §3](BEDROCK_SETUP.md#3-which-model-to-use)).
+**Cost:** pay per use. Each running copy of the app stops calling AI after $5 of estimated spend a day (`AI_DAILY_BUDGET_USD`), and the budget's kill switch is the account-wide backstop. About $0.00025 per Gemma photo read ([BEDROCK_SETUP.md §3](BEDROCK_SETUP.md#3-which-model-to-use)).
 
-- **Nova 2 Lite works without any setup.** It needs no form or agreement, and the stack already grants it. Until Claude is enabled, the site reads recipes with Nova.
-- **Claude (Haiku 5.5, Sonnet 5.5) needs account steps.** Quotas and Marketplace agreements belong to each account, so do [BEDROCK_SETUP.md §2](BEDROCK_SETUP.md#2-fix-the-account-owner-actions) (§2.1 to §2.6: the use-case form, the Haiku and Sonnet agreements, the quota request) **in the prod account**, adding `--profile nd-prod` to each command. Repeat in dev only if you want Claude there too. The request you made in your original account doesn't carry over. No code or deploy change is needed: once the quota is above 0, the app switches to Claude by itself.
+- **Since 2026-11-15 the site reads recipes with Gemma 3 27B, falling back to Nova Lite v1. Both work without any setup.** They need no form, agreement or quota request, and the stack grants exactly these two (Gemma's foundation-model ARN; Nova Lite's `us.` profile and its three regions' foundation-model ARNs).
+- **Claude isn't used, so the Claude account steps aren't needed**, in either account. The pending Claude quota requests can be withdrawn or left. To switch back to Claude later, see [BEDROCK_SETUP.md §2 and §5](BEDROCK_SETUP.md#2-fix-the-account-owner-actions): the account steps in that account, then the stack's `AI_*` models and grants.
 
-**Check:** `aws bedrock get-foundation-model-availability --profile nd-prod --model-id anthropic.claude-haiku-5-5` shows `agreementAvailability.status: AVAILABLE` and the quota from §2.1 is above 0.
+**Check:** `aws bedrock get-foundation-model-availability --profile nd-prod --model-id google.gemma-3-27b-it` shows `agreementAvailability.status: AVAILABLE` and `authorizationStatus: AUTHORIZED`.
 
 ---
 
@@ -399,9 +399,9 @@ aws cloudformation describe-stacks --profile nd-dev --stack-name NutritionDictio
    aws logs tail <WebLogGroup> --profile nd-dev --since 1h | grep -i 'ip address'
    ```
    No output is good. A warning means `CloudFront-Viewer-Address` isn't arriving, and everyone shares one sign-in limit ([ACCOUNTS.md](ACCOUNTS.md#going-to-production-on-aws)).
-6. **A Bedrock read.** First check the account can call Nova at all (costs a fraction of a cent):
+6. **A Bedrock read.** First check the account can call Gemma at all (costs a fraction of a cent):
    ```bash
-   aws bedrock-runtime converse --profile nd-dev --model-id us.amazon.nova-2-lite-v1:0 \
+   aws bedrock-runtime converse --profile nd-dev --model-id google.gemma-3-27b-it \
      --messages '[{"role":"user","content":[{"text":"Reply with OK"}]}]' \
      --inference-config maxTokens=20 --query 'output.message.content[0].text'
    ```
@@ -409,7 +409,7 @@ aws cloudformation describe-stacks --profile nd-dev --stack-name NutritionDictio
    ```bash
    aws logs tail <WebLogGroup> --profile nd-dev --since 15m | grep '\[ai\]'
    ```
-   Expect a line like `[ai] provider=bedrock model=us.amazon.nova-2-lite-v1:0 ... ok=true ... cost_usd=0.00...` (or `claude-haiku` once Claude is enabled in dev).
+   Expect a line like `[ai] provider=bedrock model=google.gemma-3-27b-it kind=image ... ok=true ... cost_usd=0.00023 tokens=maybe_undercounted`. A line naming `us.amazon.nova-lite-v1:0` means Gemma failed and the fallback read it; the line before says why.
 7. **Kill switch, on dev first.** See [Post-launch checklist](#18-post-launch-checklist), item 4. Practise it here, where nothing is at stake.
 
 ---

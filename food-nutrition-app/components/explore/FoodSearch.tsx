@@ -2,12 +2,12 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import type { Food } from '@/lib/food-types';
+import type { FoodGroupResult } from '@/lib/food-groups';
 import { RecentCache } from '@/lib/navigation-ux';
 import Icon from '@/components/ui/Icon';
 import { FoodRowSkeleton } from '@/components/foods/FoodRow';
-import { fetchSearch } from '@/hooks/useFoodSearch';
-import FoodResultRow from './FoodResultRow';
+import { appendGroups, fetchGroupedSearch } from '@/hooks/useFoodSearch';
+import FoodGroupRow from './FoodGroupRow';
 import { recentSearches, useRecentSearches } from './useRecentSearches';
 
 const PAGE_SIZE = 20;
@@ -16,14 +16,18 @@ const MIN_CHARS = 2;
 
 interface SearchData {
     key: string;
-    foods: Food[];
+    /** One row per food (lib/food-groups.ts). */
+    groups: FoodGroupResult[];
     page: number;
     totalPages: number;
+    /** Foods (groups) matching. */
     total: number;
+    /** USDA entries matching. */
+    entries: number;
     error?: string;
 }
 
-const EMPTY: SearchData = { key: '', foods: [], page: 0, totalPages: 0, total: 0 };
+const EMPTY: SearchData = { key: '', groups: [], page: 0, totalPages: 0, total: 0, entries: 0 };
 
 const keyFor = (trimmed: string, nonce: number) => `${trimmed.toLowerCase()}#${nonce}`;
 
@@ -32,8 +36,9 @@ const seenResults = new RecentCache<SearchData>(20);
 
 export interface InitialSearch {
     query: string;
-    foods: Food[];
+    groups: FoodGroupResult[];
     total: number;
+    entries: number;
     totalPages: number;
 }
 
@@ -59,14 +64,14 @@ export default function FoodSearch({ initial, foodCount, children }: FoodSearchP
     const [query, setQuery] = useState(initialQuery);
     const [nonce, setNonce] = useState(0);
     const [data, setData] = useState<SearchData>(() => {
-        if (initial) return { key: keyFor(initial.query.trim(), 0), foods: initial.foods, page: 1, totalPages: initial.totalPages, total: initial.total };
+        if (initial) return { key: keyFor(initial.query.trim(), 0), groups: initial.groups, page: 1, totalPages: initial.totalPages, total: initial.total, entries: initial.entries };
         // Results seen earlier in this visit come back at once, so Back lands where it left off.
         const seen = initialQuery.trim().length >= MIN_CHARS ? seenResults.get(initialQuery.trim().toLowerCase()) : undefined;
         return seen ? { ...seen, key: keyFor(initialQuery.trim(), 0) } : EMPTY;
     });
     // Remember what's on screen (including "Show more" pages) for Back.
     useEffect(() => {
-        if (data.key && !data.error && data.foods.length) seenResults.set(data.key.replace(/#\d+$/, ''), data);
+        if (data.key && !data.error && data.groups.length) seenResults.set(data.key.replace(/#\d+$/, ''), data);
     }, [data]);
     const [loadingMore, setLoadingMore] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -87,8 +92,8 @@ export default function FoodSearch({ initial, foodCount, children }: FoodSearchP
         const ctrl = new AbortController();
         const timer = setTimeout(async () => {
             try {
-                const r = await fetchSearch(trimmed, 1, PAGE_SIZE, ctrl.signal);
-                setData({ key, foods: r.foods, page: 1, totalPages: r.totalPages, total: r.total });
+                const r = await fetchGroupedSearch(trimmed, 1, PAGE_SIZE, ctrl.signal);
+                setData({ key, groups: r.groups, page: 1, totalPages: r.totalPages, total: r.total, entries: r.entries });
             } catch (e) {
                 if (ctrl.signal.aborted) return;
                 setData({ ...EMPTY, key, error: e instanceof Error ? e.message : 'Search failed' });
@@ -128,10 +133,8 @@ export default function FoodSearch({ initial, foodCount, children }: FoodSearchP
         if (!current || current.page >= current.totalPages || loadingMore) return;
         setLoadingMore(true);
         try {
-            const r = await fetchSearch(trimmed, current.page + 1, PAGE_SIZE);
-            setData(d => d.key === key
-                ? { ...d, foods: [...d.foods, ...r.foods.filter(f => !d.foods.some(x => x.id === f.id))], page: d.page + 1 }
-                : d);
+            const r = await fetchGroupedSearch(trimmed, current.page + 1, PAGE_SIZE);
+            setData(d => d.key === key ? { ...d, groups: appendGroups(d.groups, r.groups), page: d.page + 1 } : d);
         } catch {
             /* keep what we have; the button stays available to retry */
         } finally {
@@ -148,7 +151,7 @@ export default function FoodSearch({ initial, foodCount, children }: FoodSearchP
     };
 
     const onInputKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'ArrowDown' && current?.foods.length) {
+        if (e.key === 'ArrowDown' && current?.groups.length) {
             e.preventDefault();
             focusResult(0);
         } else if (e.key === 'Escape' && query) {
@@ -158,6 +161,8 @@ export default function FoodSearch({ initial, foodCount, children }: FoodSearchP
     };
 
     const onListKey = (e: React.KeyboardEvent<HTMLUListElement>) => {
+        // A type picker handles its own keys.
+        if ((e.target as HTMLElement).closest('.type-picker')) return;
         const links = Array.from(listRef.current?.querySelectorAll<HTMLAnchorElement>('a.result-link') ?? []);
         const at = links.indexOf(document.activeElement as HTMLAnchorElement);
         if (at < 0) return;
@@ -176,7 +181,7 @@ export default function FoodSearch({ initial, foodCount, children }: FoodSearchP
     const status = !active ? ''
         : loading ? 'Searching…'
             : current?.error ? ''
-                : current?.total ? `${current.total.toLocaleString('en-US')} ${current.total === 1 ? 'food matches' : 'foods match'} “${trimmed}”`
+                : current?.total ? `${current.total.toLocaleString('en-US')} ${current.total === 1 ? 'food matches' : 'foods match'} “${trimmed}”${current.entries > current.total ? ` (${current.entries.toLocaleString('en-US')} USDA entries)` : ''}`
                     : '';
 
     return (
@@ -213,7 +218,7 @@ export default function FoodSearch({ initial, foodCount, children }: FoodSearchP
 
             <div className="search-status small muted" id={statusId} aria-live="polite">
                 {status}
-                {active && !!current?.foods.length && <span className="search-hint"> · Press ↓ to move through results</span>}
+                {active && !!current?.groups.length && <span className="search-hint"> · Press ↓ to move through results</span>}
             </div>
 
             {!active && recents.length > 0 && (
@@ -247,7 +252,7 @@ export default function FoodSearch({ initial, foodCount, children }: FoodSearchP
                         </div>
                     )}
 
-                    {current && !current.error && current.foods.length === 0 && (
+                    {current && !current.error && current.groups.length === 0 && (
                         <div className="empty-state">
                             <div className="empty-icon"><Icon name="search" /></div>
                             <h2>No foods match &ldquo;{trimmed}&rdquo;</h2>
@@ -258,16 +263,16 @@ export default function FoodSearch({ initial, foodCount, children }: FoodSearchP
                         </div>
                     )}
 
-                    {!!current?.foods.length && (
+                    {!!current?.groups.length && (
                         <ul className="result-list" ref={listRef} onKeyDown={onListKey}>
-                            {current.foods.map(f => <FoodResultRow key={f.id} food={f} onOpen={remember} />)}
+                            {current.groups.map(g => <FoodGroupRow key={g.key} group={g} query={trimmed} onOpen={remember} />)}
                         </ul>
                     )}
 
                     {!!current && current.page < current.totalPages && (
                         <div className="list-footer">
                             <button type="button" className="btn btn-secondary" onClick={loadMore} disabled={loadingMore}>
-                                {loadingMore ? <><span className="spinner" /> Loading…</> : `Show more (${(current.total - current.foods.length).toLocaleString('en-US')} left)`}
+                                {loadingMore ? <><span className="spinner" /> Loading…</> : `Show more (${(current.total - current.groups.length).toLocaleString('en-US')} left)`}
                             </button>
                         </div>
                     )}

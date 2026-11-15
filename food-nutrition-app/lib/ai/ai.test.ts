@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import jpeg from 'jpeg-js';
 import Anthropic from '@anthropic-ai/sdk';
 import { bedrockConfigHint, bedrockEndpoint, bedrockModelId, builtinTextFirst, chooseProvider, createProvider, DEFAULT_BEDROCK_MODEL, DEFAULT_MODEL, mapSdkError } from './index';
-import { createNovaProvider, mapNovaError, novaRequest, type NovaRequest, type NovaResponse } from './nova';
+import { createConverseProvider, mapConverseError, converseRequest, type ConverseRequest, type ConverseResponse } from './converse';
 import { createClaudeProvider, type ClaudeMessage, type ClaudeRequest } from './claude';
 import { createMockProvider } from './mock';
 import { baseModelId, estimateCostUsd } from './cost';
@@ -186,14 +186,14 @@ describe('Claude errors that let Nova take over', () => {
 });
 
 describe('Nova provider', () => {
-    const toolReply = (input: unknown, usage = { inputTokens: 1780, outputTokens: 481 }): NovaResponse => ({
+    const toolReply = (input: unknown, usage = { inputTokens: 1780, outputTokens: 481 }): ConverseResponse => ({
         output: { message: { content: [{ toolUse: { name: RECORD_RECIPE_TOOL, input } }] } },
         stopReason: 'tool_use',
         usage,
     });
-    function capture(...replies: (NovaResponse | Error)[]) {
-        const sent: NovaRequest[] = [];
-        const send = async (r: NovaRequest) => {
+    function capture(...replies: (ConverseResponse | Error)[]) {
+        const sent: ConverseRequest[] = [];
+        const send = async (r: ConverseRequest) => {
             sent.push(r);
             const next = replies.length > 1 ? replies.shift()! : replies[0];
             if (next instanceof Error) throw next;
@@ -201,11 +201,11 @@ describe('Nova provider', () => {
         };
         return { sent, send };
     }
-    const imageFormat = (r: NovaRequest) => (r.messages[0].content[0] as { image: { format: string } }).image.format;
+    const imageFormat = (r: ConverseRequest) => (r.messages[0].content[0] as { image: { format: string } }).image.format;
     beforeEach(() => { silence(); });
 
     it('forces the record_recipe tool with the shared prompt and schema', () => {
-        const r = novaRequest('us.amazon.nova-2-lite-v1:0', { kind: 'text', text: '2 eggs' });
+        const r = converseRequest('us.amazon.nova-2-lite-v1:0', { kind: 'text', text: '2 eggs' });
         assert.equal(r.modelId, 'us.amazon.nova-2-lite-v1:0');
         assert.deepEqual(r.toolConfig.toolChoice, { tool: { name: RECORD_RECIPE_TOOL } });
         assert.equal(r.toolConfig.tools[0].toolSpec.inputSchema.json, RECORD_RECIPE_TOOL_DEF.input_schema);
@@ -215,50 +215,50 @@ describe('Nova provider', () => {
     });
     it('sends images as raw bytes in the right format, before the text', () => {
         const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
-        const r = novaRequest('m', { kind: 'image', base64: bytes.toString('base64'), mediaType: 'image/jpeg' });
+        const r = converseRequest('m', { kind: 'image', base64: bytes.toString('base64'), mediaType: 'image/jpeg' });
         const [image, text] = r.messages[0].content as [{ image: { format: string; source: { bytes: Uint8Array } } }, { text: string }];
         assert.equal(image.image.format, 'jpeg');
         assert.deepEqual(Buffer.from(image.image.source.bytes), bytes);
         assert.match(text.text, /photo/);
-        assert.equal(imageFormat(novaRequest('m', { kind: 'image', base64: 'AA==', mediaType: 'image/webp' })), 'webp');
+        assert.equal(imageFormat(converseRequest('m', { kind: 'image', base64: 'AA==', mediaType: 'image/webp' })), 'webp');
     });
     it('validates the reply with the same schema as Claude, filling a missing confidence', async () => {
         const { send } = capture(toolReply({ ...GOOD, ingredients: [{ name: 'ripe bananas, mashed', quantity: 3, unit: null }] }));
         const spent: number[] = [];
-        const p = createNovaProvider({ model: 'us.amazon.nova-2-lite-v1:0', send, onSpend: usd => spent.push(usd) });
+        const p = createConverseProvider({ model: 'us.amazon.nova-2-lite-v1:0', send, onSpend: usd => spent.push(usd) });
         const r = await p.readRecipe({ kind: 'text', text: '3 bananas' });
         assert.equal(r.recipe.ingredients[0].confidence, 0.5);
         assert.equal(r.model, 'us.amazon.nova-2-lite-v1:0');
         assert.equal(Number(spent[0].toFixed(5)), 0.00191);
     });
     it('rejects what validation rejects, and says when the photo is not food', async () => {
-        await assert.rejects(createNovaProvider({ model: 'm', ...capture(toolReply({ kind: 'recipe' })) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
-        await assert.rejects(createNovaProvider({ model: 'm', ...capture(toolReply({ ...GOOD, kind: 'not_food' })) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_not_food' });
+        await assert.rejects(createConverseProvider({ model: 'm', ...capture(toolReply({ kind: 'recipe' })) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
+        await assert.rejects(createConverseProvider({ model: 'm', ...capture(toolReply({ ...GOOD, kind: 'not_food' })) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_not_food' });
     });
     it('caps confidence on plated meals', async () => {
         const plate = { ...GOOD, kind: 'plated_meal', ingredients: [{ ...GOOD.ingredients[0], confidence: 0.99 }] };
-        const r = await createNovaProvider({ model: 'm', ...capture(toolReply(plate)) }).readRecipe({ kind: 'image', base64: 'AA==', mediaType: 'image/jpeg' });
+        const r = await createConverseProvider({ model: 'm', ...capture(toolReply(plate)) }).readRecipe({ kind: 'image', base64: 'AA==', mediaType: 'image/jpeg' });
         assert.equal(r.recipe.platedMeal, true);
         assert.equal(r.recipe.ingredients[0].confidence, PLATED_MEAL_MAX_CONFIDENCE);
     });
     it('retries once without a tool call, then gives up, counting both calls', async () => {
-        const empty: NovaResponse = { output: { message: { content: [{ text: 'hi' }] } }, stopReason: 'end_turn', usage: { inputTokens: 10, outputTokens: 5 } };
+        const empty: ConverseResponse = { output: { message: { content: [{ text: 'hi' }] } }, stopReason: 'end_turn', usage: { inputTokens: 10, outputTokens: 5 } };
         const ok = capture(empty, toolReply(GOOD));
-        const r = await createNovaProvider({ model: 'm', ...ok }).readRecipe({ kind: 'text', text: 'x' });
+        const r = await createConverseProvider({ model: 'm', ...ok }).readRecipe({ kind: 'text', text: 'x' });
         assert.equal(ok.sent.length, 2);
         assert.equal(r.usage!.inputTokens, 1790);
         const never = capture(empty);
-        await assert.rejects(createNovaProvider({ model: 'm', ...never }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
+        await assert.rejects(createConverseProvider({ model: 'm', ...never }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
         assert.equal(never.sent.length, 2);
     });
     it('reports truncated and filtered replies', async () => {
-        await assert.rejects(createNovaProvider({ model: 'm', ...capture({ ...toolReply(GOOD), stopReason: 'max_tokens' }) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
-        await assert.rejects(createNovaProvider({ model: 'm', ...capture({ ...toolReply(GOOD), stopReason: 'content_filtered' }) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_refused' });
+        await assert.rejects(createConverseProvider({ model: 'm', ...capture({ ...toolReply(GOOD), stopReason: 'max_tokens' }) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
+        await assert.rejects(createConverseProvider({ model: 'm', ...capture({ ...toolReply(GOOD), stopReason: 'content_filtered' }) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_refused' });
     });
     it('never logs recipe text or image data', async () => {
         const lines: string[] = [];
         mock.method(console, 'info', (m: string) => { lines.push(m); });
-        await createNovaProvider({ model: 'm', ...capture(toolReply(GOOD)) }).readRecipe({ kind: 'text', text: 'SECRET-RECIPE' });
+        await createConverseProvider({ model: 'm', ...capture(toolReply(GOOD)) }).readRecipe({ kind: 'text', text: 'SECRET-RECIPE' });
         assert.equal(lines.length, 1);
         assert.doesNotMatch(lines.join('\n'), /SECRET/);
     });
@@ -270,24 +270,24 @@ describe('Nova errors', () => {
         const logged: string[] = [];
         const err = mock.method(console, 'error', (m: string) => { logged.push(m); });
         try {
-            const denied = mapNovaError(aws('AccessDeniedException', 403, 'secret request detail'), 'us.amazon.nova-2-lite-v1:0');
+            const denied = mapConverseError(aws('AccessDeniedException', 403, 'secret request detail'), 'us.amazon.nova-2-lite-v1:0');
             assert.deepEqual([denied.code, denied.unavailable], ['ai_unavailable', 'access']);
             assert.doesNotMatch(denied.message, /IAM|AWS|bedrock/i);
             assert.match(logged.at(-1)!, /bedrock:InvokeModel/);
             assert.match(logged.at(-1)!, /model-id amazon\.nova-2-lite-v1:0/);
             assert.doesNotMatch(logged.join('\n'), /secret request detail/);
-            assert.equal(mapNovaError(aws('ResourceNotFoundException', 404), 'x').unavailable, 'access');
-            assert.equal(mapNovaError(aws('ValidationException', 400, 'The provided model identifier is invalid.'), 'x').unavailable, 'access');
-            const throttled = mapNovaError(aws('ThrottlingException', 429), 'x');
+            assert.equal(mapConverseError(aws('ResourceNotFoundException', 404), 'x').unavailable, 'access');
+            assert.equal(mapConverseError(aws('ValidationException', 400, 'The provided model identifier is invalid.'), 'x').unavailable, 'access');
+            const throttled = mapConverseError(aws('ThrottlingException', 429), 'x');
             assert.deepEqual([throttled.code, throttled.unavailable], ['ai_rate_limited', 'capacity']);
-            assert.equal(mapNovaError(aws('ServiceQuotaExceededException', 400), 'x').code, 'ai_rate_limited');
-            assert.equal(mapNovaError(aws('ValidationException', 400, 'image too big'), 'x').code, 'ai_bad_output');
-            assert.equal(mapNovaError(aws('ModelTimeoutException', 408), 'x').code, 'ai_timeout');
-            assert.equal(mapNovaError(aws('AbortError'), 'x').code, 'ai_timeout');
-            assert.equal(mapNovaError(aws('ServiceUnavailableException', 503), 'x').unavailable, 'capacity');
-            assert.equal(mapNovaError(aws('CredentialsProviderError'), 'x').code, 'ai_unavailable');
+            assert.equal(mapConverseError(aws('ServiceQuotaExceededException', 400), 'x').code, 'ai_rate_limited');
+            assert.equal(mapConverseError(aws('ValidationException', 400, 'image too big'), 'x').code, 'ai_bad_output');
+            assert.equal(mapConverseError(aws('ModelTimeoutException', 408), 'x').code, 'ai_timeout');
+            assert.equal(mapConverseError(aws('AbortError'), 'x').code, 'ai_timeout');
+            assert.equal(mapConverseError(aws('ServiceUnavailableException', 503), 'x').unavailable, 'capacity');
+            assert.equal(mapConverseError(aws('CredentialsProviderError'), 'x').code, 'ai_unavailable');
             assert.match(logged.at(-1)!, /credentials/);
-            assert.equal(mapNovaError(new AiError('ai_refused', 'x'), 'x').code, 'ai_refused');
+            assert.equal(mapConverseError(new AiError('ai_refused', 'x'), 'x').code, 'ai_refused');
         } finally {
             err.mock.restore();
         }

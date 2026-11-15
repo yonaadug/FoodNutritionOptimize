@@ -24,7 +24,7 @@
  */
 import { createClaudeProvider, type ClaudeMessage, type ClaudeRequest, type ClaudeSend } from './claude';
 import { createMockProvider } from './mock';
-import { createNovaProvider, novaSend } from './nova';
+import { createConverseProvider, converseSend } from './converse';
 import { recordSpend } from './rate-limit';
 import { createRoutedProvider } from './router';
 import { AiError, type AiProvider } from './types';
@@ -298,7 +298,7 @@ export function createProvider(env: Env = process.env): { provider: AiProvider; 
             return createClaudeProvider({ name: 'anthropic', model, send: anthropicSend(env, model), rerank: withRerank, onSpend: recordSpend });
         }
         if (isNovaModel(model)) {
-            return createNovaProvider({ model, send: novaSend(choice.region!, model, { timeoutMs: timeout, maxRetries }), onSpend: recordSpend });
+            return createConverseProvider({ model, send: converseSend(choice.region!, model, { timeoutMs: timeout, maxRetries }), onSpend: recordSpend });
         }
         return createClaudeProvider({ name: 'bedrock', model, send: bedrockSend(env, choice.region!, model, endpoint!), rerank: withRerank, onSpend: recordSpend });
     };

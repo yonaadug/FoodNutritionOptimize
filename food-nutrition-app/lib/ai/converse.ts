@@ -1,17 +1,19 @@
 /**
- * Amazon Nova on Bedrock, through the Converse API. The fallback reader when
- * Claude can't be used (lib/ai/router.ts), and usable on its own.
+ * Every Bedrock model that isn't Claude (Gemma, Nova and others), through the
+ * Converse API. Gemma 3 27B is the default reader and Nova Lite v1 the default
+ * fallback (lib/ai/router.ts); Claude ids go to lib/ai/claude.ts instead.
  *
  * Same prompt, same record_recipe tool and the same validator as the Claude
  * providers (lib/ai/claude.ts, lib/ai/schema.ts), so the rest of the app can't
  * tell the reads apart. Differences:
- * - Nova accepts a forced tool choice, so the call is required rather than asked for.
- * - Nova doesn't enforce the schema (AWS lists structured outputs as unsupported
- *   for Nova), so validateRecipeOutput is what keeps the reply in shape.
+ * - The tool choice is forced, so the call is required rather than asked for.
+ *   Gemma 3 27B and the Nova models accept that (docs/research/CHEAPER_MODELS.md).
+ * - The schema isn't enforced by Bedrock here, so validateRecipeOutput is what
+ *   keeps the reply in shape.
  * - Images go as raw bytes, not base64.
  *
- * Nova's accuracy on recipes has not been measured. The UI treats its reads like
- * any AI read: the user checks every ingredient.
+ * Accuracy on our test set: docs/research/CHEAPER_MODELS.md. The UI treats these
+ * reads like any AI read: the user checks every ingredient.
  */
 import { estimateCostUsd, logAiCall } from './cost';
 import { IMAGE_PROMPT, SYSTEM_PROMPT, textPrompt } from './claude';
@@ -19,7 +21,7 @@ import { RECORD_RECIPE_TOOL, RECORD_RECIPE_TOOL_DEF, validateRecipeOutput } from
 import { AiError, InvalidReplyError, type AiProvider, type AiResult, type AiUsage, type ImageMediaType, type RecipeInput } from './types';
 
 /** The part of a Converse request this code builds (a subset of ConverseCommandInput). */
-export interface NovaRequest {
+export interface ConverseRequest {
     modelId: string;
     system: { text: string }[];
     messages: { role: 'user'; content: ({ text: string } | { image: { format: 'jpeg' | 'png' | 'gif' | 'webp'; source: { bytes: Uint8Array } } })[] }[];
@@ -31,24 +33,24 @@ export interface NovaRequest {
 }
 
 /** The part of a Converse reply this code reads. */
-export interface NovaResponse {
+export interface ConverseResponse {
     output?: { message?: { content?: { text?: string; toolUse?: { name?: string; input?: unknown } }[] } };
     stopReason?: string;
     usage?: { inputTokens?: number; outputTokens?: number; cacheReadInputTokens?: number; cacheWriteInputTokens?: number };
 }
 
-/** Sends one Converse request. The real one (novaSend) maps SDK errors to AiError. */
-export type NovaSend = (request: NovaRequest, options: { signal?: AbortSignal }) => Promise<NovaResponse>;
+/** Sends one Converse request. The real one (converseSend) maps SDK errors to AiError. */
+export type ConverseSend = (request: ConverseRequest, options: { signal?: AbortSignal }) => Promise<ConverseResponse>;
 
-/** Nova 2 Lite wrote 481 output tokens for a 10-ingredient card; 60 ingredients fit easily. */
+/** Readers wrote 250 to 500 output tokens for a 10-ingredient card; 60 ingredients fit easily. */
 const MAX_TOKENS = 4096;
 
 const FORMATS: Record<ImageMediaType, 'jpeg' | 'png' | 'gif' | 'webp'> = {
     'image/jpeg': 'jpeg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp',
 };
 
-export function novaRequest(model: string, input: RecipeInput): NovaRequest {
-    const content: NovaRequest['messages'][number]['content'] = input.kind === 'image'
+export function converseRequest(model: string, input: RecipeInput): ConverseRequest {
+    const content: ConverseRequest['messages'][number]['content'] = input.kind === 'image'
         ? [{ image: { format: FORMATS[input.mediaType], source: { bytes: Buffer.from(input.base64, 'base64') } } }, { text: IMAGE_PROMPT }]
         : [{ text: textPrompt(input.text) }];
     return {
@@ -64,7 +66,7 @@ export function novaRequest(model: string, input: RecipeInput): NovaRequest {
     };
 }
 
-function usageOf(r: NovaResponse): AiUsage {
+function usageOf(r: ConverseResponse): AiUsage {
     return {
         inputTokens: r.usage?.inputTokens ?? 0,
         outputTokens: r.usage?.outputTokens ?? 0,
@@ -82,7 +84,7 @@ function addUsage(a: AiUsage, b: AiUsage): AiUsage {
     };
 }
 
-function checkStop(r: NovaResponse): void {
+function checkStop(r: ConverseResponse): void {
     if (r.stopReason === 'content_filtered' || r.stopReason === 'guardrail_intervened') {
         throw new AiError('ai_refused', 'We couldn\'t read this one automatically. You can add the ingredients by hand instead.');
     }
@@ -91,21 +93,21 @@ function checkStop(r: NovaResponse): void {
     }
 }
 
-function toolInput(r: NovaResponse): unknown | undefined {
+function toolInput(r: ConverseResponse): unknown | undefined {
     return r.output?.message?.content?.find(c => c.toolUse?.name === RECORD_RECIPE_TOOL)?.toolUse?.input;
 }
 
-export interface NovaProviderOptions {
+export interface ConverseProviderOptions {
     model: string;
-    send: NovaSend;
+    send: ConverseSend;
     /** Called with the cost of each completed call (spend guard). */
     onSpend?: (usd: number) => void;
 }
 
-export function createNovaProvider({ model, send, onSpend }: NovaProviderOptions): AiProvider {
+export function createConverseProvider({ model, send, onSpend }: ConverseProviderOptions): AiProvider {
     async function readRecipe(input: RecipeInput, options: { signal?: AbortSignal } = {}): Promise<AiResult> {
         const started = Date.now();
-        const request = novaRequest(model, input);
+        const request = converseRequest(model, input);
         let usage: AiUsage = { inputTokens: 0, outputTokens: 0 };
         try {
             // The tool is forced, but ask once more if a reply still comes back without it.
@@ -137,9 +139,9 @@ export function createNovaProvider({ model, send, onSpend }: NovaProviderOptions
 const SETUP_DOC = 'docs/BEDROCK_SETUP.md';
 const UNAVAILABLE = 'The recipe reader isn\'t available right now. You can add the ingredients by hand.';
 
-/** "us.amazon.nova-2-lite-v1:0" -> "amazon.nova-2-lite-v1:0", for the availability check. */
+/** "us.amazon.nova-lite-v1:0" -> "amazon.nova-lite-v1:0", for the availability check. "google.gemma-3-27b-it" is kept. */
 function foundationId(model: string): string {
-    return model.replace(/^arn:.*\//, '').replace(/^[a-z]{2,6}(?:-[a-z]+)?\.(?=amazon\.)/, '');
+    return model.replace(/^arn:.*\//, '').replace(/^[a-z]{2,6}(?:-[a-z]+)?\.(?=[a-z]+\.)/, '');
 }
 
 /** An AWS SDK v3 error, as far as this code looks at it. */
@@ -150,25 +152,25 @@ interface AwsError { name?: string; message?: string; $metadata?: { httpStatusCo
  * echo request details, so only the error name and status reach the log, plus a
  * hint for the owner on configuration errors.
  */
-export function mapNovaError(e: unknown, model: string): AiError {
+export function mapConverseError(e: unknown, model: string): AiError {
     if (e instanceof AiError) return e;
     const err = (e ?? {}) as AwsError;
     const name = err.name ?? 'Error';
     const status = err.$metadata?.httpStatusCode;
     const message = typeof err.message === 'string' ? err.message : '';
-    const log = (hint: string) => console.error(`[ai] Nova error: ${name}${status ? ` ${status}` : ''}. ${hint}`);
+    const log = (hint: string) => console.error(`[ai] Bedrock Converse error: ${name}${status ? ` ${status}` : ''}. ${hint}`);
 
     if (name === 'AbortError' || name === 'TimeoutError' || name === 'ModelTimeoutException' || name === 'RequestTimeout') {
         return new AiError('ai_timeout', 'Reading took too long. Please try again, or paste only the ingredients.');
     }
     if (name === 'AccessDeniedException') {
-        log(`Bedrock says this role or account can't use ${model}. IAM must allow bedrock:InvokeModel on the inference profile and on the foundation model in each of its regions `
-            + `(${SETUP_DOC} §5). Check access with: aws bedrock get-foundation-model-availability --model-id ${foundationId(model)}. See ${SETUP_DOC}.`);
+        log(`Bedrock says this role or account can't use ${model}. IAM must allow bedrock:InvokeModel on the foundation model (an in-region id such as Gemma's), `
+            + `or on the inference profile and the foundation model in each of its regions (a us. profile such as Nova Lite's) (${SETUP_DOC} §5). Check access with: aws bedrock get-foundation-model-availability --model-id ${foundationId(model)}. See ${SETUP_DOC}.`);
         return new AiError('ai_unavailable', UNAVAILABLE, 'access');
     }
     if (name === 'ResourceNotFoundException' || (name === 'ValidationException' && /model identifier|inference profile|on-demand throughput/i.test(message))) {
-        log(`Bedrock has no model or inference profile ${model} here, or it needs a profile id. Use AI_FALLBACK_MODEL=us.amazon.nova-2-lite-v1:0, `
-            + `and list profiles with: aws bedrock list-inference-profiles --region <region>. See ${SETUP_DOC}.`);
+        log(`Bedrock has no model or inference profile ${model} here, or it needs a profile id. Gemma 3 27B is google.gemma-3-27b-it and Nova Lite v1 is us.amazon.nova-lite-v1:0. `
+            + `List them with: aws bedrock list-foundation-models and aws bedrock list-inference-profiles --region <region>. See ${SETUP_DOC}.`);
         return new AiError('ai_unavailable', UNAVAILABLE, 'access');
     }
     if (name === 'ThrottlingException' || name === 'ServiceQuotaExceededException' || name === 'ModelNotReadyException' || status === 429) {
@@ -176,7 +178,7 @@ export function mapNovaError(e: unknown, model: string): AiError {
         return new AiError('ai_rate_limited', 'The recipe reader is busy right now. Please try again in a minute.', 'capacity');
     }
     if (name === 'ValidationException' || name === 'ModelErrorException') {
-        console.error(`[ai] Nova request rejected: ${name}${status ? ` ${status}` : ''}`);
+        console.error(`[ai] Bedrock Converse request rejected: ${name}${status ? ` ${status}` : ''}`);
         return new AiError('ai_bad_output', 'We couldn\'t read that. Try a smaller photo, or paste the recipe as text.');
     }
     if (name === 'CredentialsProviderError' || name === 'UnrecognizedClientException' || name === 'ExpiredTokenException' || name === 'InvalidSignatureException') {
@@ -184,10 +186,10 @@ export function mapNovaError(e: unknown, model: string): AiError {
         return new AiError('ai_unavailable', UNAVAILABLE);
     }
     if (name === 'ServiceUnavailableException' || name === 'InternalServerException' || (status !== undefined && status >= 500)) {
-        console.error(`[ai] Nova service error: ${name}${status ? ` ${status}` : ''}`);
+        console.error(`[ai] Bedrock Converse service error: ${name}${status ? ` ${status}` : ''}`);
         return new AiError('ai_unavailable', UNAVAILABLE, 'capacity');
     }
-    console.error(`[ai] unexpected Nova error: ${name}`);
+    console.error(`[ai] unexpected Bedrock Converse error: ${name}`);
     return new AiError('ai_unavailable', UNAVAILABLE);
 }
 
@@ -195,8 +197,8 @@ export function mapNovaError(e: unknown, model: string): AiError {
  * The real Converse sender: @aws-sdk/client-bedrock-runtime, loaded on first use
  * so mock mode never imports it. Credentials come from the standard AWS chain.
  */
-export function novaSend(region: string, model: string, opts: { timeoutMs: number; maxRetries: number }): NovaSend {
-    let client: Promise<{ send: (request: NovaRequest, signal?: AbortSignal) => Promise<NovaResponse> }> | null = null;
+export function converseSend(region: string, model: string, opts: { timeoutMs: number; maxRetries: number }): ConverseSend {
+    let client: Promise<{ send: (request: ConverseRequest, signal?: AbortSignal) => Promise<ConverseResponse> }> | null = null;
     const getClient = () => (client ??= import('@aws-sdk/client-bedrock-runtime').then(({ BedrockRuntimeClient, ConverseCommand }) => {
         const c = new BedrockRuntimeClient({
             region,
@@ -204,8 +206,8 @@ export function novaSend(region: string, model: string, opts: { timeoutMs: numbe
             requestHandler: { requestTimeout: opts.timeoutMs, connectionTimeout: 5_000 },
         });
         return {
-            send: (request: NovaRequest, signal?: AbortSignal) =>
-                c.send(new ConverseCommand(request as unknown as ConstructorParameters<typeof ConverseCommand>[0]), { abortSignal: signal }) as Promise<NovaResponse>,
+            send: (request: ConverseRequest, signal?: AbortSignal) =>
+                c.send(new ConverseCommand(request as unknown as ConstructorParameters<typeof ConverseCommand>[0]), { abortSignal: signal }) as Promise<ConverseResponse>,
         };
     }));
     return async (request, { signal }) => {
@@ -213,7 +215,7 @@ export function novaSend(region: string, model: string, opts: { timeoutMs: numbe
         try {
             return await c.send(request, signal);
         } catch (e) {
-            throw mapNovaError(e, model);
+            throw mapConverseError(e, model);
         }
     };
 }

@@ -78,7 +78,8 @@ export default function TermsPage() {
 
             <h2 id="ai">AI recipe reads</h2>
             <p>
-                The recipe reader uses AI (Anthropic&apos;s Claude or Amazon Nova, on Amazon Bedrock) to read photos and some pasted recipes.
+                The recipe reader uses AI models running on Amazon Bedrock (currently Google&apos;s Gemma 3, operated by AWS, with Amazon Nova as a
+                backup) to read photos and some pasted recipes.
                 <strong> AI reads can be wrong:</strong> it can miss or invent ingredients, misread amounts, or pick the wrong food. Photos of
                 plated food are especially rough. Check every ingredient and amount before you rely on the result. You&apos;re responsible for
                 what you do with it.
@@ -171,7 +172,7 @@ export default function TermsPage() {
                 <ul>
                     <li>Milne et al. 2024 is published under CC BY-NC-ND 4.0, and the site will have paid features. Its values are still in the data, and this is open in <code>TODO.md</code>. Decide whether citing its numbers is allowed, or remove those rows (<code>data/contaminants/microplastics.tsv</code>).</li>
                     <li>Cox et al. 2019 is &copy; ACS; we cite numeric values only. Kosuth et al. 2018 is CC BY. Confirm attribution is enough for both.</li>
-                    <li>AI outputs: confirm the AWS Service Terms for Amazon Bedrock and the Anthropic and Amazon Nova model terms allow showing model output to users in a paid product, and who owns it.</li>
+                    <li>AI outputs: confirm the AWS Service Terms for Amazon Bedrock, Google&apos;s Gemma Terms of Use and Prohibited Use Policy (check whether AWS&apos;s terms for Gemma 3 on Bedrock pass them through), and the Amazon Nova terms allow showing model output to users in a paid product, and who owns it. Anthropic&apos;s terms matter only if Claude is switched back on.</li>
                 </ul>
             </LawyerNote>
 

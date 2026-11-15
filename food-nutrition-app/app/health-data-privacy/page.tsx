@@ -98,7 +98,7 @@ export default function HealthDataPrivacyPage() {
             </p>
             <ul>
                 <li><strong>Amazon Web Services</strong>, which hosts the site and its database in the US.</li>
-                <li><strong>Amazon Bedrock</strong> (part of AWS), which reads recipe photos and some pasted recipes. It doesn&apos;t use them to train models or share them with the model makers.</li>
+                <li><strong>Amazon Bedrock</strong> (part of AWS), which reads recipe photos and some pasted recipes with AI models AWS runs (currently Google&apos;s Gemma 3, with Amazon Nova as a backup). It doesn&apos;t use them to train models or share them with the model makers.</li>
             </ul>
             <p>
                 Stripe and Google don&apos;t receive your consumer health data. We may disclose data if the law requires it, such as under a

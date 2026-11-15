@@ -6,6 +6,10 @@ import { ALL_NUTRIENT_CONFIG } from './nutrient-defaults';
 import { fillFromOlderEntries } from './nutrient-fill';
 import { pickSources, scoreSources, type RankedSource, type RankOptions } from './best-sources';
 import { basePrefixes, categorySlug, rankRelated, type RelatedResult } from './food-page';
+import {
+    INLINE_TYPES, foodGroupOf, groupRanked, pickRepresentative, typeOptions,
+    type FoodGroupResult, type FoodTypeOption, type GroupedSearchResult, type TypeEntry,
+} from './food-groups';
 
 export type { Food, ServingSize } from './food-types';
 
@@ -260,16 +264,23 @@ export interface SearchOptions {
 export function searchFoodsIn(conn: Connection, query: string, page = 1, limit = 20, options: SearchOptions = {}): SearchResult {
     const safeLimit = Math.min(Math.max(1, Math.floor(limit) || 20), SEARCH_MAX_LIMIT);
     const safePage = Math.min(Math.max(1, Math.floor(page) || 1), SEARCH_MAX_PAGE);
+    const { ranked } = rankedMatchesIn(conn, query, options);
+
+    const pageIds = ranked.slice((safePage - 1) * safeLimit, safePage * safeLimit).map(c => c.id);
+    const byId = new Map(getFoodsByIdsIn(conn, pageIds).map(f => [f.id, f]));
+    const foods = pageIds.map(id => byId.get(id)).filter((f): f is Food => f !== undefined);
+
+    const total = ranked.length;
+    return { foods, total, page: safePage, totalPages: Math.ceil(total / safeLimit), limit: safeLimit };
+}
+
+/** Every match for a query, best first (see searchFoodsIn), with the query's tokens. */
+function rankedMatchesIn(conn: Connection, query: string, options: SearchOptions): { ranked: SearchCandidate[]; tokens: string[] } {
     const q = query.trim().toLowerCase().slice(0, SEARCH_MAX_QUERY_LENGTH);
     const tokens = tokenizeQuery(q);
-    if (tokens.length === 0) return { foods: [], total: 0, page: safePage, totalPages: 0, limit: safeLimit };
+    if (tokens.length === 0) return { ranked: [], tokens };
 
-    const params: Record<string, string | number> = {
-        q,
-
-        limit: safeLimit,
-        offset: (safePage - 1) * safeLimit,
-    };
+    const params: Record<string, string | number> = { q };
     tokens.forEach((t, i) => {
         wordForms(t).forEach((form, j) => {
             params[`w${i}_${j}`] = `% ${escapeLike(form)} %`;
@@ -317,15 +328,123 @@ export function searchFoodsIn(conn: Connection, query: string, page = 1, limit =
         SELECT f.id, f.description, ${tier} AS tier, ${dataTypeRank(conn.schema)} AS dtr, ${conn.schema.hasFts ? 'm.score' : '0'} AS score
         FROM ${from}
         WHERE ${where}
-    `).all(omit(params, ['limit', 'offset'])) as SearchCandidate[];
-    const ranked = rankCandidates(candidates, tokens);
+    `).all(params) as SearchCandidate[];
+    return { ranked: rankCandidates(candidates, tokens), tokens };
+}
 
-    const pageIds = ranked.slice((safePage - 1) * safeLimit, safePage * safeLimit).map(c => c.id);
-    const byId = new Map(getFoodsByIdsIn(conn, pageIds).map(f => [f.id, f]));
-    const foods = pageIds.map(id => byId.get(id)).filter((f): f is Food => f !== undefined);
+/** What grouping needs about every food, loaded once per connection (the DB is read-only). */
+interface TypeIndex {
+    byId: Map<number, TypeEntry & { key: string; superseded: boolean }>;
+    /** Current (not superseded) entries by group key. */
+    byKey: Map<string, (TypeEntry & { key: string })[]>;
+}
 
-    const total = ranked.length;
-    return { foods, total, page: safePage, totalPages: Math.ceil(total / safeLimit), limit: safeLimit };
+const typeIndexCache = new WeakMap<Connection, TypeIndex>();
+
+const TYPE_COLUMNS = ['data_type_rank', 'superseded_by_fdc_id', 'calories', 'protein_g', 'total_fat_g', 'carbohydrate_g', 'water_g'];
+
+function typeIndexIn(conn: Connection): TypeIndex {
+    let index = typeIndexCache.get(conn);
+    if (!index) {
+        const cols = ['id', 'fdc_id', 'description', 'data_type', ...TYPE_COLUMNS.filter(c => conn.schema.foodColumns.has(c))];
+        const rows = conn.db.prepare(`SELECT ${cols.join(', ')} FROM foods`).all() as (TypeEntry & { superseded_by_fdc_id?: number | null })[];
+        // Calories filled from an older entry count, as everywhere else on the site.
+        const filled = withFilledNutrientsIn(conn, rows as unknown as Food[]) as unknown as typeof rows;
+        index = { byId: new Map(), byKey: new Map() };
+        for (const r of filled) {
+            const entry = { ...r, key: foodGroupOf(r.description).key, superseded: !!r.superseded_by_fdc_id };
+            index.byId.set(r.id, entry);
+            if (entry.superseded) continue;
+            const list = index.byKey.get(entry.key);
+            if (list) list.push(entry);
+            else index.byKey.set(entry.key, [entry]);
+        }
+        typeIndexCache.set(conn, index);
+    }
+    return index;
+}
+
+/**
+ * Search with one row per food (lib/food-groups.ts): matches are ranked as in
+ * searchFoodsIn, then grouped by food in the order of each group's best match, so a
+ * group ranks by its best entry. Paging counts groups. Each group carries its most
+ * typical matched entry in full (the row's calories, nutrients and main action) and
+ * every matched type, light, for the type picker.
+ */
+export interface GroupSearchOptions extends SearchOptions {
+    /** Types sent with each group (default INLINE_TYPES); a larger group's full list loads by key. */
+    inlineTypes?: number;
+}
+
+function matchedGroupsIn(conn: Connection, query: string, options: SearchOptions) {
+    const { ranked, tokens } = rankedMatchesIn(conn, query, options);
+    const index = typeIndexIn(conn);
+    const groups = groupRanked(ranked, c => index.byId.get(c.id)?.key ?? foodGroupOf(c.description).key);
+    const entriesOf = (g: { members: SearchCandidate[] }) =>
+        g.members.map(m => index.byId.get(m.id)).filter((e): e is NonNullable<typeof e> => e !== undefined);
+    return { ranked, tokens, groups, entriesOf };
+}
+
+/**
+ * Search with one row per food (lib/food-groups.ts): matches are ranked as in
+ * searchFoodsIn, then grouped by food in the order of each group's best match, so a
+ * group ranks by its best entry. Paging counts groups. Each group carries its most
+ * typical matched entry in full (the row's calories, nutrients and main action) and its
+ * matched types, light, in picker order: all of them up to `inlineTypes`, else the first
+ * `inlineTypes` (searchGroupTypesIn has the rest), so "beef" stays a small response.
+ */
+export function searchFoodGroupsIn(conn: Connection, query: string, page = 1, limit = 20, options: GroupSearchOptions = {}): GroupedSearchResult {
+    const safeLimit = Math.min(Math.max(1, Math.floor(limit) || 20), SEARCH_MAX_LIMIT);
+    const safePage = Math.min(Math.max(1, Math.floor(page) || 1), SEARCH_MAX_PAGE);
+    const inline = Math.max(1, Math.floor(options.inlineTypes ?? INLINE_TYPES));
+    const { ranked, tokens, groups: all, entriesOf } = matchedGroupsIn(conn, query, options);
+    if (ranked.length === 0) return { groups: [], total: 0, entries: 0, page: safePage, totalPages: 0, limit: safeLimit };
+
+    const onPage = all.slice((safePage - 1) * safeLimit, safePage * safeLimit).map(g => {
+        const entries = entriesOf(g);
+        return { key: g.key, entries, rep: pickRepresentative(entries, tokens) };
+    });
+    const full = new Map(getFoodsByIdsIn(conn, onPage.map(g => g.rep.id)).map(f => [f.id, f]));
+    const groups = onPage.flatMap((g): FoodGroupResult[] => {
+        const food = full.get(g.rep.id);
+        if (!food) return [];
+        const types = typeOptions(g.entries, food.id).slice(0, inline);
+        return [{ key: g.key, name: foodGroupOf(food.description).name, count: g.entries.length, food, types }];
+    });
+    return { groups, total: all.length, entries: ranked.length, page: safePage, totalPages: Math.ceil(all.length / safeLimit), limit: safeLimit };
+}
+
+export async function searchFoodGroups(query: string, page = 1, limit = 20, options: GroupSearchOptions = {}): Promise<GroupedSearchResult> {
+    return searchFoodGroupsIn(connection(), query, page, limit, options);
+}
+
+/** Every matched type of one group, in picker order (the full list behind a large group's row). */
+export function searchGroupTypesIn(conn: Connection, query: string, key: string, options: SearchOptions = {}): FoodTypeOption[] {
+    const { tokens, groups, entriesOf } = matchedGroupsIn(conn, query, options);
+    const group = groups.find(g => g.key === key);
+    if (!group) return [];
+    const entries = entriesOf(group);
+    return typeOptions(entries, pickRepresentative(entries, tokens).id);
+}
+
+export async function searchGroupTypes(query: string, key: string, options: SearchOptions = {}): Promise<FoodTypeOption[]> {
+    return searchGroupTypesIn(connection(), query, key, options);
+}
+
+/**
+ * Every current type of `food`'s group (the food page's Type switcher), Most common
+ * first. Just the food itself when it has no other types; empty for a superseded record.
+ */
+export function getFoodTypesIn(conn: Connection, food: Pick<Food, 'id'>): FoodTypeOption[] {
+    const index = typeIndexIn(conn);
+    const me = index.byId.get(food.id);
+    if (!me || me.superseded) return [];
+    const entries = index.byKey.get(me.key) ?? [me];
+    return typeOptions(entries, pickRepresentative(entries).id);
+}
+
+export async function getFoodTypes(food: Pick<Food, 'id'>): Promise<FoodTypeOption[]> {
+    return getFoodTypesIn(connection(), food);
 }
 
 interface SearchCandidate {
@@ -401,11 +520,6 @@ export function rankCandidates<T extends SearchCandidate>(candidates: T[], token
     return keyed.map(k => k.c);
 }
 
-function omit(obj: Record<string, string | number>, keys: string[]): Record<string, string | number> {
-    const out = { ...obj };
-    for (const k of keys) delete out[k];
-    return out;
-}
 
 
 export async function searchFoods(query: string, page = 1, limit = 20, options: SearchOptions = {}): Promise<SearchResult> {

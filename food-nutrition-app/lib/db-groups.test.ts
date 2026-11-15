@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import Database from 'better-sqlite3';
 import { NextRequest } from 'next/server';
-import { openDatabase, searchFoodGroupsIn, searchFoodsIn, getFoodTypesIn, getFoodByFdcIdIn } from './db';
+import { openDatabase, searchFoodGroupsIn, searchFoodsIn, searchGroupTypesIn, getFoodTypesIn, getFoodByFdcIdIn } from './db';
 import { GET as searchRoute } from '@/app/api/search/route';
 import { NUTRIENT_COLUMNS } from './testing/fixtures';
 
@@ -134,6 +134,16 @@ for (const mode of ['fts', 'like'] as const) {
             assert.equal(p1.entries, all.entries);
         });
 
+        it('sends at most `inlineTypes` types with a group; the rest load by key, in the same order', () => {
+            const cod = searchFoodGroupsIn(conn(), 'cod', 1, 20, { inlineTypes: 3 }).groups.find(g => g.key === 'cod')!;
+            assert.equal(cod.count, 8);
+            assert.equal(cod.types.length, 3);
+            const full = searchGroupTypesIn(conn(), 'cod', 'cod');
+            assert.equal(full.length, 8);
+            assert.deepEqual(full.slice(0, 3), cod.types);
+            assert.deepEqual(searchGroupTypesIn(conn(), 'cod', 'no such food'), []);
+        });
+
         it('returns nothing for an empty query', () => {
             assert.deepEqual(searchFoodGroupsIn(conn(), '  ', 1, 20).groups, []);
         });
@@ -210,5 +220,17 @@ describe('grouped search on the real database', { skip: !hasDb && 'nutrition.db 
         const flat = await (await searchRoute(new NextRequest('http://localhost/api/search?q=cod&limit=5'))).json();
         assert.equal(flat.groups, undefined);
         assert.equal(flat.foods.length, 5);
+    });
+
+    it('keeps a huge group light: beef sends its first 60 types, the rest load by key', async () => {
+        const res = await searchRoute(new NextRequest('http://localhost/api/search?q=beef&group=1'));
+        const text = await res.text();
+        const beef = JSON.parse(text).groups.find((g: { key: string }) => g.key === 'beef');
+        assert.ok(beef.count > 300);
+        assert.equal(beef.types.length, 60);
+        assert.ok(text.length < 120_000, `${text.length} bytes`);
+        const more = await (await searchRoute(new NextRequest('http://localhost/api/search?q=beef&group=1&key=beef'))).json();
+        assert.equal(more.types.length, beef.count);
+        assert.deepEqual(more.types.slice(0, 60), beef.types);
     });
 });

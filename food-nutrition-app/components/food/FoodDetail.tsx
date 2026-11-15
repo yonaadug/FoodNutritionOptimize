@@ -4,6 +4,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { Food } from '@/lib/food-types';
+import { servingForType, servingParam, type FoodTypeOption } from '@/lib/food-groups';
 import { fmt, foodPath, keyNutrients, servingOptions } from '@/lib/food-page';
 import { isFilled } from '@/lib/nutrient-fill';
 import { typicalServing } from '@/lib/servings';
@@ -19,6 +20,7 @@ import ServingSelect, { CUSTOM_SERVING } from './ServingSelect';
 import { OlderEntryMark } from './FoodLink';
 import NutrientTable from './NutrientTable';
 import SafetySlot from './SafetySlot';
+import TypeSwitcher from './TypeSwitcher';
 import { onFoodViewed } from './onFoodViewed';
 
 /**
@@ -26,12 +28,34 @@ import { onFoodViewed } from './onFoodViewed';
  * serving and then live in the browser: serving selector, Nutrition Facts,
  * nutrient table, and the plan / compare / share actions.
  */
-export default function FoodDetail({ food, compareSuggestions }: { food: Food; compareSuggestions: Food[] }) {
+export default function FoodDetail({ food, compareSuggestions, types = [], groupName }: {
+    food: Food;
+    compareSuggestions: Food[];
+    /** Every type of this food (the Type switcher); fewer than two hides it. */
+    types?: FoodTypeOption[];
+    groupName?: string;
+}) {
     const { options, defaultId } = useMemo(() => servingOptions(food), [food]);
     const [servingId, setServingId] = useState(defaultId);
     const [custom, setCustom] = useState<{ text: string; unit: MassUnit }>({ text: '150', unit: 'g' });
     const [comparing, setComparing] = useState(false);
     const selectId = useId();
+
+    // Arriving from another type of this food: keep the serving chosen there (?serving=).
+    useEffect(() => {
+        const param = new URLSearchParams(window.location.search).get('serving');
+        if (!param) return;
+        const carried = servingForType(param, options);
+        /* eslint-disable react-hooks/set-state-in-effect -- one-shot read of the address after hydration */
+        if (carried) {
+            setServingId(carried.servingId);
+            if (carried.custom) setCustom(carried.custom);
+        }
+        /* eslint-enable react-hooks/set-state-in-effect */
+        const url = new URL(window.location.href);
+        url.searchParams.delete('serving');
+        window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    }, [options]);
 
     const fdcId = food.fdc_id;
     const description = food.description;
@@ -57,9 +81,11 @@ export default function FoodDetail({ food, compareSuggestions }: { food: Food; c
     const grams = isCustom ? (parsedCustom.ok ? parsedCustom.grams : FALLBACK_GRAMS) : chosen.grams;
     const servingLabel = isCustom ? amountLabel(grams, parsedCustom.ok ? custom.unit : 'g') : chosen.label;
     const rich = useMemo(() => keyNutrients(food, grams, 5, 20), [food, grams]);
+    const carry = servingParam({ servingId, options, defaultId, custom });
 
     return (
         <>
+            {groupName && <TypeSwitcher foodId={food.id} name={groupName} types={types} serving={carry} />}
             <FoodActions food={food} grams={grams} servingLabel={servingLabel} gramsValid={!isCustom || customValid} comparing={comparing} onCompare={() => {
                 setComparing(true);
                 requestAnimationFrame(() => document.getElementById('compare-area')?.scrollIntoView({ behavior: 'smooth' }));

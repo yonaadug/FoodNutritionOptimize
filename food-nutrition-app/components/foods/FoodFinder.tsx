@@ -5,6 +5,7 @@ import type { Food } from '@/lib/food-types';
 import Icon from '@/components/ui/Icon';
 import { isFilled } from '@/lib/nutrient-fill';
 import FoodRow, { FoodRowSkeleton } from './FoodRow';
+import FoodGroupRow from './FoodGroupRow';
 import { useFoodSearch } from '@/hooks/useFoodSearch';
 import { useTopFoods } from '@/hooks/useTopFoods';
 import { GOAL_KEYS, fmtNumber, nutrientLabel, nutrientUnit, nv, NUTRIENT_GROUPS } from '@/components/planner/nutrients';
@@ -81,7 +82,7 @@ function SearchPanel({ isAdded, onToggle, inputRef }: { isAdded: (id: number) =>
                 {!s.active ? 'Type at least 2 letters. Results update as you type.'
                     : s.loading ? 'Searching…'
                         : s.error ? ''
-                            : s.total > 0 ? `${s.total.toLocaleString()} ${s.total === 1 ? 'match' : 'matches'}${s.total > s.results.length ? `, showing ${s.results.length}` : ''}`
+                            : s.total > 0 ? `${s.total.toLocaleString()} ${s.total === 1 ? 'food matches' : 'foods match'}${s.entries > s.total ? ` (${s.entries.toLocaleString()} USDA entries)` : ''}${s.total > s.groups.length ? `, showing ${s.groups.length}` : ''}`
                                 : ''}
             </p>
 
@@ -108,7 +109,7 @@ function SearchPanel({ isAdded, onToggle, inputRef }: { isAdded: (id: number) =>
                 </div>
             )}
 
-            {s.active && !s.loading && !s.error && s.results.length === 0 && (
+            {s.active && !s.loading && !s.error && s.groups.length === 0 && (
                 <div className="empty-state">
                     <div className="empty-icon"><Icon name="search" /></div>
                     <h3>No foods match &ldquo;{s.query.trim()}&rdquo;</h3>
@@ -116,15 +117,15 @@ function SearchPanel({ isAdded, onToggle, inputRef }: { isAdded: (id: number) =>
                 </div>
             )}
 
-            {s.results.length > 0 && (
+            {s.groups.length > 0 && (
                 <div className="result-scroll">
                     <ul className="result-list" aria-label="Search results">
-                        {s.results.map(f => <FoodRow key={f.id} food={f} added={isAdded(f.id)} onToggle={onToggle} />)}
+                        {s.groups.map(g => <FoodGroupRow key={g.key} group={g} query={s.resultsQuery} isAdded={isAdded} onToggle={onToggle} />)}
                     </ul>
                     {s.hasMore && (
                         <div className="list-footer">
                             <button type="button" className="btn btn-secondary btn-sm" onClick={s.loadMore} disabled={s.loadingMore}>
-                                {s.loadingMore ? <><span className="spinner" /> Loading…</> : 'Show more results'}
+                                {s.loadingMore ? <><span className="spinner" /> Loading…</> : `Show more (${(s.total - s.groups.length).toLocaleString()} left)`}
                             </button>
                         </div>
                     )}

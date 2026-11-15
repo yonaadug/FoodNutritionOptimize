@@ -9,6 +9,7 @@ const PATHS: Record<string, React.ReactNode> = {
     info: <><circle cx="12" cy="12" r="9" /><path d="M12 11v5M12 8h.01" /></>,
     arrowRight: <path d="M5 12h14M13 6l6 6-6 6" />,
     arrowLeft: <path d="M19 12H5M11 6l-6 6 6 6" />,
+    chevronDown: <path d="m6 9 6 6 6-6" />,
     refresh: <><path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" /></>,
     leaf: <><path d="M11 20A7 7 0 0 1 4 13c0-6 7-10 16-10 0 9-4 16-9 17z" /><path d="M4 21c3-6 7-9 12-12" /></>,
     sliders: <><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></>,

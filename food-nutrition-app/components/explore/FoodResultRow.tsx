@@ -26,45 +26,57 @@ interface FoodResultRowProps {
  */
 export default function FoodResultRow({ food, highlight, onOpen }: FoodResultRowProps) {
     const { name, detail } = splitFoodName(food.description);
+    return (
+        <li className="result-item">
+            <IntentLink href={foodPath(food)} className="result-link" onClick={onOpen}>
+                <ResultBody food={food} highlight={highlight} name={<>
+                    <span className="food-name">{name}</span>
+                    {detail && <span className="food-detail">, {detail}</span>}
+                </>} />
+            </IntentLink>
+        </li>
+    );
+}
+
+/**
+ * What a result link holds: the name line given, category and data source, then
+ * calories and a few key nutrients per realistic serving of `food`.
+ */
+export function ResultBody({ food, name, highlight }: { food: Food; name: React.ReactNode; highlight?: FoodResultRowProps['highlight'] }) {
     const serving = typicalServing(food.serving_sizes, food);
     const ok = hasCoreData(food);
     const kcal = nv(food, 'calories');
     return (
-        <li className="result-item">
-            <IntentLink href={foodPath(food)} className="result-link" onClick={onOpen}>
-                <div className="result-main">
-                    <div className="result-name" title={food.description}>
-                        <span className="food-name">{name}</span>
-                        {detail && <span className="food-detail">, {detail}</span>}
-                    </div>
-                    <div className="food-meta">
-                        {food.food_category && <span className="chip">{food.food_category}</span>}
-                        <DatasetBadge dataType={food.data_type} />
-                    </div>
-                    {ok ? (
-                        <p className="result-nutrients tabular">
-                            {resultNutrients(food, serving.grams).map(n => (
-                                <span key={n.key}><b>{fmt(n.amount)} {n.unit}</b> {n.label}</span>
-                            ))}
-                        </p>
-                    ) : (
-                        <p className="result-nutrients">
-                            <span className="chip chip-warn"><Icon name="alert" size={12} /> Limited data</span>
-                        </p>
-                    )}
+        <>
+            <div className="result-main">
+                <div className="result-name" title={food.description}>{name}</div>
+                <div className="food-meta">
+                    {food.food_category && <span className="chip">{food.food_category}</span>}
+                    <DatasetBadge dataType={food.data_type} />
                 </div>
-                {highlight ? (
-                    <div className="result-stat tabular">
-                        <span className="result-stat-value">{highlight.value}</span>
-                        {highlight.sub && <span className="result-stat-sub">{highlight.sub}</span>}
-                    </div>
-                ) : ok && (
-                    <div className="result-stat tabular">
-                        <span className="result-stat-value">{kcal === null ? '—' : fmt(scaleAmount(kcal, serving.grams), 0)} <small>kcal</small></span>
-                        <span className="result-stat-sub">per {serving.label}</span>
-                    </div>
+                {ok ? (
+                    <p className="result-nutrients tabular">
+                        {resultNutrients(food, serving.grams).map(n => (
+                            <span key={n.key}><b>{fmt(n.amount)} {n.unit}</b> {n.label}</span>
+                        ))}
+                    </p>
+                ) : (
+                    <p className="result-nutrients">
+                        <span className="chip chip-warn"><Icon name="alert" size={12} /> Limited data</span>
+                    </p>
                 )}
-            </IntentLink>
-        </li>
+            </div>
+            {highlight ? (
+                <div className="result-stat tabular">
+                    <span className="result-stat-value">{highlight.value}</span>
+                    {highlight.sub && <span className="result-stat-sub">{highlight.sub}</span>}
+                </div>
+            ) : ok && (
+                <div className="result-stat tabular">
+                    <span className="result-stat-value">{kcal === null ? '—' : fmt(scaleAmount(kcal, serving.grams), 0)} <small>kcal</small></span>
+                    <span className="result-stat-sub">per {serving.label}</span>
+                </div>
+            )}
+        </>
     );
 }

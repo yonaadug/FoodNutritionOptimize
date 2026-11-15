@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { getCategories, getDbInfo, getTopHits, searchFoods, SEARCH_MAX_QUERY_LENGTH } from '@/lib/db';
+import { getCategories, getDbInfo, getTopHits, searchFoodGroups, SEARCH_MAX_QUERY_LENGTH } from '@/lib/db';
 import { categorySlug, nutrientName, nutrientSlug } from '@/lib/food-page';
 import { SITE_TAGLINE } from '@/lib/nav';
 import FoodCard from '@/components/explore/FoodCard';
@@ -27,8 +27,8 @@ export default async function Home({ searchParams }: PageProps<'/'>) {
     const q = queryParam((await searchParams).q);
     let initial: InitialSearch | null = null;
     if (q.length >= 2) {
-        const r = await searchFoods(q, 1, 20);
-        initial = { query: q, foods: r.foods, total: r.total, totalPages: r.totalPages };
+        const r = await searchFoodGroups(q, 1, 20);
+        initial = { query: q, groups: r.groups, total: r.total, entries: r.entries, totalPages: r.totalPages };
     }
     const { foodCount } = getDbInfo();
 

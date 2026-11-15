@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { getFoodByFdcId, getRelatedFoods } from '@/lib/db';
+import { getFoodByFdcId, getFoodTypes, getRelatedFoods } from '@/lib/db';
+import { foodGroupOf } from '@/lib/food-groups';
 import type { Food } from '@/lib/food-types';
 import { categorySlug, datasetInfo, fdcUrl, fmt, foodPath, formatPublicationDate, nutrientName, parseFoodParam, resultNutrients } from '@/lib/food-page';
 import { filledKeys } from '@/lib/nutrient-fill';
@@ -51,14 +52,18 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
     const canonical = foodPath(food);
     if (`/food/${id}` !== canonical) permanentRedirect(canonical);
 
-    const [related, replacement] = await Promise.all([
+    const [related, replacement, types] = await Promise.all([
         getRelatedFoods(food),
         food.superseded_by_fdc_id ? getFoodByFdcId(food.superseded_by_fdc_id) : Promise.resolve(undefined),
+        getFoodTypes(food),
     ]);
     const { name, detail } = splitFoodName(food.description);
     const dataset = datasetInfo(food.data_type);
     const published = formatPublicationDate(food.publication_date);
     const compareSuggestions = [...related.forms.slice(0, 5), ...related.similar.slice(0, 3)];
+    // The Type switcher lists this food's types: "Other forms" keeps only the forms it doesn't.
+    const typeIds = new Set(types.map(t => t.id));
+    const otherForms = related.forms.filter(f => !typeIds.has(f.id));
     const filled = filledKeys(food);
     const olderEntry = filled.length > 0 ? food.filledFrom![filled[0]] : null;
 
@@ -91,13 +96,13 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
                 </div>
             )}
 
-            <FoodDetail food={food} compareSuggestions={compareSuggestions} />
+            <FoodDetail food={food} compareSuggestions={compareSuggestions} types={types} groupName={foodGroupOf(food.description).name} />
 
-            {related.forms.length > 0 && (
+            {otherForms.length > 0 && (
                 <section aria-labelledby="forms-title">
                     <h2 className="browse-title" id="forms-title">Other forms of {name.toLowerCase()}</h2>
                     <ul className="food-grid">
-                        {related.forms.map(f => <li key={f.id}><FoodCard food={f} /></li>)}
+                        {otherForms.map(f => <li key={f.id}><FoodCard food={f} /></li>)}
                     </ul>
                 </section>
             )}

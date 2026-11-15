@@ -59,8 +59,24 @@ Further down:
 **Searching.**
 
 - Results start at 2 letters and update as you type. The address changes to `/?q=salmon`, so a search can be shared and the Back button returns to it, with the same results and scroll position.
-- Each row shows the name, category, a USDA dataset badge, the top three nutrients, and calories per typical serving. Clicking a row opens the food page. There's no Add button here; adding happens on the food page.
-- **Show more (N left)** loads the next 20.
+- **One row per food.** USDA lists many foods several ways (cod 9 ways, salmon 45). Each food shows once, with its **most common type**: "Salmon · most common: sockeye · wild caught · raw". The status line counts foods and entries: "11 foods match "salmon" (56 USDA entries)". A food USDA lists once looks as it always did.
+- Each row shows the name, category, a USDA dataset badge, the top three nutrients, and calories per typical serving, all for the most common type. Clicking the row opens that type's page. There's no Add button here; adding happens on the food page.
+- **9 types** (on foods with several) opens the type picker, below.
+- **Show more (N left)** loads the next 20 foods.
+
+![Which cod?](walkthrough/72-search-cod-types.png)
+
+**Choosing a type.** The **9 types** button opens **Which cod?** under the row:
+
+- The **Most common** type comes first, then **Raw**, **Cooked**, **Canned, dried & cured** and **Other forms**, A to Z within each. Each type shows its qualifiers ("Atlantic · dried and salted"), calories per 100 g and its USDA dataset, so the choice is informed.
+- Choosing a type opens its food page.
+- Foods with 10 or more types get a **Filter** box ("sockeye canned" leaves two salmon). Foods with more than 60 types (rice, beef) load the rest of the list when the picker opens.
+- Keyboard: Tab reaches **9 types**, Enter opens it, ↑ ↓ move between types (and back to the filter), Home and End jump, Enter chooses, Esc clears the filter and then closes the picker, returning focus to **9 types**. Screen readers hear "Cod, 9 types, choose a type".
+- On a phone the picker opens in place, full width:
+
+![The type picker on a phone, in dark mode](walkthrough/75-phone-dark-cod-types.png)
+
+**What counts as one food.** The short name decides it (`lib/food-groups.ts`): "Fish, cod, Atlantic, raw" and "Cod, Pacific or Alaskan, frozen" are both **Cod**, but "Codfish salad" and "Fish oil, cod liver" are their own foods, and Cheddar and Swiss cheese, or black and kidney beans, stay apart. Catch-all names take the next word too ("Soup, tomato" vs "Soup, chicken noodle"; "Oil, olive" vs "Oil, canola"), branded products only group with the same product, and restaurant, fast-food and baby-food dishes never group. The **most common** type is the entry with calories, without a canned, dried, smoked or other unusual form you didn't search for, from USDA Foundation data before SR Legacy before survey data, raw or plain before cooked, and of the variety most entries share (Atlantic cod, white rice).
 - Keyboard: `/` jumps to the box from anywhere on the page, ↓ moves into the results, Esc clears.
 - Foods you open are remembered as **Recent** chips under the box, in this browser only. Each has an × and there's a **Clear** button.
 - No matches gives "No foods match…" with a tip to use a simpler word and **Browse foods instead**.
@@ -73,6 +89,7 @@ Further down:
 
 - **Breadcrumb:** Foods › category › food.
 - **Name,** with a badge for the USDA dataset. Foods with almost no data also get a **Limited data** badge. An older record that USDA has replaced gets a note linking to the newer one.
+- **Type** (foods with several types): "Type: sockeye · wild caught · raw · 45 types of salmon". It opens the same picker as search, with this page marked **This page**, and each type opens its own page. The serving you picked comes along when it makes sense: 1 oz, 3 oz, 100 g and custom amounts always, a household measure ("1 fillet") when the other type has it, otherwise that type's usual serving.
 - **Add to my plan** puts the food on your planner list, and the planner chooses how much. **Add exactly 216 g** does the same but keeps the serving you picked as a fixed amount, and plans the rest of the day around it. A short line under the buttons says which is which. The button then becomes **In your plan · Open plan**, with the amount if it's fixed.
 - **Compare** opens the [comparison panel](#4-compare).
 - **Share** copies the link, or opens the share sheet on a phone.
@@ -88,13 +105,15 @@ Further down:
 
 ![A custom amount in ounces](walkthrough/71-food-custom-ounces.png)
 
+![Switching to another type of cod at 3 oz](walkthrough/73-food-type-switcher.png)
+
 **How the numbers scale.** USDA stores every nutrient per 100 g, and that is all the database holds. A serving's amount is that value × grams ÷ 100, from the unrounded value, and only the shown number is rounded (0 decimals from 10, 1 from 1, 2 below 1). % Daily Value comes from the unrounded amount. Ounces are exact: 1 oz = 28.349523125 g, so 3 oz = 85.05 g. Where USDA lists "3 oz" as 85 g, or "1 oz" as 28 or 28.35 g, it is the same menu entry as the standard weight, at the exact grams. The difference is 0.06%, which only moves a number sitting right on a rounding edge, by one in its last digit. "—" stays "—" at every weight, † stays on values from the older entry, and a recipe's lower bounds keep their "≥". All of this is in `lib/serving-scale.ts`, with tests.
 
 ![Related foods and the data source](walkthrough/05-food-related-and-source.png)
 
 At the bottom:
 
-- **Other forms** and **Nutritionally similar foods** are cards that open those foods.
+- **Other forms** and **Nutritionally similar foods** are cards that open those foods. **Other forms** leaves out the types the **Type** control already lists, and disappears when that's all of them.
 - **Where this data comes from** names the dataset, links the USDA record, and gives the publication date and release. Where USDA holds the same food in another dataset, **Same food elsewhere** links to it.
 
 ## 3. Contaminant meters
@@ -157,7 +176,7 @@ At the bottom of a full panel, **How we work this out** repeats the bands and li
 **Compare** on a food page opens a panel below the page.
 
 - **Suggestion chips** offer other forms and similar foods. Click to add or remove one.
-- **Or search for another food** finds anything else. You can add up to three foods, and the rest grey out once you have.
+- **Or search for another food** finds anything else, one row per food. **Add** compares the most common type; **9 types** opens the picker to compare another type instead (this page's own food is shown but can't be added). You can add up to three foods, and the rest grey out once you have.
 - **Compare at** puts every label on the same weight: **1 oz**, **3 oz** or **100 g**, one food's serving ("Broccoli (this page): 1 cup, chopped (91 g)", so the others are shown at 91 g), **Each food's usual serving**, or **Custom amount…** in grams or ounces. It starts at the weight the food page is showing, so the page's food doesn't jump and every food is comparable straight away. A line under it says "All 3 labels show 3 oz (85.05 g), so you can compare them directly."
 - **The labels** sit side by side, and you scroll sideways if they don't fit. Each has its own **Serving size** menu, the same one as on its food page, so a food that USDA only lists at 100 g still has 1 oz and 3 oz. Changing one label's menu overrides **Compare at** for that label only: it gets a **Different weight** tag, and a warning names each food's weight with a **Put every food at 3 oz (85.05 g)** button. Changing **Compare at** puts every label back on it.
 - When raw and cooked foods are side by side (raw salmon and cooked lingcod), a note says that cooking removes water, so equal weights aren't like for like.
@@ -230,7 +249,11 @@ Below those:
 
 ![Your foods, with one food's options open](walkthrough/22-plan-your-foods.png)
 
-**Find foods you like** searches the same way as the home page, but each row has an **Add** button. The name links to the food's page. **Popular starting points** are one-click searches.
+**Find foods you like** searches the same way as the home page, one row per food, but each row has an **Add** button. The name links to the food's page. **Popular starting points** are one-click searches.
+
+![Choosing a type of cod in the planner](walkthrough/74-plan-cod-types.png)
+
+On a food with several types, **Add** adds the most common type, for when you don't mind which. **9 types** opens the picker, where every type has its own **Add** / **Added** button, and the control then says how many are in your list ("9 types · 2 added").
 
 **Your foods** is the list the plan is built from. Each food has two buttons:
 

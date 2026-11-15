@@ -185,6 +185,13 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
   - EU/UK VAT approach is undecided (Stripe Tax threshold monitoring, or Managed Payments).
   - "Unlimited" history is capped at 500 items per kind by the existing abuse limit; say so or raise it.
 - [ ] **Flaky test:** `lib/auth/account-api.test.ts` "rate-limits per user" failed 1 run in 4 under load (dynalite).
+- [ ] **AI after a deploy:** right after a deploy that changes the web role's Bedrock permissions, IAM can take a minute
+      to apply. The first AI read then gets AccessDenied, and `lib/ai/router.ts` marks the model unavailable for 600 s
+      on that Lambda instance, so photo reading is off for up to 10 minutes (seen on prod, 2026-11-15). Use a short
+      cooldown (e.g. 60 s) for access errors, or retry once after a few seconds before cooling down.
+- [ ] **Gemma's cold start:** the first Gemma call on dev timed out at 14 s and fell back to Nova Lite; warm calls took
+      4 to 8 s. Watch `[ai] ... ms=` in the logs; if timeouts are common, lower `AI_TIMEOUT_MS` so the fallback answers
+      sooner, or make Nova Lite primary for text.
 - [ ] Legal and compliance ([docs/LEGAL.md](docs/LEGAL.md)):
   - Privacy policy, terms and medical disclaimer: drafted, awaiting legal review
   - Washington MHMDA consent and a consumer health data policy: drafted and recorded at sign-in, awaiting review

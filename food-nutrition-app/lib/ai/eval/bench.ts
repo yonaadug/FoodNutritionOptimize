@@ -13,7 +13,7 @@
  * What it does, per model:
  * - Sends the app's own request: SYSTEM_PROMPT, the record_recipe tool and the
  *   user turn from lib/ai/claude.ts, through the Converse API, built by
- *   novaRequest (lib/ai/nova.ts) and read by createNovaProvider, so the reply goes
+ *   converseRequest (lib/ai/converse.ts) and read by createConverseProvider, so the reply goes
  *   through validateRecipeOutput exactly as in production.
  * - If a model refuses a forced tool choice it falls back to "any", then "auto",
  *   then to JSON in the reply text (the schema in the system prompt). The mode
@@ -41,7 +41,7 @@ import { PASTED_RECIPES, type PastedRecipe } from '../../recipes/fixtures-pasted
 import { matchIngredientIn } from '../../recipes/match';
 import { asPasted, evaluateRouting, scoreIngredients, stats, type GroupStats, type RecipeScore } from '../../recipes/reader-eval';
 import { SYSTEM_PROMPT } from '../claude';
-import { createNovaProvider, novaRequest, type NovaRequest, type NovaResponse } from '../nova';
+import { createConverseProvider, converseRequest, type ConverseRequest, type ConverseResponse } from '../converse';
 import { RECORD_RECIPE_TOOL, RECORD_RECIPE_TOOL_DEF } from '../schema';
 import { AiError, type RecipeInput } from '../types';
 import { CARD_STYLES, renderCard } from './cards';
@@ -163,7 +163,7 @@ function price(c: Candidate, inTok: number, outTok: number): number {
 }
 
 /** Worst case for one call: generous input, the whole output budget. */
-function worstCase(c: Candidate, req: NovaRequest): number {
+function worstCase(c: Candidate, req: ConverseRequest): number {
     const chars = JSON.stringify(req.system).length + JSON.stringify(RECORD_RECIPE_TOOL_DEF).length
         + req.messages[0].content.reduce((n, b) => n + ('text' in b ? b.text.length : 0), 0);
     const hasImage = req.messages[0].content.some(b => 'image' in b);
@@ -183,7 +183,7 @@ function record(r: CallRecord): void {
 
 // ---------- Converse, generically ----------
 
-type Client = { send: (cmd: unknown) => Promise<NovaResponse> };
+type Client = { send: (cmd: unknown) => Promise<ConverseResponse> };
 let clientPromise: Promise<{ client: Client; Converse: new (input: unknown) => unknown }> | null = null;
 function bedrock() {
     return (clientPromise ??= import('@aws-sdk/client-bedrock-runtime').then(({ BedrockRuntimeClient, ConverseCommand }) => ({
@@ -195,7 +195,7 @@ function bedrock() {
 const JSON_INSTRUCTION = `\n\nThis interface has no tools. Instead of calling ${RECORD_RECIPE_TOOL}, reply with one JSON object that is valid input for it, and nothing else. It must match this JSON Schema:\n${JSON.stringify(RECORD_RECIPE_TOOL_DEF.input_schema)}`;
 
 /** The app's request, adapted to a mode. */
-function adapt(req: NovaRequest, mode: Mode): Record<string, unknown> {
+function adapt(req: ConverseRequest, mode: Mode): Record<string, unknown> {
     const { toolConfig, system, ...rest } = req;
     if (mode === 'json') return { ...rest, system: [{ text: system[0].text + JSON_INSTRUCTION }] };
     const toolChoice = mode === 'tool' ? toolConfig.toolChoice : mode === 'any' ? { any: {} } : { auto: {} };
@@ -228,7 +228,7 @@ const modeOf = new Map<string, Mode>();
 interface Context { item: string; kind: string; cost: number; inputTokens: number; outputTokens: number; firstCallInput: number }
 
 function makeSend(c: Candidate, context: Context) {
-    return async (req: NovaRequest): Promise<NovaResponse> => {
+    return async (req: ConverseRequest): Promise<ConverseResponse> => {
         const { client, Converse } = await bedrock();
         let i = MODES.indexOf(modeOf.get(c.id) ?? 'tool');
         for (;;) {
@@ -326,7 +326,7 @@ const NOT_INVOCABLE = /AccessDenied|ResourceNotFound|UnrecognizedClient|ExpiredT
  */
 async function measureOverhead(c: Candidate): Promise<{ tokens: number | null; blocked: string | null }> {
     // A one-line recipe: an empty one makes some models emit a broken tool call, which reports no usage.
-    const req = novaRequest(c.id, { kind: 'text', text: '1 egg' });
+    const req = converseRequest(c.id, { kind: 'text', text: '1 egg' });
     req.inferenceConfig.maxTokens = 300;
     try {
         const reply = await makeSend(c, { item: '(prompt + "1 egg")', kind: 'overhead', cost: 0, inputTokens: 0, outputTokens: 0, firstCallInput: 0 })(req);
@@ -341,7 +341,7 @@ async function measureOverhead(c: Candidate): Promise<{ tokens: number | null; b
 async function runModel(conn: ReturnType<typeof openDatabase>, c: Candidate, items: Item[]): Promise<ReadRecord[]> {
     const context: Context = { item: '', kind: '', cost: 0, inputTokens: 0, outputTokens: 0, firstCallInput: 0 };
     const send = makeSend(c, context);
-    const provider = createNovaProvider({ model: c.id, send: req => send(req) });
+    const provider = createConverseProvider({ model: c.id, send: req => send(req) });
     const out: ReadRecord[] = [];
     for (const item of items) {
         context.item = item.recipe.title;

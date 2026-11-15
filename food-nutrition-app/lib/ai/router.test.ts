@@ -93,8 +93,8 @@ describe('model routing', () => {
         assert.deepEqual([r.model, r.recipe.ingredients.length, nova.calls.length], ['haiku', 0, 0]);
     });
 
-    it('does not escalate other failures: timeouts, refusals, not food, rejected requests', async () => {
-        for (const e of [new AiError('ai_timeout', 'x'), new AiError('ai_refused', 'x'), new AiError('ai_not_food', 'x'), new AiError('ai_bad_output', 'x')]) {
+    it('does not retry other failures on another model: refusals, not food, rejected requests', async () => {
+        for (const e of [new AiError('ai_refused', 'x'), new AiError('ai_not_food', 'x'), new AiError('ai_bad_output', 'x')]) {
             const sonnet = fake('sonnet', recipe());
             const nova = fake('nova', recipe());
             await assert.rejects(createRoutedProvider({ primary: fake('haiku', e), escalation: sonnet, fallback: nova }).readRecipe(TEXT), { code: e.code });
@@ -102,8 +102,8 @@ describe('model routing', () => {
         }
     });
 
-    it('falls back to Nova when Claude is unavailable: access denied, not found, quota, throttling, outage', async () => {
-        for (const e of [denied(), throttled(), new AiError('ai_unavailable', 'x', 'capacity')]) {
+    it('falls back when the main model is unavailable: access denied, not found, quota, throttling, outage, timeout', async () => {
+        for (const e of [denied(), throttled(), new AiError('ai_unavailable', 'x', 'capacity'), new AiError('ai_timeout', 'x')]) {
             const nova = fake('nova', recipe());
             const r = await createRoutedProvider({ primary: fake('haiku', e), escalation: fake('sonnet', recipe()), fallback: nova }).readRecipe(IMAGE);
             assert.equal(r.model, 'nova');
@@ -114,6 +114,30 @@ describe('model routing', () => {
         const nova = fake('nova', recipe());
         const r = await createRoutedProvider({ primary: fake('haiku', new InvalidReplyError('bad')), escalation: fake('sonnet', denied()), fallback: nova }).readRecipe(TEXT);
         assert.equal(r.model, 'nova');
+    });
+
+    it('retries a reply that fails validation once with the fallback when there is no escalation model', async () => {
+        const gemma = fake('gemma', new InvalidReplyError('bad'));
+        const nova = fake('nova', recipe());
+        const r = await createRoutedProvider({ primary: gemma, escalation: null, fallback: nova }).readRecipe(IMAGE);
+        assert.deepEqual([r.model, gemma.calls.length, nova.calls.length], ['nova', 1, 1]);
+        await assert.rejects(createRoutedProvider({ primary: fake('gemma', new InvalidReplyError('bad')), escalation: null, fallback: null }).readRecipe(TEXT), { code: 'ai_bad_output' });
+    });
+
+    it('works the same whichever models fill the tiers: Gemma first, Nova Lite as the fallback, no Claude', async () => {
+        const gemma = fake('google.gemma-3-27b-it', throttled());
+        const novaLite = fake('us.amazon.nova-lite-v1:0', recipe());
+        const router = createRoutedProvider({ primary: gemma, escalation: null, fallback: novaLite });
+        assert.deepEqual([router.name, router.model], ['bedrock', 'google.gemma-3-27b-it']);
+        assert.equal((await router.readRecipe(IMAGE)).model, 'us.amazon.nova-lite-v1:0');
+    });
+
+    it('does not put a model that timed out on cooldown', async () => {
+        const gemma = fake('gemma', new AiError('ai_timeout', 'x'), recipe());
+        const nova = fake('nova', recipe());
+        const router = createRoutedProvider({ primary: gemma, escalation: null, fallback: nova, now: () => 0 });
+        assert.equal((await router.readRecipe(IMAGE)).model, 'nova');
+        assert.equal((await router.readRecipe(IMAGE)).model, 'gemma', 'one slow read does not send the next one elsewhere');
     });
 
     it('validates Nova like any other read: its failures reach the caller', async () => {
@@ -166,5 +190,72 @@ describe('model routing', () => {
         assert.equal(rerank.mock.callCount(), 0);
         now += ACCESS_COOLDOWN_MS;
         assert.equal((await router.rerank!([])).size, 1);
+    });
+});
+
+/** A provider that takes `ms` to answer and gives up, as the SDKs do, when its signal aborts. */
+function slow(model: string, ms: number) {
+    const seen: number[] = [];
+    const p: AiProvider & { seen: number[] } = {
+        name: 'bedrock',
+        model,
+        seen,
+        readRecipe(_input, { signal } = {}) {
+            const started = Date.now();
+            return new Promise<AiResult>((resolve, reject) => {
+                const t = setTimeout(() => resolve({ recipe: recipe(), usage: null }), ms);
+                signal?.addEventListener('abort', () => {
+                    clearTimeout(t);
+                    seen.push(Date.now() - started);
+                    reject(new AiError('ai_timeout', 'x'));
+                }, { once: true });
+            });
+        },
+    };
+    return p;
+}
+
+describe('model routing time limits', () => {
+    beforeEach(() => {
+        mock.method(console, 'warn', () => {});
+    });
+
+    it('stops the main model at its own time limit and hands the read to the fallback', async () => {
+        const gemma = slow('gemma', 5_000);
+        const nova = fake('nova', recipe());
+        const started = Date.now();
+        const router = createRoutedProvider({ primary: gemma, escalation: null, fallback: nova, timeouts: { primary: 40, fallback: 1_000 }, deadlineMs: 2_000, minAttemptMs: 10 });
+        const r = await router.readRecipe(IMAGE);
+        assert.equal(r.model, 'nova');
+        assert.equal(gemma.seen.length, 1);
+        assert.ok(Date.now() - started < 1_000);
+    });
+
+    it('gives the fallback only what is left of the whole read\'s deadline', async () => {
+        const gemma = slow('gemma', 5_000);
+        const nova = slow('nova', 5_000);
+        const started = Date.now();
+        const router = createRoutedProvider({ primary: gemma, escalation: null, fallback: nova, timeouts: { primary: 60, fallback: 5_000 }, deadlineMs: 120, minAttemptMs: 10 });
+        await assert.rejects(router.readRecipe(TEXT), { code: 'ai_timeout' });
+        assert.equal(nova.seen.length, 1);
+        assert.ok(nova.seen[0] < 200, `fallback ran ${nova.seen[0]} ms`);
+        assert.ok(Date.now() - started < 400);
+    });
+
+    it('skips the fallback when too little time is left, and reports the main model\'s failure', async () => {
+        let t = 0;
+        const gemma: AiProvider = { name: 'bedrock', model: 'gemma', async readRecipe() { t += 22_000; throw denied(); } };
+        const nova = fake('nova', recipe());
+        const router = createRoutedProvider({ primary: gemma, escalation: null, fallback: nova, deadlineMs: 23_000, now: () => t });
+        await assert.rejects(router.readRecipe(TEXT), { code: 'ai_unavailable' });
+        assert.equal(nova.calls.length, 0);
+    });
+
+    it('does not fall back once the caller has given up', async () => {
+        const nova = fake('nova', recipe());
+        const caller = new AbortController();
+        const gemma: AiProvider = { name: 'bedrock', model: 'gemma', async readRecipe() { caller.abort(); throw new AiError('ai_timeout', 'x'); } };
+        await assert.rejects(createRoutedProvider({ primary: gemma, escalation: null, fallback: nova }).readRecipe(TEXT, { signal: caller.signal }), { code: 'ai_timeout' });
+        assert.equal(nova.calls.length, 0);
     });
 });

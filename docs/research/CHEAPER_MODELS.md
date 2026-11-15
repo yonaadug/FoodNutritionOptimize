@@ -4,6 +4,8 @@ Research and a small paid benchmark, 2026-11-14. Links were accessed **2026-11-1
 
 This builds on [FOOD_PHOTO_OPTIONS.md](FOOD_PHOTO_OPTIONS.md) (photo options and accuracy evidence), [RECIPES.md](../RECIPES.md) (routing) and [BEDROCK_SETUP.md](../BEDROCK_SETUP.md) (account set-up).
 
+> **Decision, 2026-11-15.** After this benchmark the owner chose **Gemma 3 27B as the reader for photos and unsure text, and Nova Lite v1 (`us.amazon.nova-lite-v1:0`) as its fallback, with no Claude and no escalation model.** The code now sends every non-Claude Bedrock id through the Converse provider, which removes the blocker noted under [Recommended change](#recommended-change). The routing, cost and IAM are in [RECIPES.md](../RECIPES.md#which-model-reads-what) and [BEDROCK_SETUP.md](../BEDROCK_SETUP.md). The analysis below is as written on 2026-11-14.
+
 ## The answer
 
 **Yes, for today's set-up. The cheaper model is Amazon's own Nova Lite v1, not DeepSeek.**

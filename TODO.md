@@ -17,18 +17,21 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
       Still open: the week planner and plan contaminant check need wrapping in `<PlusGate>` once they land, the
       privacy policy must mention that Stripe keeps invoices after an account is deleted, and the EU/UK VAT choice
       (AWS design §3.6).
-- [ ] **Real AI for recipes (owner: turn it on; Claude waits on AWS).** Since 2026-11-14 the code is ready
+- [ ] **Real AI for recipes (owner: deploy it).** Since 2026-11-15 the code reads with **Google Gemma 3 27B on
+      Bedrock, falling back to Amazon Nova Lite v1**, with no Claude
       ([docs/RECIPES.md](docs/RECIPES.md#which-model-reads-what)): pasted text is read by the free built-in reader
-      first (63% of the offline evaluation set needs no AI, at 99.5% food top-1), photos and unsure text go to Claude
-      Haiku 5.5, plated-food photos and failed reads to Sonnet 5.5, and **Amazon Nova 2 Lite reads everything while
-      Claude is unavailable**. Nova works on the account now (3 live calls, $0.0047). To turn it on locally: set
-      `AI_PROVIDER=bedrock` and `AI_BEDROCK_REGION=us-east-1` (credentials from `~/.aws`). On AWS: deploy the CDK
-      example, which grants all three models. Claude itself still needs the account steps in
-      [docs/BEDROCK_SETUP.md §2](docs/BEDROCK_SETUP.md#2-fix-the-account-owner-actions) (quota `L-47520EB7` > 0 is
-      requested; also the use-case form and the Haiku 5.5 agreement), and then takes over with no change. Then:
-      evaluate Haiku and Nova on 20–50 real recipe photos, and Sonnet on plates, before relying on them; watch the
-      `provider=builtin` share and how often users edit those rows. Also: the local `aws` CLI is an Intel build that
-      can't run on this Mac (`brew install awscli`).
+      first (63% of the offline evaluation set needs no AI, at 99.5% food top-1), photos (plated food included) and
+      unsure text go to Gemma (about $0.00025 a photo, $0.00017 a text read), and Nova Lite takes over when Gemma
+      errors, times out or fails validation. Both work on the dev account now, with no agreement or quota request
+      (live check 2026-11-15, under $0.0005). To turn it on locally: set `AI_PROVIDER=bedrock` and
+      `AI_BEDROCK_REGION=us-east-1` (credentials from `~/.aws`). On AWS: deploy the CDK example, which grants only
+      these two models. **The pending Claude quota request (`L-47520EB7`), use-case form and Haiku 5.5 agreement
+      aren't needed any more**; Claude stays supported if the owner switches back
+      ([docs/BEDROCK_SETUP.md](docs/BEDROCK_SETUP.md)). Then: evaluate Gemma on 20–50 real recipe photos (phone
+      photos, handwriting, plated food; the benchmark used rendered cards only) before relying on it; compare the
+      first bill with the logs (Bedrock seems to under-count Gemma's input tokens); watch the `provider=builtin`
+      share and how often users edit those rows. Also: the local `aws` CLI is an Intel build that can't run on this
+      Mac (`brew install awscli`).
 - [ ] **Arsenic reference for the rice meter.** EPA 2025 (current default) reads brown rice at about 220% per cup, and
       ATSDR 2007 at about 44%. It's one edit to `is_default` in `data/contaminants/reference_values.tsv`, plus a rebuild.
 - [ ] **Old `feat/*` branches and worktrees** (`feat/food-search`, `feat/recipe-analyzer`, `feat/accounts`,
@@ -99,11 +102,12 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
       fill (`lib/legal.ts`), the `privacy@nutritiondictionary.com` mailbox to set up, and when to turn `LEGAL_DRAFT` off.
 - [ ] **Before `/recipes` goes public on a paid AI provider:** a global spend cap (§3.7 of the AWS design) plus an
       AWS Budget. Per-account photo quotas are done (lib/billing/quota.ts, in the user table). The per-IP limits and
-      the daily budget are still in-memory, per server instance. Claude on Bedrock bills as
-      AWS Marketplace charges, so a budget filtered to "Amazon Bedrock" misses it. The CDK kill switch now also
-      denies Bedrock to the web role ([docs/BEDROCK_SETUP.md §6](docs/BEDROCK_SETUP.md#6-spend-controls)).
-      Bedrock compiles a strict tool schema on first use (up to ~90 s, cached 24 h): check whether the first call
-      after deploy times out at `AI_TIMEOUT_MS=20000`, and add a warm-up if it does.
+      the daily budget are still in-memory, per server instance. Gemma and Nova bill as "Amazon Bedrock"; Claude, if
+      switched back on, bills as AWS Marketplace charges, so a budget filtered to "Amazon Bedrock" would miss it. The
+      CDK kill switch now also denies Bedrock to the web role
+      ([docs/BEDROCK_SETUP.md §6](docs/BEDROCK_SETUP.md#6-spend-controls)). After deploy, watch for Gemma timeouts
+      (`timed out (limit 14000 ms)` in the logs; its photo p95 was 11.2 s): frequent ones mean Nova Lite is reading
+      more than planned.
 - [ ] **Contaminants, license:** Milne 2024 microplastics data is CC BY-NC-ND and paid features are planned. Get a
       review or remove those rows (question 8 in [docs/LEGAL.md](docs/LEGAL.md)).
 - [ ] **Contaminants, data gaps:**

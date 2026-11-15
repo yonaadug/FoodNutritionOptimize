@@ -2,11 +2,14 @@ import { describe, it, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import jpeg from 'jpeg-js';
 import Anthropic from '@anthropic-ai/sdk';
-import { bedrockConfigHint, bedrockEndpoint, bedrockModelId, builtinTextFirst, chooseProvider, createProvider, DEFAULT_BEDROCK_MODEL, DEFAULT_MODEL, mapSdkError } from './index';
-import { createNovaProvider, mapNovaError, novaRequest, type NovaRequest, type NovaResponse } from './nova';
+import {
+    bedrockClient, bedrockConfigHint, bedrockEndpoint, bedrockModelId, builtinTextFirst, chooseProvider, createProvider, DEFAULT_ANTHROPIC_MODEL, DEFAULT_BEDROCK_MODEL,
+    isClaudeModel, mapSdkError, readTimeouts,
+} from './index';
+import { createConverseProvider, mapConverseError, converseRequest, type ConverseRequest, type ConverseResponse } from './converse';
 import { createClaudeProvider, type ClaudeMessage, type ClaudeRequest } from './claude';
 import { createMockProvider } from './mock';
-import { baseModelId, estimateCostUsd } from './cost';
+import { baseModelId, estimateCostUsd, logAiCall } from './cost';
 import { PLATED_MEAL_MAX_CONFIDENCE, RECORD_RECIPE_TOOL, RECORD_RECIPE_TOOL_DEF, validateChoices, validateRecipeOutput } from './schema';
 import { clientIp, overDailyBudget, RateLimiter, recordSpend, resetLimits } from './rate-limit';
 import { boxDownscale, fitWithin, imageTokenEstimate, ImageError, MAX_EDGE_PX, MAX_MODEL_IMAGE_BYTES, prepareImage, sniffImage, stripJpegMetadata } from './image';
@@ -47,6 +50,35 @@ describe('chooseProvider', () => {
     it('keeps full Bedrock ids and profiles as written', () => {
         assert.equal(bedrockModelId('us.anthropic.claude-haiku-5-5'), 'us.anthropic.claude-haiku-5-5');
         assert.equal(bedrockModelId('arn:aws:bedrock:us-east-1:1:inference-profile/x'), 'arn:aws:bedrock:us-east-1:1:inference-profile/x');
+        assert.equal(bedrockModelId('google.gemma-3-27b-it'), 'google.gemma-3-27b-it');
+        assert.equal(bedrockModelId('qwen.qwen3-32b-v1:0'), 'qwen.qwen3-32b-v1:0');
+        assert.equal(bedrockModelId('us.amazon.nova-lite-v1:0'), 'us.amazon.nova-lite-v1:0');
+    });
+    it('sends Claude ids to the Claude client and every other Bedrock id to Converse', () => {
+        const claude = [
+            'anthropic.claude-haiku-5-5', 'us.anthropic.claude-haiku-5-5', 'global.anthropic.claude-sonnet-5-5', 'eu.anthropic.claude-sonnet-5-5',
+            'claude-haiku-5-5', 'arn:aws:bedrock:us-east-1:1:inference-profile/us.anthropic.claude-haiku-5-5',
+            'arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-haiku-5-5',
+        ];
+        const converse = [
+            'google.gemma-3-27b-it', 'us.amazon.nova-lite-v1:0', 'amazon.nova-lite-v1:0', 'us.amazon.nova-2-lite-v1:0', 'amazon.nova-micro-v1:0',
+            'mistral.ministral-3-8b-instruct', 'qwen.qwen3-32b-v1:0', 'deepseek.v3.2', 'openai.gpt-oss-20b-1:0',
+            'arn:aws:bedrock:us-east-1::foundation-model/google.gemma-3-27b-it', 'arn:aws:bedrock:us-east-1:1:inference-profile/us.amazon.nova-lite-v1:0',
+            // Not Claude, despite the words in them.
+            'google.claude-like-model', 'amazon.anthropicish-v1:0',
+        ];
+        for (const id of claude) {
+            assert.equal(isClaudeModel(id), true, id);
+            assert.equal(bedrockClient(id), 'claude', id);
+        }
+        for (const id of converse) {
+            assert.equal(isClaudeModel(id), false, id);
+            assert.equal(bedrockClient(id), 'converse', id);
+        }
+    });
+    it('uses the bedrock-runtime or Mantle endpoint only for Claude ids', () => {
+        const c = chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'google.gemma-3-27b-it', AI_ESCALATION_MODEL: 'us.anthropic.claude-sonnet-5-5' });
+        assert.deepEqual([c.model, c.endpoint, c.escalationModel, c.escalationEndpoint], ['google.gemma-3-27b-it', null, 'us.anthropic.claude-sonnet-5-5', 'runtime']);
     });
     it('sends inference profiles and ARNs to bedrock-runtime, bare ids to the Mantle endpoint', () => {
         // Mantle serves "anthropic.<model>" ids only, and not every model (Haiku 5.5 and Sonnet 5.5
@@ -59,7 +91,7 @@ describe('chooseProvider', () => {
         assert.equal(bedrockEndpoint('arn:aws:bedrock:us-east-1:1:inference-profile/us.anthropic.claude-haiku-5-5'), 'runtime');
         const c = chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'us.anthropic.claude-haiku-5-5' });
         assert.deepEqual([c.model, c.endpoint], ['us.anthropic.claude-haiku-5-5', 'runtime']);
-        assert.equal(chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1' }).endpoint, 'runtime');
+        assert.equal(chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1' }).endpoint, null, 'the default, Gemma, goes through Converse');
         assert.equal(chooseProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'claude-opus-5-5' }).endpoint, 'mantle');
         assert.equal(chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' }).endpoint, null);
         assert.equal(createProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1', AI_MODEL: 'global.anthropic.claude-haiku-5-5' }).provider.model, 'global.anthropic.claude-haiku-5-5');
@@ -91,7 +123,7 @@ describe('chooseProvider', () => {
         }
     });
     it('uses the bare model id on the Claude API', () => {
-        assert.equal(chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' }).model, DEFAULT_MODEL);
+        assert.equal(chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' }).model, DEFAULT_ANTHROPIC_MODEL);
     });
     it('creates a provider without touching the network', () => {
         assert.equal(createProvider({ AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1' }).provider.name, 'bedrock');
@@ -107,27 +139,36 @@ describe('chooseProvider', () => {
 
 describe('model tiers', () => {
     const bedrock = { AI_PROVIDER: 'bedrock', AWS_REGION: 'us-east-1' };
-    it('defaults to Haiku, with Sonnet escalation and Nova Lite fallback, on US inference profiles', () => {
+    it('defaults to Gemma 3 27B, no escalation, and Nova Lite v1 as the fallback: no Claude', () => {
         const c = chooseProvider(bedrock);
-        assert.equal(c.model, 'us.anthropic.claude-haiku-5-5');
-        assert.equal(c.endpoint, 'runtime');
-        assert.equal(c.escalationModel, 'us.anthropic.claude-sonnet-5-5');
-        assert.equal(c.escalationEndpoint, 'runtime');
-        assert.equal(c.fallbackModel, 'us.amazon.nova-2-lite-v1:0');
-        assert.doesNotMatch(DEFAULT_MODEL, /opus/);
+        assert.equal(c.model, 'google.gemma-3-27b-it');
+        assert.equal(DEFAULT_BEDROCK_MODEL, 'google.gemma-3-27b-it');
+        assert.equal(c.endpoint, null);
+        assert.equal(c.escalationModel, null);
+        assert.equal(c.escalationEndpoint, null);
+        assert.equal(c.fallbackModel, 'us.amazon.nova-lite-v1:0');
+        for (const id of [c.model, c.escalationModel, c.fallbackModel]) assert.ok(!id || !isClaudeModel(id), String(id));
     });
-    it('uses bare ids on the Claude API, where there is no Nova', () => {
+    it('still uses Claude, Sonnet escalation included, when the variables name it', () => {
+        const c = chooseProvider({ ...bedrock, AI_MODEL: 'us.anthropic.claude-haiku-5-5', AI_ESCALATION_MODEL: 'us.anthropic.claude-sonnet-5-5', AI_FALLBACK_MODEL: 'us.amazon.nova-2-lite-v1:0' });
+        assert.deepEqual([c.model, c.endpoint, c.escalationModel, c.escalationEndpoint, c.fallbackModel],
+            ['us.anthropic.claude-haiku-5-5', 'runtime', 'us.anthropic.claude-sonnet-5-5', 'runtime', 'us.amazon.nova-2-lite-v1:0']);
+        assert.equal(createProvider({ ...bedrock, AI_MODEL: 'us.anthropic.claude-haiku-5-5' }).provider.model, 'us.anthropic.claude-haiku-5-5');
+    });
+    it('uses Haiku on the Claude API, where Gemma and Nova are not offered, with no escalation unless named', () => {
         const c = chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k' });
-        assert.deepEqual([c.model, c.escalationModel, c.fallbackModel], ['claude-haiku-5-5', 'claude-sonnet-5-5', null]);
+        assert.deepEqual([c.model, c.escalationModel, c.fallbackModel], ['claude-haiku-5-5', null, null]);
+        assert.doesNotMatch(DEFAULT_ANTHROPIC_MODEL, /opus/);
+        assert.equal(chooseProvider({ AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'k', AI_ESCALATION_MODEL: 'claude-sonnet-5-5' }).escalationModel, 'claude-sonnet-5-5');
     });
     it('reads each tier from its own variable, and "off" turns it off', () => {
-        const c = chooseProvider({ ...bedrock, AI_MODEL: 'global.anthropic.claude-haiku-5-5', AI_ESCALATION_MODEL: 'off', AI_FALLBACK_MODEL: 'us.amazon.nova-lite-v1:0' });
-        assert.deepEqual([c.model, c.escalationModel, c.fallbackModel], ['global.anthropic.claude-haiku-5-5', null, 'us.amazon.nova-lite-v1:0']);
+        const c = chooseProvider({ ...bedrock, AI_MODEL: 'global.anthropic.claude-haiku-5-5', AI_ESCALATION_MODEL: 'off', AI_FALLBACK_MODEL: 'us.amazon.nova-2-lite-v1:0' });
+        assert.deepEqual([c.model, c.escalationModel, c.fallbackModel], ['global.anthropic.claude-haiku-5-5', null, 'us.amazon.nova-2-lite-v1:0']);
         for (const off of ['off', 'none', 'false', '0', 'OFF']) {
             assert.equal(chooseProvider({ ...bedrock, AI_FALLBACK_MODEL: off }).fallbackModel, null, off);
         }
-        const novaOnly = chooseProvider({ ...bedrock, AI_MODEL: 'off', AI_ESCALATION_MODEL: 'off' });
-        assert.deepEqual([novaOnly.provider, novaOnly.model, novaOnly.fallbackModel], ['bedrock', null, 'us.amazon.nova-2-lite-v1:0']);
+        const novaOnly = chooseProvider({ ...bedrock, AI_MODEL: 'off' });
+        assert.deepEqual([novaOnly.provider, novaOnly.model, novaOnly.fallbackModel], ['bedrock', null, 'us.amazon.nova-lite-v1:0']);
         const none = chooseProvider({ ...bedrock, AI_MODEL: 'off', AI_ESCALATION_MODEL: 'off', AI_FALLBACK_MODEL: 'off' });
         assert.equal(none.provider, 'mock');
         assert.match(none.fallbackReason!, /off/);
@@ -140,8 +181,21 @@ describe('model tiers', () => {
     });
     it('builds the router without touching the network', () => {
         const { provider } = createProvider(bedrock);
-        assert.deepEqual([provider.name, provider.model], ['bedrock', 'us.anthropic.claude-haiku-5-5']);
-        assert.equal(createProvider({ ...bedrock, AI_MODEL: 'off', AI_ESCALATION_MODEL: 'off' }).provider.model, 'us.amazon.nova-2-lite-v1:0');
+        assert.deepEqual([provider.name, provider.model], ['bedrock', 'google.gemma-3-27b-it']);
+        assert.equal(createProvider({ ...bedrock, AI_MODEL: 'off' }).provider.model, 'us.amazon.nova-lite-v1:0');
+        // Re-rank is a Claude-client feature: Gemma, built on the Converse provider, has none; Claude does.
+        assert.equal(createProvider({ ...bedrock, AI_RERANK: '1' }).provider.rerank, undefined);
+        assert.equal(typeof createProvider({ ...bedrock, AI_RERANK: '1', AI_MODEL: 'us.anthropic.claude-haiku-5-5' }).provider.rerank, 'function');
+    });
+    it('fits the main call and one fallback inside the read deadline, under the web Lambda\'s 28 s', () => {
+        const t = readTimeouts({});
+        assert.ok(t.primaryMs >= 12_000, 'Gemma 3 27B photos: p95 11.2 s in the benchmark');
+        assert.ok(t.primaryMs + t.fallbackMs <= t.deadlineMs, JSON.stringify(t));
+        assert.ok(t.deadlineMs <= 24_000, 'leaves time for the image, the matcher and the response');
+        assert.deepEqual(readTimeouts({ AI_TIMEOUT_MS: '9000', AI_FALLBACK_TIMEOUT_MS: '4000', AI_READ_DEADLINE_MS: '15000' }), { primaryMs: 9000, fallbackMs: 4000, deadlineMs: 15000 });
+        // The deployed values (docs/aws/infra-example/cdk/lib/nutrition-dictionary-stack.ts).
+        const cdk = readTimeouts({ AI_TIMEOUT_MS: '14000', AI_FALLBACK_TIMEOUT_MS: '8000' });
+        assert.ok(cdk.primaryMs + cdk.fallbackMs <= cdk.deadlineMs && cdk.deadlineMs < 28_000);
     });
     it('reads pasted text with the built-in reader first unless turned off', () => {
         assert.equal(builtinTextFirst({}), true);
@@ -186,14 +240,14 @@ describe('Claude errors that let Nova take over', () => {
 });
 
 describe('Nova provider', () => {
-    const toolReply = (input: unknown, usage = { inputTokens: 1780, outputTokens: 481 }): NovaResponse => ({
+    const toolReply = (input: unknown, usage = { inputTokens: 1780, outputTokens: 481 }): ConverseResponse => ({
         output: { message: { content: [{ toolUse: { name: RECORD_RECIPE_TOOL, input } }] } },
         stopReason: 'tool_use',
         usage,
     });
-    function capture(...replies: (NovaResponse | Error)[]) {
-        const sent: NovaRequest[] = [];
-        const send = async (r: NovaRequest) => {
+    function capture(...replies: (ConverseResponse | Error)[]) {
+        const sent: ConverseRequest[] = [];
+        const send = async (r: ConverseRequest) => {
             sent.push(r);
             const next = replies.length > 1 ? replies.shift()! : replies[0];
             if (next instanceof Error) throw next;
@@ -201,11 +255,11 @@ describe('Nova provider', () => {
         };
         return { sent, send };
     }
-    const imageFormat = (r: NovaRequest) => (r.messages[0].content[0] as { image: { format: string } }).image.format;
+    const imageFormat = (r: ConverseRequest) => (r.messages[0].content[0] as { image: { format: string } }).image.format;
     beforeEach(() => { silence(); });
 
     it('forces the record_recipe tool with the shared prompt and schema', () => {
-        const r = novaRequest('us.amazon.nova-2-lite-v1:0', { kind: 'text', text: '2 eggs' });
+        const r = converseRequest('us.amazon.nova-2-lite-v1:0', { kind: 'text', text: '2 eggs' });
         assert.equal(r.modelId, 'us.amazon.nova-2-lite-v1:0');
         assert.deepEqual(r.toolConfig.toolChoice, { tool: { name: RECORD_RECIPE_TOOL } });
         assert.equal(r.toolConfig.tools[0].toolSpec.inputSchema.json, RECORD_RECIPE_TOOL_DEF.input_schema);
@@ -215,50 +269,50 @@ describe('Nova provider', () => {
     });
     it('sends images as raw bytes in the right format, before the text', () => {
         const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
-        const r = novaRequest('m', { kind: 'image', base64: bytes.toString('base64'), mediaType: 'image/jpeg' });
+        const r = converseRequest('m', { kind: 'image', base64: bytes.toString('base64'), mediaType: 'image/jpeg' });
         const [image, text] = r.messages[0].content as [{ image: { format: string; source: { bytes: Uint8Array } } }, { text: string }];
         assert.equal(image.image.format, 'jpeg');
         assert.deepEqual(Buffer.from(image.image.source.bytes), bytes);
         assert.match(text.text, /photo/);
-        assert.equal(imageFormat(novaRequest('m', { kind: 'image', base64: 'AA==', mediaType: 'image/webp' })), 'webp');
+        assert.equal(imageFormat(converseRequest('m', { kind: 'image', base64: 'AA==', mediaType: 'image/webp' })), 'webp');
     });
     it('validates the reply with the same schema as Claude, filling a missing confidence', async () => {
         const { send } = capture(toolReply({ ...GOOD, ingredients: [{ name: 'ripe bananas, mashed', quantity: 3, unit: null }] }));
         const spent: number[] = [];
-        const p = createNovaProvider({ model: 'us.amazon.nova-2-lite-v1:0', send, onSpend: usd => spent.push(usd) });
+        const p = createConverseProvider({ model: 'us.amazon.nova-2-lite-v1:0', send, onSpend: usd => spent.push(usd) });
         const r = await p.readRecipe({ kind: 'text', text: '3 bananas' });
         assert.equal(r.recipe.ingredients[0].confidence, 0.5);
         assert.equal(r.model, 'us.amazon.nova-2-lite-v1:0');
         assert.equal(Number(spent[0].toFixed(5)), 0.00191);
     });
     it('rejects what validation rejects, and says when the photo is not food', async () => {
-        await assert.rejects(createNovaProvider({ model: 'm', ...capture(toolReply({ kind: 'recipe' })) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
-        await assert.rejects(createNovaProvider({ model: 'm', ...capture(toolReply({ ...GOOD, kind: 'not_food' })) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_not_food' });
+        await assert.rejects(createConverseProvider({ model: 'm', ...capture(toolReply({ kind: 'recipe' })) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
+        await assert.rejects(createConverseProvider({ model: 'm', ...capture(toolReply({ ...GOOD, kind: 'not_food' })) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_not_food' });
     });
     it('caps confidence on plated meals', async () => {
         const plate = { ...GOOD, kind: 'plated_meal', ingredients: [{ ...GOOD.ingredients[0], confidence: 0.99 }] };
-        const r = await createNovaProvider({ model: 'm', ...capture(toolReply(plate)) }).readRecipe({ kind: 'image', base64: 'AA==', mediaType: 'image/jpeg' });
+        const r = await createConverseProvider({ model: 'm', ...capture(toolReply(plate)) }).readRecipe({ kind: 'image', base64: 'AA==', mediaType: 'image/jpeg' });
         assert.equal(r.recipe.platedMeal, true);
         assert.equal(r.recipe.ingredients[0].confidence, PLATED_MEAL_MAX_CONFIDENCE);
     });
     it('retries once without a tool call, then gives up, counting both calls', async () => {
-        const empty: NovaResponse = { output: { message: { content: [{ text: 'hi' }] } }, stopReason: 'end_turn', usage: { inputTokens: 10, outputTokens: 5 } };
+        const empty: ConverseResponse = { output: { message: { content: [{ text: 'hi' }] } }, stopReason: 'end_turn', usage: { inputTokens: 10, outputTokens: 5 } };
         const ok = capture(empty, toolReply(GOOD));
-        const r = await createNovaProvider({ model: 'm', ...ok }).readRecipe({ kind: 'text', text: 'x' });
+        const r = await createConverseProvider({ model: 'm', ...ok }).readRecipe({ kind: 'text', text: 'x' });
         assert.equal(ok.sent.length, 2);
         assert.equal(r.usage!.inputTokens, 1790);
         const never = capture(empty);
-        await assert.rejects(createNovaProvider({ model: 'm', ...never }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
+        await assert.rejects(createConverseProvider({ model: 'm', ...never }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
         assert.equal(never.sent.length, 2);
     });
     it('reports truncated and filtered replies', async () => {
-        await assert.rejects(createNovaProvider({ model: 'm', ...capture({ ...toolReply(GOOD), stopReason: 'max_tokens' }) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
-        await assert.rejects(createNovaProvider({ model: 'm', ...capture({ ...toolReply(GOOD), stopReason: 'content_filtered' }) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_refused' });
+        await assert.rejects(createConverseProvider({ model: 'm', ...capture({ ...toolReply(GOOD), stopReason: 'max_tokens' }) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_bad_output' });
+        await assert.rejects(createConverseProvider({ model: 'm', ...capture({ ...toolReply(GOOD), stopReason: 'content_filtered' }) }).readRecipe({ kind: 'text', text: 'x' }), { code: 'ai_refused' });
     });
     it('never logs recipe text or image data', async () => {
         const lines: string[] = [];
         mock.method(console, 'info', (m: string) => { lines.push(m); });
-        await createNovaProvider({ model: 'm', ...capture(toolReply(GOOD)) }).readRecipe({ kind: 'text', text: 'SECRET-RECIPE' });
+        await createConverseProvider({ model: 'm', ...capture(toolReply(GOOD)) }).readRecipe({ kind: 'text', text: 'SECRET-RECIPE' });
         assert.equal(lines.length, 1);
         assert.doesNotMatch(lines.join('\n'), /SECRET/);
     });
@@ -270,24 +324,24 @@ describe('Nova errors', () => {
         const logged: string[] = [];
         const err = mock.method(console, 'error', (m: string) => { logged.push(m); });
         try {
-            const denied = mapNovaError(aws('AccessDeniedException', 403, 'secret request detail'), 'us.amazon.nova-2-lite-v1:0');
+            const denied = mapConverseError(aws('AccessDeniedException', 403, 'secret request detail'), 'us.amazon.nova-2-lite-v1:0');
             assert.deepEqual([denied.code, denied.unavailable], ['ai_unavailable', 'access']);
             assert.doesNotMatch(denied.message, /IAM|AWS|bedrock/i);
             assert.match(logged.at(-1)!, /bedrock:InvokeModel/);
             assert.match(logged.at(-1)!, /model-id amazon\.nova-2-lite-v1:0/);
             assert.doesNotMatch(logged.join('\n'), /secret request detail/);
-            assert.equal(mapNovaError(aws('ResourceNotFoundException', 404), 'x').unavailable, 'access');
-            assert.equal(mapNovaError(aws('ValidationException', 400, 'The provided model identifier is invalid.'), 'x').unavailable, 'access');
-            const throttled = mapNovaError(aws('ThrottlingException', 429), 'x');
+            assert.equal(mapConverseError(aws('ResourceNotFoundException', 404), 'x').unavailable, 'access');
+            assert.equal(mapConverseError(aws('ValidationException', 400, 'The provided model identifier is invalid.'), 'x').unavailable, 'access');
+            const throttled = mapConverseError(aws('ThrottlingException', 429), 'x');
             assert.deepEqual([throttled.code, throttled.unavailable], ['ai_rate_limited', 'capacity']);
-            assert.equal(mapNovaError(aws('ServiceQuotaExceededException', 400), 'x').code, 'ai_rate_limited');
-            assert.equal(mapNovaError(aws('ValidationException', 400, 'image too big'), 'x').code, 'ai_bad_output');
-            assert.equal(mapNovaError(aws('ModelTimeoutException', 408), 'x').code, 'ai_timeout');
-            assert.equal(mapNovaError(aws('AbortError'), 'x').code, 'ai_timeout');
-            assert.equal(mapNovaError(aws('ServiceUnavailableException', 503), 'x').unavailable, 'capacity');
-            assert.equal(mapNovaError(aws('CredentialsProviderError'), 'x').code, 'ai_unavailable');
+            assert.equal(mapConverseError(aws('ServiceQuotaExceededException', 400), 'x').code, 'ai_rate_limited');
+            assert.equal(mapConverseError(aws('ValidationException', 400, 'image too big'), 'x').code, 'ai_bad_output');
+            assert.equal(mapConverseError(aws('ModelTimeoutException', 408), 'x').code, 'ai_timeout');
+            assert.equal(mapConverseError(aws('AbortError'), 'x').code, 'ai_timeout');
+            assert.equal(mapConverseError(aws('ServiceUnavailableException', 503), 'x').unavailable, 'capacity');
+            assert.equal(mapConverseError(aws('CredentialsProviderError'), 'x').code, 'ai_unavailable');
             assert.match(logged.at(-1)!, /credentials/);
-            assert.equal(mapNovaError(new AiError('ai_refused', 'x'), 'x').code, 'ai_refused');
+            assert.equal(mapConverseError(new AiError('ai_refused', 'x'), 'x').code, 'ai_refused');
         } finally {
             err.mock.restore();
         }
@@ -526,6 +580,28 @@ describe('cost', () => {
         assert.equal(usd('amazon.nova-lite-v1:0'), 0.3);
         // The measured Nova 2 Lite card read in docs/BEDROCK_SETUP.md: 1,780 in, 481 out.
         assert.equal(Number(estimateCostUsd('us.amazon.nova-2-lite-v1:0', { inputTokens: 1780, outputTokens: 481 }).toFixed(5)), 0.00191);
+    });
+    it('prices Gemma 3 27B from the AWS Price List as an in-region model, with no premium', () => {
+        // AmazonBedrock us-east-1 price list, 2026-11-11: USE1-Gemma-3-27B-IT-{input,output}-tokens $0.00023/$0.00038 per 1K;
+        // no cross-region or global SKU, and no inference profile on the dev account.
+        const usage = { inputTokens: 1_000_000, outputTokens: 1_000_000 };
+        assert.equal(baseModelId('google.gemma-3-27b-it'), 'gemma-3-27b-it');
+        assert.equal(baseModelId('arn:aws:bedrock:us-east-1::foundation-model/google.gemma-3-27b-it'), 'gemma-3-27b-it');
+        assert.equal(Number(estimateCostUsd('google.gemma-3-27b-it', usage).toFixed(6)), 0.61);
+        // Benchmark reads (docs/research/CHEAPER_MODELS.md): a card photo, 474 in / 316 out; an unsure text recipe, 288 in / 394 out.
+        assert.equal(Number(estimateCostUsd('google.gemma-3-27b-it', { inputTokens: 474, outputTokens: 316 }).toFixed(7)), 0.0002291);
+        assert.equal(Number(estimateCostUsd('google.gemma-3-27b-it', { inputTokens: 288, outputTokens: 394 }).toFixed(7)), 0.0002160);
+    });
+    it('marks logged Gemma costs as possibly low, since Bedrock seems not to count its tool schema', () => {
+        const lines: string[] = [];
+        const info = mock.method(console, 'info', (m: string) => { lines.push(m); });
+        try {
+            logAiCall({ provider: 'bedrock', model: 'google.gemma-3-27b-it', kind: 'image', ms: 5900, ok: true, usage: { inputTokens: 474, outputTokens: 316 } });
+            logAiCall({ provider: 'bedrock', model: 'us.amazon.nova-lite-v1:0', kind: 'image', ms: 1900, ok: true, usage: { inputTokens: 2718, outputTokens: 258 } });
+        } finally { info.mock.restore(); }
+        assert.match(lines[0], /cost_usd=0\.00023 /);
+        assert.match(lines[0], /tokens=maybe_undercounted/);
+        assert.doesNotMatch(lines[1], /undercounted/);
     });
     it('is zero for mock, and an unknown model never looks free', () => {
         assert.equal(estimateCostUsd(null, { inputTokens: 1, outputTokens: 1 }), 0);

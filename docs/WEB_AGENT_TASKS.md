@@ -49,6 +49,8 @@ You are helping the owner set up a website called **NutritionDictionary** (nutri
 5. Don't add any other secrets or variables. They come after AWS setup.
 
 ## Part E: Bedrock access and limits, in the prod account
+
+> **Not needed since 2026-11-15.** The site now reads recipes with Gemma 3 27B and Nova Lite v1, which need no form, agreement or quota request. Do this part only if the owner switches back to Claude.
 Do this only after Part C, inside the **new prod account**:
 1. In the AWS console, open the account menu (top right) → **Switch role**. Enter the prod account ID from Part C, the role `OrganizationAccountAccessRole`, and a display name `nd-prod`. Check that the top bar now shows `nd-prod`, and that the region is **us-east-1**.
 2. Open **Amazon Bedrock → Model catalog** and open **Claude Haiku 4.5** (by Anthropic). If it asks for Anthropic's **use case details**, fill the form in like this, then **stop** and show the owner before you submit:

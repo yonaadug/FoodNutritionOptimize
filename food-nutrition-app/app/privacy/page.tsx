@@ -146,8 +146,9 @@ export default function PrivacyPage() {
             <h2 id="ai">Recipe photos, text and AI</h2>
             <p>
                 When you upload a recipe photo, or paste a recipe our built-in reader isn&apos;t sure about, we send it to Amazon Bedrock, an AWS
-                service, to read the ingredients. Bedrock runs Anthropic&apos;s Claude models, and Amazon Nova when Claude isn&apos;t available.
-                AI reads can be wrong, so the page asks you to check every ingredient.
+                service, to read the ingredients. The text or photo is processed by AI models running on Amazon Bedrock: currently Google&apos;s
+                Gemma 3, operated by AWS, with Amazon Nova as a backup. AWS is our processor for this; Google doesn&apos;t receive your recipe or
+                photo from us. AI reads can be wrong, so the page asks you to check every ingredient.
             </p>
             <ul>
                 <li>
@@ -186,7 +187,7 @@ export default function PrivacyPage() {
                         </tr>
                         <tr>
                             <th scope="row">AWS: Amazon Bedrock</th>
-                            <td>Reads recipe photos and some pasted recipes (Anthropic Claude or Amazon Nova models)</td>
+                            <td>Reads recipe photos and some pasted recipes with AI models it runs (currently Google&apos;s Gemma 3, with Amazon Nova as a backup)</td>
                             <td>The photo or recipe text, with nothing that identifies you</td>
                         </tr>
                         <tr>

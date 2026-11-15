@@ -147,20 +147,25 @@ export class NutritionDictionaryStack extends Stack {
     });
 
     // ------------------------------------------------------- recipe AI (Bedrock)
-    // /api/recipes/parse reads recipes synchronously in the web function, each
-    // model through its US cross-region inference profile (docs/BEDROCK_SETUP.md):
-    // Haiku reads, Sonnet re-reads plated-food photos and failed reads, and Nova
-    // 2 Lite takes over while Claude is unavailable (lib/ai/router.ts). Each
-    // profile can route to any of these regions, so each needs the
-    // foundation-model grant. Pasted text the built-in reader is sure of never
-    // reaches Bedrock.
+    // /api/recipes/parse reads recipes synchronously in the web function, through
+    // the Bedrock Converse API (docs/BEDROCK_SETUP.md, lib/ai/router.ts):
+    //  - Gemma 3 27B reads photos and unsure pasted text. It's an in-region model
+    //    with no inference profile, invoked by its foundation-model ARN.
+    //  - Nova Lite v1 takes over when Gemma errors (denied, not found, throttled,
+    //    timed out, down) or its reply fails validation. It goes through its US
+    //    cross-region profile, which can route to any of three regions, so each
+    //    region's foundation model needs the grant too.
+    // No escalation model and no Claude. To switch back to Claude, set the AI_*
+    // models below and grant its profiles (docs/BEDROCK_SETUP.md §5).
+    // Pasted text the built-in reader is sure of never reaches Bedrock.
     const recipeModels = {
-      main: 'anthropic.claude-haiku-5-5',
-      escalation: 'anthropic.claude-sonnet-5-5',
-      fallback: 'amazon.nova-2-lite-v1:0',
+      main: 'google.gemma-3-27b-it',
+      fallback: 'amazon.nova-lite-v1:0',
     };
+    const recipeModelArn = (region: string, model: string) => `arn:aws:bedrock:${region}::foundation-model/${model}`;
     const recipeProfileArn = (model: string) => `arn:aws:bedrock:${this.region}:${this.account}:inference-profile/us.${model}`;
-    const recipeModelRegions = ['us-east-1', 'us-east-2', 'us-west-2'];
+    // The us.amazon.nova-lite-v1:0 profile's regions (GetInferenceProfile on the dev account, 2026-11-15).
+    const fallbackProfileRegions = ['us-east-1', 'us-east-2', 'us-west-2'];
 
     // --------------------------------------------------------------- secrets
     // SSM SecureString parameters the owner creates by hand (docs/DEPLOY.md, "Secrets").
@@ -198,8 +203,9 @@ export class NutritionDictionaryStack extends Stack {
       code: image(),
       architecture: lambda.Architecture.ARM_64,
       memorySize: 1024,
-      // Recipe reading waits on Bedrock (a few seconds on Haiku). Keep this under
-      // CloudFront's origin response timeout (30 s by default).
+      // Recipe reading waits on Bedrock: Gemma 3 27B takes about 6 s for a photo,
+      // 11 s at p95. Keep this under CloudFront's origin response timeout (30 s by
+      // default), and the AI time limits below inside it.
       timeout: Duration.seconds(28),
       // Caps how fast money can be spent in prod. A new account's concurrency quota (often 10)
       // allows no reservation at all, so dev reserves nothing: its small account limit and its
@@ -228,10 +234,14 @@ export class NutritionDictionaryStack extends Stack {
         AI_PROVIDER: 'bedrock',
         AI_BUILTIN_TEXT: 'on',
         AI_BEDROCK_REGION: this.region,
-        AI_MODEL: `us.${recipeModels.main}`,
-        AI_ESCALATION_MODEL: `us.${recipeModels.escalation}`,
+        AI_MODEL: recipeModels.main,
+        AI_ESCALATION_MODEL: 'off',
         AI_FALLBACK_MODEL: `us.${recipeModels.fallback}`,
-        AI_TIMEOUT_MS: '20000',
+        // Gemma's call (retries included), then Nova Lite's, inside a 23 s read: under the
+        // 28 s function timeout with room for the image and the matcher (lib/ai/index.ts).
+        AI_TIMEOUT_MS: '14000',
+        AI_FALLBACK_TIMEOUT_MS: '8000',
+        AI_READ_DEADLINE_MS: '23000',
         AI_MAX_RETRIES: '1',
         // Per instance. With reserved concurrency as the instance cap, the AWS Budget and
         // its kill switch are the account-wide backstop.
@@ -265,22 +275,26 @@ export class NutritionDictionaryStack extends Stack {
         resources: [sesIdentityArn('*@*')],
       }));
     }
-    // Bedrock: only the three recipe models, each only through its own inference
-    // profile. No aws-marketplace permissions: the owner creates the Claude models'
-    // Marketplace agreements once, by hand (docs/BEDROCK_SETUP.md). Nova needs none.
+    // Bedrock: only the two recipe models. bedrock:InvokeModel is the permission
+    // the Converse API checks (it doesn't stream, so no ...WithResponseStream).
+    // Both are models AWS sells itself: no Marketplace agreement, so no
+    // aws-marketplace permissions (docs/research/CHEAPER_MODELS.md).
     web.addToRolePolicy(new iam.PolicyStatement({
-      sid: 'RecipeModelProfiles',
+      sid: 'RecipeModelMain',
       actions: ['bedrock:InvokeModel'],
-      resources: Object.values(recipeModels).map(recipeProfileArn),
+      resources: [recipeModelArn(this.region, recipeModels.main)],
     }));
-    for (const [tier, model] of Object.entries(recipeModels)) {
-      web.addToRolePolicy(new iam.PolicyStatement({
-        sid: `RecipeModelViaProfile${tier[0].toUpperCase()}${tier.slice(1)}`,
-        actions: ['bedrock:InvokeModel'],
-        resources: recipeModelRegions.map(r => `arn:aws:bedrock:${r}::foundation-model/${model}`),
-        conditions: { StringEquals: { 'bedrock:InferenceProfileArn': recipeProfileArn(model) } },
-      }));
-    }
+    web.addToRolePolicy(new iam.PolicyStatement({
+      sid: 'RecipeModelFallbackProfile',
+      actions: ['bedrock:InvokeModel'],
+      resources: [recipeProfileArn(recipeModels.fallback)],
+    }));
+    web.addToRolePolicy(new iam.PolicyStatement({
+      sid: 'RecipeModelFallbackViaProfile',
+      actions: ['bedrock:InvokeModel'],
+      resources: fallbackProfileRegions.map(r => recipeModelArn(r, recipeModels.fallback)),
+      conditions: { StringEquals: { 'bedrock:InferenceProfileArn': recipeProfileArn(recipeModels.fallback) } },
+    }));
 
     // Function URL protected by CloudFront OAC (AuthType AWS_IAM). With OAC, a browser
     // POST/PUT must carry `x-amz-content-sha256` (the body's SHA-256), because Lambda

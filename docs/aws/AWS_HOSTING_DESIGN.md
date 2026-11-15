@@ -8,7 +8,7 @@ All prices are USD, us-east-1, and were taken from official pricing pages on **2
 > **Current decisions (2026-11-14). Read these first.** The owner's decisions are in [DECISIONS.md](../DECISIONS.md), and the runbook that deploys them is [DEPLOY.md](../DEPLOY.md). Where this design (written 2026-11-03) differs, the decisions win:
 >
 > - **No Cognito.** Sign-in is [Better Auth](../ACCOUNTS.md) inside the web function: email links sent through SES, plus Google. Data lives in the DynamoDB table (with a second index, GSI2). The Cognito pool is gone from the CDK example. We own security patches and abuse handling.
-> - **Recipe AI runs synchronously on Bedrock** in the web function: the built-in reader first, then Claude Haiku 5.5, Sonnet 5.5 for plated-food photos and failed reads, and Amazon Nova 2 Lite while the account's Claude quota is 0 ([RECIPES.md](../RECIPES.md), [BEDROCK_SETUP.md](../BEDROCK_SETUP.md)). The app's daily AI cap is $5. The SQS worker stays as a placeholder for URL imports.
+> - **Recipe AI runs synchronously on Bedrock** in the web function: the built-in reader first, then Google Gemma 3 27B, with Amazon Nova Lite v1 as the fallback when Gemma errors, times out or fails validation (since 2026-11-15; no Claude) ([RECIPES.md](../RECIPES.md), [BEDROCK_SETUP.md](../BEDROCK_SETUP.md)). The app's daily AI cap is $5. The SQS worker stays as a placeholder for URL imports.
 > - **Budgets:** $10/month in prod and $5 in dev, emailing at 80% and 100%. At 150% the kill switch turns AI off and the site stays up.
 > - **Domain:** nutritiondictionary.com, registered at Porkbun with DNS in Route 53. Dev is dev.nutritiondictionary.com, in the dev account.
 > - **Edge:** the flat-rate Free plan allows only managed cache and origin-request policies, so the custom food-API cache policy in §3.2 was dropped. Food APIs get edge caching once they send `s-maxage` (TODO.md). `AllViewerExceptHostHeader` forwards `CloudFront-Viewer-Address`, which the sign-in rate limits need.
@@ -29,7 +29,7 @@ All prices are USD, us-east-1, and were taken from official pricing pages on **2
 | User data | **DynamoDB on-demand, single table**, with PITR in prod | $0 when idle, 25 GB of always-free storage, no connections to manage, and PITR costs $0.20/GB-month |
 | Auth | **Better Auth** in the web function: passwordless email links (SES) and Google, sessions and accounts in the DynamoDB table ([ACCOUNTS.md](../ACCOUNTS.md)). *Replaces the original Cognito proposal* | Testable on a laptop, no per-user cost at any scale, no passwords to store. We own patches and abuse handling |
 | Payments | **Stripe Checkout + Billing + Customer Portal**, with webhooks going to a small dedicated Lambda that writes entitlements | No monthly fee. 2.9% + 30¢ + 0.7% Billing (+0.5% Tax) |
-| AI (recipe text and photos) | **Synchronous Bedrock calls from the web function**: the free built-in reader first, then Claude Haiku 5.5, Sonnet 5.5 for plated food and failed reads, and Nova 2 Lite while Claude is unavailable. $5/day app cap, then the budget's kill switch. *(The original async SQS → worker → Claude Platform design is kept only as a placeholder for URL imports)* | IAM role auth (no API key to store), billed on the AWS invoice, and each model is granted only through its inference profile |
+| AI (recipe text and photos) | **Synchronous Bedrock calls from the web function**: the free built-in reader first, then Gemma 3 27B, with Nova Lite v1 as the fallback (since 2026-11-15). $5/day app cap, then the budget's kill switch. *(The original async SQS → worker → Claude Platform design is kept only as a placeholder for URL imports)* | IAM role auth (no API key to store), billed on the AWS invoice, and only the two models are granted (Gemma by its in-region model ARN, Nova Lite through its `us.` profile) |
 | Email | **SES** ($0.10 per 1,000) for sign-in links, from no-reply@nutritiondictionary.com, with DKIM, MAIL FROM and DMARC set up by CDK | Cheapest option |
 | IaC / CI | **AWS CDK (TypeScript)** + **GitHub Actions with OIDC**, using two AWS accounts (dev, prod) | AWS-native, state is free in CloudFormation, and there are no long-lived keys |
 | Guardrails | AWS Budgets ($10 prod, $5 dev: email at 80% and 100%, kill switch at 150%) + Cost Anomaly Detection (free) + 8 CloudWatch alarms (≤10 are free) + reserved concurrency | Lets you find out about and stop runaway spend, without taking the site down |
@@ -151,7 +151,7 @@ flowchart LR
   CF -->|"OAC (SigV4) on cache miss"| WEB["Lambda 'web' (arm64, 1 GB)<br/>Next.js standalone + Lambda Web Adapter<br/>nutrition.db baked in (read-only)"]
   WEB -->|"sign-in links (Better Auth)"| SES["SES"]
   U -->|"Sign in with Google"| GOOGLE["Google OAuth"]
-  WEB -->|"Bedrock: Haiku 5.5 / Sonnet 5.5 / Nova 2 Lite"| BEDROCK["Amazon Bedrock"]
+  WEB -->|"Bedrock: Gemma 3 27B / Nova Lite v1"| BEDROCK["Amazon Bedrock"]
   WEB --> DDB[("DynamoDB single table<br/>on-demand · PITR · TTL")]
   WEB -->|"presign PUT ≤5 MB"| S3U[("S3 uploads<br/>1-day lifecycle")]
   U -->|"photo upload"| S3U

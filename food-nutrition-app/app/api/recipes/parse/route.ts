@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readJsonBody } from '@/lib/api';
-import { builtinTextFirst, getAiProvider } from '@/lib/ai';
+import { builtinTextFirst, getAiProvider, readTimeouts } from '@/lib/ai';
 import { logAiCall } from '@/lib/ai/cost';
 import { DEFAULT_MAX_UPLOAD_BYTES, prepareImage } from '@/lib/ai/image';
 import { clientIp, getRateLimiter, overDailyBudget } from '@/lib/ai/rate-limit';
@@ -15,8 +15,12 @@ import { errorResponse, handleRecipeError } from '@/lib/recipes/respond';
 
 export const runtime = 'nodejs';
 
-/** Whole-request limit, under CloudFront's 60 s maximum origin timeout. */
-const DEADLINE_MS = 55_000;
+/**
+ * A backstop for the model read. The router already holds each read to
+ * AI_READ_DEADLINE_MS (23 s by default, lib/ai/index.ts readTimeouts), which keeps
+ * the request under the web Lambda's 28 s and CloudFront's 30 s origin timeout.
+ */
+const BACKSTOP_MS = 1_000;
 
 function maxUploadBytes(): number {
     const n = Number(process.env.AI_MAX_IMAGE_BYTES);
@@ -117,13 +121,13 @@ export async function POST(request: Request) {
             return errorResponse(503, 'ai_busy', 'The recipe reader is at capacity for today. You can still add ingredients by hand.');
         }
 
-        const read = await provider.readRecipe(input, { signal: AbortSignal.timeout(DEADLINE_MS) });
+        const read = await provider.readRecipe(input, { signal: AbortSignal.timeout(readTimeouts().deadlineMs + BACKSTOP_MS) });
         if (read.recipe.ingredients.length === 0) {
             throw new AiError('ai_not_food', 'We couldn\'t find any ingredients. Try another photo, or paste the recipe as text.');
         }
         const result = await analyzeRecipeIn(recipesDb(), read.recipe, input.kind === 'image' ? 'image' : 'text', {
             provider: provider.name,
-            // The model that actually read it: Haiku, Sonnet or the Nova fallback.
+            // The model that actually read it: the main model, the escalation model or the fallback.
             model: read.model ?? provider.model,
             rerank: provider.rerank ?? null,
         });

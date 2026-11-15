@@ -16,6 +16,16 @@
  * So Nova 2 Lite carries the same 10% premium off global as Claude, and Nova
  * Lite v1 has none. Cache writes are free for both.
  *
+ * Google Gemma 3 27B: the same price list, usage types
+ * USE1-Gemma-3-27B-IT-{input,output}-tokens ($0.00023 / $0.00038 per 1K, on demand).
+ * It has no cross-region or global SKU, and the dev account lists no inference
+ * profile for it (ListInferenceProfiles, 2026-11-15): it's an in-region model,
+ * called by its own id, with no premium. Prompt caching isn't supported.
+ * Bedrock seems to leave the tool schema out of Gemma's reported input tokens
+ * (224 tokens for a prompt other models count at 800 to 1,600;
+ * docs/research/CHEAPER_MODELS.md), so its logged cost may read low. If Bedrock
+ * bills the schema, that's at most about 600 tokens, $0.00014, more per call.
+ *
  * AWS billing is the source of truth.
  */
 import type { AiUsage } from './types';
@@ -27,6 +37,8 @@ interface Price {
     cacheWrite: number;
     /** These are global prices, and other routing (us., in-region) costs 10% more. */
     globalPremium: boolean;
+    /** Bedrock's reported token counts for this model look incomplete, so the estimate may be low. */
+    undercounted?: true;
 }
 
 const claude = (input: number, output: number, cacheRead: number, cacheWrite: number): Price => ({ input, output, cacheRead, cacheWrite, globalPremium: true });
@@ -40,6 +52,7 @@ const PRICES: Record<string, Price> = {
     'claude-haiku-4-5': claude(1, 5, 0.1, 1.25),
     'nova-2-lite-v1:0': { input: 0.3, output: 2.5, cacheRead: 0.075, cacheWrite: 0, globalPremium: true },
     'nova-lite-v1:0': { input: 0.06, output: 0.24, cacheRead: 0.015, cacheWrite: 0, globalPremium: false },
+    'gemma-3-27b-it': { input: 0.23, output: 0.38, cacheRead: 0, cacheWrite: 0, globalPremium: false, undercounted: true },
 };
 
 /** Priced as the most expensive listed tier when a model isn't in the table, so an unknown model can't look free. */
@@ -53,16 +66,17 @@ function bedrockId(model: string): string {
     return model.startsWith('arn:') ? model.slice(model.lastIndexOf('/') + 1) : model;
 }
 
-/** "us.anthropic.claude-opus-5-5" -> "claude-opus-5-5"; "us.amazon.nova-2-lite-v1:0" -> "nova-2-lite-v1:0" */
+/** "us.anthropic.claude-opus-5-5" -> "claude-opus-5-5"; "us.amazon.nova-2-lite-v1:0" -> "nova-2-lite-v1:0"; "google.gemma-3-27b-it" -> "gemma-3-27b-it" */
 export function baseModelId(model: string): string {
-    return bedrockId(model).replace(/^(?:[a-z]{2,6}(?:-[a-z]+)?\.)?(?:anthropic|amazon)\./, '');
+    return bedrockId(model).replace(/^(?:[a-z]{2,6}(?:-[a-z]+)?\.)?(?:anthropic|amazon|google)\./, '');
 }
 
 export function estimateCostUsd(model: string | null, usage: AiUsage | null): number {
     if (!model || !usage) return 0;
     const p = PRICES[baseModelId(model)] ?? UNKNOWN_MODEL;
     const id = bedrockId(model);
-    const onBedrock = id.includes('anthropic.') || id.includes('amazon.');
+    // Claude API ids ("claude-…") have no provider prefix and pay list price.
+    const onBedrock = id.includes('.');
     const premium = p.globalPremium && onBedrock && !id.startsWith('global.') ? BEDROCK_REGIONAL_PREMIUM : 1;
     return premium * (
         usage.inputTokens * p.input +
@@ -72,7 +86,15 @@ export function estimateCostUsd(model: string | null, usage: AiUsage | null): nu
     ) / 1_000_000;
 }
 
-/** One log line per model call. Counts and identifiers only: never recipe text, images or IP addresses. */
+/** Whether Bedrock's token counts for this model look incomplete (Gemma 3), so its logged cost may read low. */
+export function tokensUndercounted(model: string | null): boolean {
+    return !!model && PRICES[baseModelId(model)]?.undercounted === true;
+}
+
+/**
+ * One log line per model call. Counts and identifiers only: never recipe text, images or IP addresses.
+ * For a model whose reported tokens look incomplete (Gemma 3), the line says tokens=maybe_undercounted.
+ */
 export function logAiCall(fields: {
     provider: string;
     model: string | null;
@@ -88,6 +110,7 @@ export function logAiCall(fields: {
         `in=${usage?.inputTokens ?? 0}`, `out=${usage?.outputTokens ?? 0}`,
         `cost_usd=${estimateCostUsd(model, usage ?? null).toFixed(5)}`,
     ];
+    if (tokensUndercounted(model)) parts.push('tokens=maybe_undercounted');
     if (error) parts.push(`error=${error}`);
     console.info(`[ai] ${parts.join(' ')}`);
 }

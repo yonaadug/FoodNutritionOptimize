@@ -31,6 +31,7 @@ Decisions the owner made, newest first. Agents and docs follow these; change the
 - **Bot check:** no Turnstile at launch; add it only if abuse appears.
 - **Deploys:** GitHub Actions with OIDC (no stored AWS keys). Dev deploys on every push to main; prod deploys only after the owner approves in GitHub.
 - **Alerts** go to the owner's usual email, set as a private deploy-time setting and never committed.
+- **Dev alarms don't email** (2026-11-15). They still show in the dev console, but testing trips them. Dev's budget alerts still email.
 
 **Sign-in and email** ([ACCOUNTS.md](ACCOUNTS.md))
 - **Sign-in:** email links **and Google** at launch. The owner creates the Google OAuth app.

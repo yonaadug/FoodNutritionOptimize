@@ -539,13 +539,19 @@ export class NutritionDictionaryStack extends Stack {
     if (props.alertEmail) killTopic.addSubscription(new subs.EmailSubscription(props.alertEmail));
 
     // ------------------------------------------------------------ alarms (≤10 free)
-    const alarm = (id: string, metric: cw.IMetric, threshold: number, periods = 1) =>
-      new cw.Alarm(this, id, {
+    // Only prod's alarms email. Dev's still change state in the console, but testing trips
+    // them (dev's account runs 10 Lambdas at once, so one test run throttles), and the
+    // owner asked for no dev alarm email, 2026-11-15. Dev's budget alerts still email.
+    const alarm = (id: string, metric: cw.IMetric, threshold: number, periods = 1) => {
+      const a = new cw.Alarm(this, id, {
         alarmName: `nutrition-dictionary-${props.stage}-${id}`,
         metric, threshold, evaluationPeriods: periods,
         comparisonOperator: cw.ComparisonOperator.GREATER_THAN_THRESHOLD,
         treatMissingData: cw.TreatMissingData.NOT_BREACHING,
-      }).addAlarmAction(alarmAction);
+      });
+      if (isProd) a.addAlarmAction(alarmAction);
+      return a;
+    };
 
     alarm('Web5xx', new cw.Metric({
       namespace: 'AWS/Lambda', metricName: 'Url5xxCount',

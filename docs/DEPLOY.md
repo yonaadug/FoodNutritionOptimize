@@ -457,7 +457,7 @@ Do these in prod (after practising 4 on dev):
    aws cloudwatch set-alarm-state --profile nd-prod --alarm-name nutrition-dictionary-prod-Web5xx \
      --state-value ALARM --state-reason "testing alert email"
    ```
-   An "ALARM" email should arrive within a minute. It returns to OK on its own. Also check that all 8 alarms exist: `aws cloudwatch describe-alarms --profile nd-prod --alarm-name-prefix nutrition-dictionary-prod --query 'MetricAlarms[].[AlarmName,StateValue]' --output table`. (`AiSpendDaily` stays quiet until the app emits its metric, which is on the TODO list. The budget covers AI meanwhile.)
+   An "ALARM" email should arrive within a minute. It returns to OK on its own. Also check that all 8 alarms exist: `aws cloudwatch describe-alarms --profile nd-prod --alarm-name-prefix nutrition-dictionary-prod --query 'MetricAlarms[].[AlarmName,StateValue]' --output table`. (`AiSpendDaily` stays quiet until the app emits its metric, which is on the TODO list. The budget covers AI meanwhile.) Only prod's alarms email; dev's change state in the console but send nothing, so force a prod alarm for this test.
 2. **Budget emails can reach you.** Budgets → `nutrition-dictionary-prod-monthly`: $10, alerts at 80% and 100% (to the alerts topic) and 150% (to the kill-switch topic). Then check both topics' subscriptions are confirmed, not pending:
    ```bash
    aws sns list-subscriptions-by-topic --profile nd-prod --topic-arn <AlertsTopicArn> --query 'Subscriptions[].SubscriptionArn'

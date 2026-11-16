@@ -18,10 +18,9 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
       farm-raised shrimp (sodium suggests additives), ribeye (macros match the 1/8"-trim SR entry). Accepted but
       close calls: halibut, snapper, Brazil nuts (fat 57 vs 67 g), boneless skinless chicken thigh (fat 7.9 vs
       4.1 g), tart cherry and pomegranate juice. Moving a row between the two files and rebuilding is all it takes.
-      Two of USDA's own NDB links look wrong and can't be fixed through the crosswalk: Foundation "Apples, honeycrisp,
-      with skin, raw" shares an NDB number with SR "Apples, raw, golden delicious, with skin", and raw Foundation
-      "Mushroom, portabella" with SR "Mushrooms, portabella, grilled". Those SR rows are hidden and fill the
-      Foundation foods' gaps. Fixing it needs a small list of NDB links to ignore in `build_db.py`.
+      USDA's NDB links: honeycrisp is no longer linked to golden delicious (owner, 2026-11-16;
+      `scripts/data/foundation_sr_ndb_unlinked.csv`). The owner kept raw Foundation "Mushroom, portabella" linked to
+      SR "Mushrooms, portabella, grilled". SR "Mushrooms, portabella, raw" (NDB 11265) is unlinked and still shows.
 - [ ] **Plus and Stripe (owner: set up the sandbox, then try it).** Built 2026-11-14 and tested with a fake Stripe client
       only; nothing has called Stripe yet ([docs/STRIPE_PLAN.md §7](docs/STRIPE_PLAN.md#7-testing-locally-no-real-money)).
       Create the product, both prices, the portal settings and a webhook in the sandbox, set `STRIPE_MODE=test` with

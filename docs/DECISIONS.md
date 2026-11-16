@@ -32,6 +32,7 @@ Decisions the owner made, newest first. Agents and docs follow these; change the
 - **Deploys:** GitHub Actions with OIDC (no stored AWS keys). Dev deploys on every push to main; prod deploys only after the owner approves in GitHub.
 - **Alerts** go to the owner's usual email, set as a private deploy-time setting and never committed.
 - **Dev alarms don't email** (2026-11-15). They still show in the dev console, but testing trips them. Dev's budget alerts still email.
+- **One entry per food** (2026-11-16). When Foundation and SR Legacy describe the exact same food, only Foundation shows; its missing values come from the SR entry (marked †), and a value neither has stays empty. Honeycrisp and golden delicious apples stay separate foods despite sharing USDA's NDB number; raw portabella stays linked to grilled portabella.
 
 **Sign-in and email** ([ACCOUNTS.md](ACCOUNTS.md))
 - **Sign-in:** email links **and Google** at launch. The owner creates the Google OAuth app.

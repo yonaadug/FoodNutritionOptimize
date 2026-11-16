@@ -25,6 +25,8 @@ Schema contract (see docs/KEY_NUTRIENTS.md):
   * SR Legacy rows that a Foundation food replaces keep their row and carry
     `superseded_by_fdc_id`: same NDB number, or a reviewed pair in
     scripts/data/foundation_sr_crosswalk.csv (foods USDA gave a new NDB number).
+    NDB links listed in scripts/data/foundation_sr_ndb_unlinked.csv are not made
+    (USDA reused an NDB number for a different food).
   * `foods_fts` (FTS5, external content on foods), `meta` (provenance),
     `value_provenance` (non-primary / derived values), `serving_sizes`
     (always includes "100 g").
@@ -54,6 +56,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 DEFAULT_OUT = PROJECT_ROOT / "food-nutrition-app" / "nutrition.db"
 CROSSWALK_PATH = Path(__file__).resolve().parent / "data" / "foundation_sr_crosswalk.csv"
+UNLINKED_PATH = Path(__file__).resolve().parent / "data" / "foundation_sr_ndb_unlinked.csv"
 FDC_BASE = "https://fdc.nal.usda.gov/fdc-datasets/"
 
 SOURCES = {
@@ -399,10 +402,23 @@ def load_crosswalk(path: Path) -> list[tuple[int, int]]:
         raise SystemExit(f"{path}: every row needs integer foundation_fdc_id and sr_fdc_id ({e})")
 
 
-def link_older_entries(foods: list[dict], crosswalk: list[tuple[int, int]]) -> tuple[dict, dict]:
+def load_unlinked(path: Path) -> set[tuple[int, int]]:
+    """(Foundation fdc_id, SR Legacy fdc_id) pairs that share an NDB number but aren't the same food.
+
+    USDA reused the number for a different food (e.g. honeycrisp apples on golden delicious's
+    number), so the NDB match would hide the SR row and fill the Foundation food's gaps from it.
+    Same columns as the crosswalk, each row with its reason.
+    """
+    return set(load_crosswalk(path)) if path.exists() else set()
+
+
+def link_older_entries(foods: list[dict], crosswalk: list[tuple[int, int]],
+                       unlinked: set[tuple[int, int]] = frozenset()) -> tuple[dict, dict]:
     """Set superseded_by_fdc_id on every food: the Foundation food that replaces an SR Legacy row, else None.
 
-    A row is linked by NDB number (USDA kept the number) or by a crosswalk pair.
+    A row is linked by NDB number (USDA kept the number) or by a crosswalk pair, except an
+    NDB pair in `unlinked`. An unlinked pair that isn't an NDB link, or that the crosswalk
+    links anyway, stops the build.
     Returns ({SR fdc_id: "ndb_number" | "crosswalk"}, {Foundation fdc_id: (SR energy kcal,
     calories_source)}): how each link was made, and the energy a Foundation food falls back
     on when it reports none (the NDB-linked row first, then the first crosswalk row with energy).
@@ -413,11 +429,20 @@ def link_older_entries(foods: list[dict], crosswalk: list[tuple[int, int]]) -> t
     found_by_ndb = {f["ndb_number"]: f["fdc_id"] for f in foods
                     if f["data_type"] == "foundation_food" and f["ndb_number"]}
     how: dict[int, str] = {}
+    ndb_pairs = set()
     for f in foods:
         f["superseded_by_fdc_id"] = None
         if f["data_type"] == "sr_legacy_food" and f["ndb_number"] in found_by_ndb:
-            f["superseded_by_fdc_id"] = found_by_ndb[f["ndb_number"]]
+            pair = (found_by_ndb[f["ndb_number"]], f["fdc_id"])
+            ndb_pairs.add(pair)
+            if pair in unlinked:
+                continue
+            f["superseded_by_fdc_id"] = pair[0]
             how[f["fdc_id"]] = "ndb_number"
+    for fid, sid in sorted(unlinked - ndb_pairs):
+        raise SystemExit(f"unlinked pair {fid} -> {sid}: not an NDB link, so there is nothing to undo")
+    for fid, sid in sorted(unlinked & set(crosswalk)):
+        raise SystemExit(f"unlinked pair {fid} -> {sid} is also in the crosswalk")
     for fid, sid in crosswalk:
         new, old = by_id.get(fid), by_id.get(sid)
         where = f"crosswalk pair {fid} -> {sid}"
@@ -528,9 +553,11 @@ def build(args) -> Path:
     # Cross-dataset duplicates: SR Legacy rows that a Foundation food replaces
     # (same food, newer analysis) get superseded_by_fdc_id (kept, not deleted).
     crosswalk = load_crosswalk(CROSSWALK_PATH)
-    link_how, sr_energy = link_older_entries(loaded, crosswalk)
+    unlinked = load_unlinked(UNLINKED_PATH)
+    link_how, sr_energy = link_older_entries(loaded, crosswalk, unlinked)
     log(f"[link] {Counter(link_how.values())['ndb_number']} SR Legacy rows by NDB number, "
-        f"{Counter(link_how.values())['crosswalk']} by {CROSSWALK_PATH.relative_to(PROJECT_ROOT)}")
+        f"{Counter(link_how.values())['crosswalk']} by {CROSSWALK_PATH.relative_to(PROJECT_ROOT)}, "
+        f"{len(unlinked)} NDB links undone by {UNLINKED_PATH.relative_to(PROJECT_ROOT)}")
 
     # Resolve nutrients; drop foods whose energy cannot be determined.
     excluded = []
@@ -627,11 +654,13 @@ def build(args) -> Path:
                                  f"WWEIA {FNDDS_DEFAULT_CATEGORY_RANGE[0]}-{FNDDS_DEFAULT_CATEGORY_RANGE[1]} (mixed dishes, sandwiches, soups)",
         "sr_excluded_categories": json.dumps(sorted(SR_EXCLUDED_CATEGORIES - ({"Baby Foods"} if args.include_baby_foods else set()))),
         "duplicate_policy": "All rows kept. SR Legacy rows that a Foundation food replaces carry superseded_by_fdc_id: "
-                            "same NDB number, or a reviewed pair in scripts/data/foundation_sr_crosswalk.csv for foods USDA "
-                            "gave a new NDB number. Rank results by data_type_rank (1 Foundation, 2 SR Legacy, 3 FNDDS).",
+                            "same NDB number (less the pairs in scripts/data/foundation_sr_ndb_unlinked.csv), or a reviewed "
+                            "pair in scripts/data/foundation_sr_crosswalk.csv for foods USDA gave a new NDB number. Rank results by data_type_rank (1 Foundation, 2 SR Legacy, 3 FNDDS).",
         "superseded_link_counts": json.dumps({k: Counter(link_how.values())[k] for k in ("ndb_number", "crosswalk")}),
         "foundation_sr_crosswalk": json.dumps({"file": CROSSWALK_PATH.relative_to(PROJECT_ROOT).as_posix(),
                                                "sha256": sha256_of(CROSSWALK_PATH), "pairs": len(crosswalk)}),
+        "foundation_sr_ndb_unlinked": json.dumps({"file": UNLINKED_PATH.relative_to(PROJECT_ROOT).as_posix(),
+                                                  "sha256": sha256_of(UNLINKED_PATH), "pairs": len(unlinked)}),
         "license": "USDA FoodData Central data is in the public domain (CC0 1.0).",
     }
     for dtp, cnt in by_type.items():

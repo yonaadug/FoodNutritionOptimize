@@ -282,6 +282,14 @@ describe('rankRelated', () => {
         assert.deepEqual(equivalents.map(f => f.fdc_id), [2684444]);
         assert.deepEqual(forms, []);
     });
+    it('keeps two foods apart that share an NDB number the build left unlinked', () => {
+        // USDA reused golden delicious's NDB number for honeycrisp (scripts/data/foundation_sr_ndb_unlinked.csv).
+        const honeycrisp = makeFood({ id: 50, fdc_id: 1750343, description: 'Apples, honeycrisp, with skin, raw', food_category: 'Fruits and Fruit Juices', ndb_number: 9501, data_type_rank: 1, superseded_by_fdc_id: null });
+        const golden = makeFood({ id: 51, fdc_id: 168202, description: 'Apples, raw, golden delicious, with skin', food_category: 'Fruits and Fruit Juices', ndb_number: 9501, data_type_rank: 2, superseded_by_fdc_id: null });
+        const { equivalents, forms } = rankRelated(honeycrisp, [golden]);
+        assert.deepEqual(equivalents, []);
+        assert.deepEqual(forms.map(f => f.fdc_id), [168202]);
+    });
     it('puts the closest forms first', () => {
         const { forms } = rankRelated(egg, [
             make(3, 'Egg, duck, whole, fresh, raw', { ndb_number: 1138 }),

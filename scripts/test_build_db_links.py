@@ -98,6 +98,25 @@ class LinkOlderEntries(unittest.TestCase):
             build_db.link_older_entries(sample(), [(2, 12), (3, 12)])
 
 
+class UnlinkedNdbPairs(unittest.TestCase):
+    def test_an_unlinked_ndb_pair_stays_apart(self):
+        foods = sample()
+        how, energy = build_db.link_older_entries(foods, [(2, 12)], {(1, 11)})
+        by_id = {f["fdc_id"]: f for f in foods}
+        self.assertIsNone(by_id[11]["superseded_by_fdc_id"])
+        self.assertEqual(by_id[12]["superseded_by_fdc_id"], 2)
+        self.assertEqual(how, {12: "crosswalk"})
+        self.assertNotIn(1, energy)
+
+    def test_rejects_an_unlinked_pair_that_is_not_an_ndb_link(self):
+        with self.assertRaisesRegex(SystemExit, "not an NDB link"):
+            build_db.link_older_entries(sample(), [], {(2, 12)})
+
+    def test_rejects_a_pair_both_unlinked_and_in_the_crosswalk(self):
+        with self.assertRaisesRegex(SystemExit, "also in the crosswalk"):
+            build_db.link_older_entries(sample(), [(1, 11)], {(1, 11)})
+
+
 class CheckedInCrosswalk(unittest.TestCase):
     def test_file_parses_into_integer_pairs(self):
         pairs = build_db.load_crosswalk(build_db.CROSSWALK_PATH)
@@ -110,6 +129,11 @@ class CheckedInCrosswalk(unittest.TestCase):
     def test_owner_example_is_listed(self):
         # Foundation "Fish, cod, Atlantic, wild caught, raw" -> SR "Fish, cod, Atlantic, raw"
         self.assertIn((2684444, 171955), build_db.load_crosswalk(build_db.CROSSWALK_PATH))
+
+
+    def test_honeycrisp_is_not_golden_delicious(self):
+        # Owner decision 2026-11-16: USDA reused golden delicious's NDB number for honeycrisp.
+        self.assertIn((1750343, 168202), build_db.load_unlinked(build_db.UNLINKED_PATH))
 
 
 class CaloriesFromLinkedEntry(unittest.TestCase):

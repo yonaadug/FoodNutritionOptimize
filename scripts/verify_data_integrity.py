@@ -38,6 +38,7 @@ DEFAULT_DB = PROJECT_ROOT / "food-nutrition-app" / "nutrition.db"
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 CROSSWALK = PROJECT_ROOT / "scripts" / "data" / "foundation_sr_crosswalk.csv"
 CROSSWALK_REJECTED = PROJECT_ROOT / "scripts" / "data" / "foundation_sr_crosswalk_rejected.csv"
+UNLINKED = PROJECT_ROOT / "scripts" / "data" / "foundation_sr_ndb_unlinked.csv"
 
 MAX_DB_MB = 50
 MIN_FOODS = {"foundation_food": 300, "sr_legacy_food": 7000}
@@ -356,6 +357,21 @@ def check_superseded_links(con, ck: Checker, meta: dict) -> None:
         if exp is None or not close(row[2], exp, tol_abs=0.01):
             wrong_cal.append((row[0], row[2], exp))
     ck.check(not wrong_cal, "calories taken from a linked SR Legacy row match that row", str(wrong_cal[:5]))
+
+    if UNLINKED.exists():
+        unlinked = read_crosswalk(UNLINKED)
+        built = json.loads(meta.get("foundation_sr_ndb_unlinked") or "{}")
+        ck.check(built.get("sha256") == hashlib.sha256(UNLINKED.read_bytes()).hexdigest(),
+                 "unlinked NDB pairs: database was built from this version of the file", f"meta pairs={built.get('pairs')}")
+        not_ndb, still_linked = [], []
+        for u in unlinked:
+            new, old = rows.get(u["foundation_fdc_id"]), rows.get(u["sr_fdc_id"])
+            if not (new and old and new[1] == "foundation_food" and old[1] == "sr_legacy_food" and new[3] and new[3] == old[3]):
+                not_ndb.append((u["foundation_fdc_id"], u["sr_fdc_id"]))
+            elif old[4] is not None:
+                still_linked.append((u["sr_fdc_id"], old[4]))
+        ck.check(not not_ndb, "unlinked NDB pairs: each is a Foundation and an SR Legacy food sharing an NDB number", str(not_ndb[:5]))
+        ck.check(not still_linked, "unlinked NDB pairs: the SR row is not superseded", str(still_linked[:5]))
 
     if CROSSWALK_REJECTED.exists():
         rejected = read_crosswalk(CROSSWALK_REJECTED)

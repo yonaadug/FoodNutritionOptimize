@@ -46,11 +46,15 @@ Legacy row they replace: rule 7 below.)
 - Every row is kept, and `data_type` is preserved (`foundation_food`,
   `sr_legacy_food`, `survey_fndds_food`). `data_type_rank` is 1, 2 or 3 in
   that order. Sort search results by `data_type_rank`, then by relevance.
-- 262 SR Legacy rows describe the same food as a Foundation food, analysed
+- 261 SR Legacy rows describe the same food as a Foundation food, analysed
   earlier. These rows have `superseded_by_fdc_id` set to the Foundation
   `fdc_id` (`meta.superseded_link_counts` says how each was linked):
-  - **212 share an NDB number** with the Foundation food. USDA kept the
-    number when it re-analysed these foods.
+  - **211 share an NDB number** with the Foundation food. USDA kept the
+    number when it re-analysed these foods. USDA also reused a number for a
+    different food at least once (Foundation "Apples, honeycrisp, with skin,
+    raw" has golden delicious's number), so the NDB links listed in
+    [`scripts/data/foundation_sr_ndb_unlinked.csv`](../scripts/data/foundation_sr_ndb_unlinked.csv)
+    are not made: both foods show, and neither fills the other's gaps.
   - **50 are linked by a reviewed crosswalk**,
     [`scripts/data/foundation_sr_crosswalk.csv`](../scripts/data/foundation_sr_crosswalk.csv).
     USDA gave these Foundation foods a new NDB number (100xxx), so the NDB
@@ -100,7 +104,7 @@ New columns are added after them.
 | `calories_source` | Which energy rule produced `calories` (see below). |
 | `data_type_rank` | 1 = Foundation, 2 = SR Legacy, 3 = FNDDS. |
 | `ndb_number`, `fndds_food_code` | Source identifiers. |
-| `superseded_by_fdc_id` | Set on SR Legacy rows that a Foundation food replaces: same NDB number, or a pair in `scripts/data/foundation_sr_crosswalk.csv`. |
+| `superseded_by_fdc_id` | Set on SR Legacy rows that a Foundation food replaces: same NDB number (unless the pair is in `scripts/data/foundation_sr_ndb_unlinked.csv`), or a pair in `scripts/data/foundation_sr_crosswalk.csv`. |
 | `publication_date`, `source_release` | Provenance. |
 
 Other tables:
@@ -122,7 +126,8 @@ Other tables:
   - `count_<data_type>`, `foods_count`, `serving_sizes_count`
   - `calories_source_counts`, `nutrient_coverage_pct`, `excluded_foods_no_energy`
   - `superseded_link_counts` (`ndb_number`, `crosswalk`) and
-    `foundation_sr_crosswalk` (file, sha256 and number of pairs used)
+    `foundation_sr_crosswalk` and `foundation_sr_ndb_unlinked` (file, sha256
+    and number of pairs used)
   - `duplicate_policy` and other notes
 - `value_provenance(food_id, nutrient_column, source)` has one row for each
   value that did not come from the column's primary nutrient id, such as

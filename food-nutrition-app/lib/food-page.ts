@@ -466,8 +466,10 @@ export function nutrientProfileSimilarity(a: object, b: object): number | null {
 
 /**
  * Rank candidate foods against `food`.
- *  - equivalents: the Foundation and SR Legacy records of one food: same NDB number, or
- *    one supersedes the other (USDA gave some Foundation foods a new NDB number)
+ *  - equivalents: the Foundation and SR Legacy records of one food, as the database build
+ *    linked them (one supersedes the other). A shared NDB number counts only when the
+ *    database has no links, since the build undoes a few where USDA reused a number
+ *    for a different food (scripts/data/foundation_sr_ndb_unlinked.csv)
  *  - forms: same base name ("Egg, whole, cooked, fried" for "Egg, whole, raw"), ordered
  *    by how much of the rest of the description they share, then NDB proximity
  *  - similar: other foods in the same category, by nutrient-profile similarity, at
@@ -494,7 +496,8 @@ export function rankRelated<T extends RelatedCandidate>(food: RelatedCandidate, 
         if (c.id === food.id || c.fdc_id === food.fdc_id) continue;
         // Linked by the database build: by NDB number, or by the reviewed crosswalk when USDA renumbered the food.
         const linked = c.superseded_by_fdc_id === food.fdc_id || (!!food.superseded_by_fdc_id && food.superseded_by_fdc_id === c.fdc_id);
-        if (linked || (food.ndb_number && c.ndb_number === food.ndb_number)) { equivalents.push(c); continue; }
+        const linksKnown = c.superseded_by_fdc_id !== undefined || food.superseded_by_fdc_id !== undefined;
+        if (linked || (!linksKnown && food.ndb_number && c.ndb_number === food.ndb_number)) { equivalents.push(c); continue; }
         if (c.superseded_by_fdc_id && (c.superseded_by_fdc_id === food.fdc_id || fdcIds.has(c.superseded_by_fdc_id))) continue;
         const key = c.description.toLowerCase();
         if (seen.has(key)) continue;

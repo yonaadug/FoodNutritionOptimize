@@ -6,23 +6,28 @@
  * The component that applies these rules is components/ui/IntentLink.tsx.
  */
 
-/** The events a link watches for a sign that someone may follow it. */
-export type LinkIntentEvent = 'pointerenter' | 'pointerdown' | 'focus';
+/** What happened to a link that might show someone is about to follow it. */
+export type LinkIntentEvent =
+    /** A pointer came over it. */
+    | { type: 'pointerenter'; pointerType: string }
+    /** It took focus; `keyboard` when the browser judges that focus came from the keyboard (:focus-visible). */
+    | { type: 'focus'; keyboard: boolean };
 
 /**
- * Does this event show that someone may follow the link?
- * - `pointerenter` from a mouse: pointing at it;
- * - `pointerdown` from a finger or pen: touching it (phones have no hover), a moment
- *   before the tap ends and the page changes;
- * - `focus`: moving to it with the keyboard.
- * A touch's own pointerenter comes just before its pointerdown, and a mouse press always
- * follows its pointerenter, so neither counts twice.
+ * Does this event show that someone may follow the link? A mouse pointing at it, or
+ * keyboard focus moving to it: both usually come well before the click.
+ *
+ * A finger or pen touching it doesn't count, nor does the focus a click or tap gives it.
+ * A whole fetch ahead takes two trips to the server (the page's outline, then its data),
+ * and a tap lasts about a tenth of a second, so the page would change before the fetch
+ * was done and wait for it: measured with a 300 ms server, a tap that fetched on touching
+ * down sent 3 requests and showed the page 420-630 ms after the finger lifted, against
+ * 1 request and 350-390 ms for a plain tap. A slow page shows its skeleton meanwhile.
  */
-export function showsIntent(event: LinkIntentEvent, pointerType?: string): boolean {
-    switch (event) {
-        case 'pointerenter': return pointerType === 'mouse';
-        case 'pointerdown': return pointerType === 'touch' || pointerType === 'pen';
-        case 'focus': return true;
+export function showsIntent(event: LinkIntentEvent): boolean {
+    switch (event.type) {
+        case 'pointerenter': return event.pointerType === 'mouse';
+        case 'focus': return event.keyboard;
         default: return false;
     }
 }

@@ -6,23 +6,20 @@ import { linkPrefetch, showsIntent } from './link-intent';
 
 describe('showsIntent', () => {
     it('counts a mouse moving over the link', () => {
-        assert.equal(showsIntent('pointerenter', 'mouse'), true);
+        assert.equal(showsIntent({ type: 'pointerenter', pointerType: 'mouse' }), true);
     });
-    it('counts a finger or pen touching down on it (phones have no hover)', () => {
-        assert.equal(showsIntent('pointerdown', 'touch'), true);
-        assert.equal(showsIntent('pointerdown', 'pen'), true);
+    it('counts focus moved to it with the keyboard', () => {
+        assert.equal(showsIntent({ type: 'focus', keyboard: true }), true);
     });
-    it('counts keyboard focus', () => {
-        assert.equal(showsIntent('focus'), true);
+    it('does not count a finger or pen touching it: a tap is over before a fetch ahead could help', () => {
+        assert.equal(showsIntent({ type: 'pointerenter', pointerType: 'touch' }), false);
+        assert.equal(showsIntent({ type: 'pointerenter', pointerType: 'pen' }), false);
     });
-    it("leaves a touch's own pointerenter to its pointerdown, and a mouse press to its pointerenter", () => {
-        assert.equal(showsIntent('pointerenter', 'touch'), false);
-        assert.equal(showsIntent('pointerenter', 'pen'), false);
-        assert.equal(showsIntent('pointerdown', 'mouse'), false);
+    it('does not count the focus a click or tap gives the link on its way to opening it', () => {
+        assert.equal(showsIntent({ type: 'focus', keyboard: false }), false);
     });
     it('ignores a pointer of unknown type', () => {
-        assert.equal(showsIntent('pointerenter', ''), false);
-        assert.equal(showsIntent('pointerdown', undefined), false);
+        assert.equal(showsIntent({ type: 'pointerenter', pointerType: '' }), false);
     });
 });
 
@@ -45,7 +42,7 @@ describe('linkPrefetch', () => {
 /**
  * Pages aren't cached in front of the server, so every link that fetches its page ahead
  * of time is a server request. next/link does that for every link on screen; IntentLink
- * waits until someone points at, focuses or touches the link. So in-app links go through
+ * waits until someone points at the link or moves to it with the keyboard. So in-app links go through
  * IntentLink, the only file allowed to import next/link.
  */
 describe('in-app links go through IntentLink', () => {

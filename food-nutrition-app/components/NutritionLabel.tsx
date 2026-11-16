@@ -54,7 +54,7 @@ export default function NutritionLabel({ food, grams = 100, servingLabel, titleA
     const kcal = labelNutrient(food, 'calories', grams, '', null, 0);
     const shownKeys = [...MAIN.map(r => r.key), ...(micros === 'fda' ? FDA_MICROS : MICROS)];
     const lowerBound = !!food.recipe?.incomplete?.some(k => k === 'calories' || shownKeys.includes(k));
-    const usesOlderEntry = [...MAIN.map(r => r.key), ...(micros === 'fda' ? FDA_MICROS : MICROS)].some(k => isFilled(food, k));
+    const usesOlderEntry = ['calories', ...MAIN.map(r => r.key), ...(micros === 'fda' ? FDA_MICROS : MICROS)].some(k => isFilled(food, k));
 
     return (
         <div className="nutrition-label" style={{
@@ -80,7 +80,7 @@ export default function NutritionLabel({ food, grams = 100, servingLabel, titleA
                     <div style={{ fontSize: 12, fontWeight: 700 }}>Amount per serving</div>
                     <div style={{ fontSize: 22, fontWeight: 900 }}>Calories</div>
                 </div>
-                <span style={{ fontSize: 34, fontWeight: 900, lineHeight: 1 }} data-nutrient="calories">{kcal.amount}</span>
+                <span style={{ fontSize: 34, fontWeight: 900, lineHeight: 1 }} data-nutrient="calories">{kcal.amount}{kcal.olderEntry && <OlderEntryMark />}</span>
             </div>
 
             <div style={{ fontWeight: 700, textAlign: 'right', borderBottom: '1px solid var(--text-primary)', padding: '2px 0' }}>% Daily Value*</div>

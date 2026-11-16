@@ -804,6 +804,8 @@ a.chip-btn { text-decoration: none; }
 .provenance-list dd { margin: 0; }
 .provenance-list a { color: var(--primary); }
 .provenance-list a svg { vertical-align: -2px; }
+.provenance-list .provenance-wide { grid-column: 1 / -1; }
+.provenance-sources { margin: 2px 0 6px; padding-left: 18px; display: grid; gap: 4px; }
 
 .compare-chip[aria-pressed='true'] { background: var(--success-bg); border-color: var(--success); color: var(--success); }
 .compare-chip:disabled { opacity: 0.5; cursor: not-allowed; }

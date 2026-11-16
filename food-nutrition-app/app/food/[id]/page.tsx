@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import IntentLink from '@/components/ui/IntentLink';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { getFoodByFdcId, getFoodTypes, getRelatedFoods } from '@/lib/db';
+import { getFoodByFdcId, getFoodsByFdcIds, getFoodTypes, getRelatedFoods } from '@/lib/db';
 import { foodGroupOf } from '@/lib/food-groups';
 import type { Food } from '@/lib/food-types';
 import { categorySlug, datasetInfo, fdcUrl, fmt, foodPath, formatPublicationDate, nutrientName, parseFoodParam, resultNutrients } from '@/lib/food-page';
-import { filledKeys } from '@/lib/nutrient-fill';
+import { olderEntrySources } from '@/lib/nutrient-fill';
 import { typicalServing } from '@/lib/servings';
 import { scaleAmount } from '@/lib/serving-scale';
 import { dataSourceLabel, displayFoodName, hasCoreData, nv, splitFoodName } from '@/components/planner/nutrients';
@@ -52,10 +52,12 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
     const canonical = foodPath(food);
     if (`/food/${id}` !== canonical) permanentRedirect(canonical);
 
-    const [related, replacement, types] = await Promise.all([
+    const sources = olderEntrySources(food);
+    const [related, replacement, types, sourceFoods] = await Promise.all([
         getRelatedFoods(food),
         food.superseded_by_fdc_id ? getFoodByFdcId(food.superseded_by_fdc_id) : Promise.resolve(undefined),
         getFoodTypes(food),
+        sources.length > 0 ? getFoodsByFdcIds(sources.map(s => s.fdcId)) : Promise.resolve([]),
     ]);
     const { name, detail } = splitFoodName(food.description);
     const dataset = datasetInfo(food.data_type);
@@ -64,8 +66,13 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
     // The Type switcher lists this food's types: "Other forms" keeps only the forms it doesn't.
     const typeIds = new Set(types.map(t => t.id));
     const otherForms = related.forms.filter(f => !typeIds.has(f.id));
-    const filled = filledKeys(food);
-    const olderEntry = filled.length > 0 ? food.filledFrom![filled[0]] : null;
+    // Every other entry this food's values came from, cited in full under "Where this data comes from".
+    const sourceById = new Map(sourceFoods.map(f => [f.fdc_id, f]));
+    const citedSources = sources.flatMap(s => {
+        const entry = sourceById.get(s.fdcId);
+        return entry ? [{ ...s, entry }] : [];
+    });
+    const listNutrients = (keys: string[]) => keys.map(nutrientName).join(', ').replace(/, ([^,]*)$/, ' and $1');
 
     return (
         <main className="container food-page">
@@ -144,13 +151,29 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
                             <dd>{food.source_release}</dd>
                         </div>
                     )}
-                    {olderEntry !== null && (
-                        <div>
-                            <dt>Older entry used</dt>
+                    {citedSources.length > 0 && (
+                        <div className="provenance-wide">
+                            <dt>{citedSources.length === 1 ? 'Values from another entry' : 'Values from other entries'}</dt>
                             <dd>
-                                {filled.slice(0, 4).map(nutrientName).join(', ')}{filled.length > 4 ? ` and ${filled.length - 4} more` : ''}: from{' '}
-                                <IntentLink href={`/food/${olderEntry}`}>USDA&apos;s older entry for this food</IntentLink>,
-                                because this record has no value for {filled.length === 1 ? 'it' : 'them'}. Values measured in this record are never replaced.
+                                <ul className="provenance-sources" data-testid="older-entry-sources">
+                                    {citedSources.map(({ fdcId, keys, entry }) => {
+                                        const entryPublished = formatPublicationDate(entry.publication_date);
+                                        return (
+                                            <li key={fdcId}>
+                                                <strong>{listNutrients(keys)}</strong>: from{' '}
+                                                <IntentLink href={foodPath(entry)}>{entry.description}</IntentLink>, USDA FoodData Central,{' '}
+                                                {datasetInfo(entry.data_type).name}, FDC ID{' '}
+                                                <a href={fdcUrl(entry.fdc_id)} target="_blank" rel="noreferrer">
+                                                    {entry.fdc_id} <Icon name="external" size={13} /><span className="sr-only"> (opens USDA FoodData Central in a new tab)</span>
+                                                </a>
+                                                {entryPublished ? `, published ${entryPublished}` : ''}.
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                                This record has no value for {citedSources.length === 1 && citedSources[0].keys.length === 1 ? 'it' : 'these'}, so
+                                USDA&apos;s older entry for the same food supplies {citedSources.length === 1 && citedSources[0].keys.length === 1 ? 'it' : 'them'}, marked †.
+                                Values measured in this record are never replaced.
                             </dd>
                         </div>
                     )}

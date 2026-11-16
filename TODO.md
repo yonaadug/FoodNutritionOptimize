@@ -101,10 +101,6 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Missing-data warnings show on most plans.** Foundation foods are sparse (vitamin D is reported for ~20%).
       Options: factor data completeness into search ranking, offer the equivalent SR Legacy row, or fill gaps
       from the superseded SR row with provenance.
-- [ ] **Calories from an older entry aren't marked †.** 25 Foundation foods report no energy and take it from
-      the SR Legacy row they replace at build time (`calories_source` `sr_legacy_ndb_match_1008` or
-      `sr_legacy_crosswalk_1008`, e.g. rutabaga, mayonnaise, raisins). Every other value from that row is marked †;
-      calories should be too (`lib/nutrient-fill.ts` could record it in `filledFrom`).
 - [ ] **Household serving labels** are heuristic and some read oddly ("≈ 12½ cups, pieces of ~1\"").
 - [ ] **Save multiple plans/days; print, share and export (CSV).** Roadmap "Now" phase.
 - [ ] **Carbohydrate default minimum** is the 275 g DV. Consider the 130 g RDA in the Everyday essentials preset.

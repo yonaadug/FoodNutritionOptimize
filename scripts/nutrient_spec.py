@@ -16,7 +16,7 @@ Used by scripts/build_db.py (builder) and scripts/verify_data_integrity.py
 (validator). Keep this file free of I/O.
 """
 
-SPEC_VERSION = "2.0.0"
+SPEC_VERSION = "2.1.0"
 
 # column, unit, sources (FDC nutrient ids, priority order), label
 # Units are FDC unit_name values (upper-cased); the builder refuses to load a
@@ -105,8 +105,9 @@ EXPECTED_UNITS.update(AUX_NUTRIENTS)
 #   5. 4*protein + 4*carbohydrate + 9*fat (+ 7*alcohol), ONLY when protein, fat
 #      and carbohydrate are all reported (a missing macro would silently
 #      under-count energy, e.g. raisins with only water measured -> 0 kcal)
-#   6. Foundation food only: Energy (1008) of the SR Legacy food with the same
-#      NDB number (same commodity, older analysis)
+#   6. Foundation food only: Energy (1008) of the SR Legacy food it replaces
+#      (same food, older analysis): the one with the same NDB number, else the
+#      first one listed for it in scripts/data/foundation_sr_crosswalk.csv
 # Foods for which none of these apply are EXCLUDED from the database and
 # listed in meta.excluded_foods_no_energy (calories must never be NULL or bogus).
 CALORIE_SOURCES = [
@@ -116,8 +117,10 @@ CALORIE_SOURCES = [
     ("fdc_1062_energy_kj", 1062),          # kJ / 4.184
     ("computed_atwater_4_4_9", None),      # needs protein, fat and carbohydrate
 ]
-CALORIE_SR_FALLBACK = "sr_legacy_ndb_match_1008"
-CALORIE_SOURCE_NAMES = [s for s, _ in CALORIE_SOURCES] + [CALORIE_SR_FALLBACK]
+CALORIE_SR_FALLBACK = "sr_legacy_ndb_match_1008"              # linked by NDB number
+CALORIE_SR_CROSSWALK_FALLBACK = "sr_legacy_crosswalk_1008"     # linked by the reviewed crosswalk
+CALORIE_SR_FALLBACKS = (CALORIE_SR_FALLBACK, CALORIE_SR_CROSSWALK_FALLBACK)
+CALORIE_SOURCE_NAMES = [s for s, _ in CALORIE_SOURCES] + list(CALORIE_SR_FALLBACKS)
 
 # Derivations applied only when the primary/fallback ids above are all absent.
 DERIVATIONS = {
@@ -165,11 +168,12 @@ def derive_folate(n):
     return None, None
 
 
-def resolve_nutrients(n, sr_energy=None):
+def resolve_nutrients(n, sr_energy=None, sr_energy_source=CALORIE_SR_FALLBACK):
     """Map {fdc_nutrient_id: amount} to ({column: value}, {column: provenance}, calories_source).
 
-    `sr_energy` is the 1008 value of the SR Legacy food sharing this Foundation
-    food's NDB number (or None). Returns calories None / source None when no
+    `sr_energy` is the 1008 value of the SR Legacy food this Foundation food
+    replaces (or None), and `sr_energy_source` says how that food was linked
+    (one of CALORIE_SR_FALLBACKS). Returns calories None / source None when no
     energy rule applies (caller excludes the food).
 
     Provenance is only recorded for values that did not come from the first
@@ -219,6 +223,6 @@ def resolve_nutrients(n, sr_energy=None):
             src = name
             break
     if cal is None and sr_energy is not None:
-        cal, src = sr_energy, CALORIE_SR_FALLBACK
+        cal, src = sr_energy, sr_energy_source
     out["calories"] = None if cal is None else round(float(cal), 3)
     return out, prov, src

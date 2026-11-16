@@ -22,6 +22,9 @@ Schema contract (see docs/KEY_NUTRIENTS.md):
   * `foods` keeps every v1 column; all nutrient columns are per 100 g edible portion.
   * Missing nutrient = NULL, measured zero = 0. `calories` is never NULL and
     `calories_source` says where it came from.
+  * SR Legacy rows that a Foundation food replaces keep their row and carry
+    `superseded_by_fdc_id`: same NDB number, or a reviewed pair in
+    scripts/data/foundation_sr_crosswalk.csv (foods USDA gave a new NDB number).
   * `foods_fts` (FTS5, external content on foods), `meta` (provenance),
     `value_provenance` (non-primary / derived values), `serving_sizes`
     (always includes "100 g").
@@ -45,11 +48,12 @@ from pathlib import Path, PurePosixPath
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import nutrient_spec as spec  # noqa: E402
 
-BUILDER_VERSION = "2.0.0"
+BUILDER_VERSION = "2.1.0"
 SCHEMA_VERSION = "2"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 DEFAULT_OUT = PROJECT_ROOT / "food-nutrition-app" / "nutrition.db"
+CROSSWALK_PATH = Path(__file__).resolve().parent / "data" / "foundation_sr_crosswalk.csv"
 FDC_BASE = "https://fdc.nal.usda.gov/fdc-datasets/"
 
 SOURCES = {
@@ -378,6 +382,67 @@ def load_csv_dataset(root: Path, src: dict, key: str, args) -> list[dict]:
 
 
 # --------------------------------------------------------------------------- #
+# Foundation foods replacing SR Legacy rows
+# --------------------------------------------------------------------------- #
+def load_crosswalk(path: Path) -> list[tuple[int, int]]:
+    """(Foundation fdc_id, SR Legacy fdc_id) pairs reviewed as the same food.
+
+    For Foundation foods USDA gave a new NDB number, so the NDB match can't link
+    them. Each row of the file says why the two are the same item; near-misses
+    that were rejected are in foundation_sr_crosswalk_rejected.csv.
+    """
+    with open(path, encoding="utf-8", newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    try:
+        return [(int(r["foundation_fdc_id"]), int(r["sr_fdc_id"])) for r in rows]
+    except (KeyError, TypeError, ValueError) as e:
+        raise SystemExit(f"{path}: every row needs integer foundation_fdc_id and sr_fdc_id ({e})")
+
+
+def link_older_entries(foods: list[dict], crosswalk: list[tuple[int, int]]) -> tuple[dict, dict]:
+    """Set superseded_by_fdc_id on every food: the Foundation food that replaces an SR Legacy row, else None.
+
+    A row is linked by NDB number (USDA kept the number) or by a crosswalk pair.
+    Returns ({SR fdc_id: "ndb_number" | "crosswalk"}, {Foundation fdc_id: (SR energy kcal,
+    calories_source)}): how each link was made, and the energy a Foundation food falls back
+    on when it reports none (the NDB-linked row first, then the first crosswalk row with energy).
+    A crosswalk pair that names a missing food, the wrong dataset, or an SR row that is
+    already linked stops the build.
+    """
+    by_id = {f["fdc_id"]: f for f in foods}
+    found_by_ndb = {f["ndb_number"]: f["fdc_id"] for f in foods
+                    if f["data_type"] == "foundation_food" and f["ndb_number"]}
+    how: dict[int, str] = {}
+    for f in foods:
+        f["superseded_by_fdc_id"] = None
+        if f["data_type"] == "sr_legacy_food" and f["ndb_number"] in found_by_ndb:
+            f["superseded_by_fdc_id"] = found_by_ndb[f["ndb_number"]]
+            how[f["fdc_id"]] = "ndb_number"
+    for fid, sid in crosswalk:
+        new, old = by_id.get(fid), by_id.get(sid)
+        where = f"crosswalk pair {fid} -> {sid}"
+        if new is None or new["data_type"] != "foundation_food":
+            raise SystemExit(f"{where}: {fid} is not a loaded Foundation food")
+        if old is None or old["data_type"] != "sr_legacy_food":
+            raise SystemExit(f"{where}: {sid} is not a loaded SR Legacy food")
+        if how.get(sid) == "crosswalk":
+            raise SystemExit(f"{where}: SR Legacy food {sid} is listed more than once")
+        if sid in how:
+            raise SystemExit(f"{where}: SR Legacy food {sid} is already linked to {old['superseded_by_fdc_id']} by NDB number")
+        old["superseded_by_fdc_id"] = fid
+        how[sid] = "crosswalk"
+    energy: dict[int, tuple[float, str]] = {}
+    by_ndb = [sid for sid, kind in how.items() if kind == "ndb_number"]
+    by_crosswalk = [sid for _, sid in crosswalk]          # file order decides between several rows
+    for sids, src in ((by_ndb, spec.CALORIE_SR_FALLBACK), (by_crosswalk, spec.CALORIE_SR_CROSSWALK_FALLBACK)):
+        for sid in sids:
+            old = by_id[sid]
+            if 1008 in old["nutrients"]:
+                energy.setdefault(old["superseded_by_fdc_id"], (old["nutrients"][1008], src))
+    return how, energy
+
+
+# --------------------------------------------------------------------------- #
 # Database
 # --------------------------------------------------------------------------- #
 def create_schema(con: sqlite3.Connection) -> None:
@@ -460,26 +525,19 @@ def build(args) -> Path:
             "foods_loaded": len(foods),
         })
 
-    # Cross-dataset duplicates: SR Legacy rows whose NDB number also appears in
-    # Foundation Foods describe the same commodity; Foundation is newer analytic
-    # data, so the SR row gets superseded_by_fdc_id (kept, not deleted).
-    found_by_ndb = {f["ndb_number"]: f["fdc_id"] for f in loaded
-                    if f["data_type"] == "foundation_food" and f["ndb_number"]}
-    sr_energy_by_ndb = {}
-    for f in loaded:
-        if f["data_type"] == "sr_legacy_food" and f["ndb_number"] in found_by_ndb:
-            f["superseded_by_fdc_id"] = found_by_ndb[f["ndb_number"]]
-            if 1008 in f["nutrients"]:
-                sr_energy_by_ndb[f["ndb_number"]] = f["nutrients"][1008]
-        else:
-            f["superseded_by_fdc_id"] = None
+    # Cross-dataset duplicates: SR Legacy rows that a Foundation food replaces
+    # (same food, newer analysis) get superseded_by_fdc_id (kept, not deleted).
+    crosswalk = load_crosswalk(CROSSWALK_PATH)
+    link_how, sr_energy = link_older_entries(loaded, crosswalk)
+    log(f"[link] {Counter(link_how.values())['ndb_number']} SR Legacy rows by NDB number, "
+        f"{Counter(link_how.values())['crosswalk']} by {CROSSWALK_PATH.relative_to(PROJECT_ROOT)}")
 
     # Resolve nutrients; drop foods whose energy cannot be determined.
     excluded = []
     kept = []
     for f in loaded:
-        sr_e = sr_energy_by_ndb.get(f["ndb_number"]) if f["data_type"] == "foundation_food" else None
-        f["resolved"] = spec.resolve_nutrients(f["nutrients"], sr_e)
+        sr_e = sr_energy.get(f["fdc_id"]) if f["data_type"] == "foundation_food" else None
+        f["resolved"] = spec.resolve_nutrients(f["nutrients"], *(sr_e or ()))
         if f["resolved"][2] is None:
             excluded.append({"fdc_id": f["fdc_id"], "data_type": f["data_type"], "description": f["description"]})
         else:
@@ -488,6 +546,13 @@ def build(args) -> Path:
         log(f"  excluded {len(excluded)} foods with no determinable energy: "
             + "; ".join(e["description"] for e in excluded[:8]) + (" ..." if len(excluded) > 8 else ""))
     loaded = kept
+    # A link to a Foundation food that was just excluded would hide the SR row behind nothing.
+    kept_ids = {f["fdc_id"] for f in loaded}
+    for f in loaded:
+        if f.get("superseded_by_fdc_id") and f["superseded_by_fdc_id"] not in kept_ids:
+            log(f"  unlinked {f['fdc_id']} {f['description']!r}: its Foundation food {f['superseded_by_fdc_id']} was excluded")
+            f["superseded_by_fdc_id"] = None
+            link_how.pop(f["fdc_id"], None)
 
     ids = Counter(f["fdc_id"] for f in loaded)
     dup = [i for i, c in ids.items() if c > 1]
@@ -561,8 +626,12 @@ def build(args) -> Path:
         "fndds_category_filter": "all non-baby WWEIA categories" if args.fndds_all else
                                  f"WWEIA {FNDDS_DEFAULT_CATEGORY_RANGE[0]}-{FNDDS_DEFAULT_CATEGORY_RANGE[1]} (mixed dishes, sandwiches, soups)",
         "sr_excluded_categories": json.dumps(sorted(SR_EXCLUDED_CATEGORIES - ({"Baby Foods"} if args.include_baby_foods else set()))),
-        "duplicate_policy": "All rows kept. SR Legacy rows whose NDB number matches a Foundation food carry superseded_by_fdc_id. "
-                            "Rank results by data_type_rank (1 Foundation, 2 SR Legacy, 3 FNDDS).",
+        "duplicate_policy": "All rows kept. SR Legacy rows that a Foundation food replaces carry superseded_by_fdc_id: "
+                            "same NDB number, or a reviewed pair in scripts/data/foundation_sr_crosswalk.csv for foods USDA "
+                            "gave a new NDB number. Rank results by data_type_rank (1 Foundation, 2 SR Legacy, 3 FNDDS).",
+        "superseded_link_counts": json.dumps({k: Counter(link_how.values())[k] for k in ("ndb_number", "crosswalk")}),
+        "foundation_sr_crosswalk": json.dumps({"file": CROSSWALK_PATH.relative_to(PROJECT_ROOT).as_posix(),
+                                               "sha256": sha256_of(CROSSWALK_PATH), "pairs": len(crosswalk)}),
         "license": "USDA FoodData Central data is in the public domain (CC0 1.0).",
     }
     for dtp, cnt in by_type.items():

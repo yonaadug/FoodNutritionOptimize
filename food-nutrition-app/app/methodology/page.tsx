@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 
 export const metadata: Metadata = {
     title: 'How we source and match our data',
@@ -22,7 +22,7 @@ export default function MethodologyPage() {
         <main className="container food-page">
             <nav aria-label="Breadcrumb" className="breadcrumb">
                 <ol>
-                    <li><Link href="/">Foods</Link></li>
+                    <li><IntentLink href="/">Foods</IntentLink></li>
                     <li aria-current="page">How we source our data</li>
                 </ol>
             </nav>

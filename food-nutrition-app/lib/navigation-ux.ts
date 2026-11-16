@@ -41,8 +41,9 @@ export type SkeletonKind = 'home' | 'food' | 'food-list' | 'link-index' | 'accou
 
 /**
  * Which skeleton stands in for a page while it loads. Null for the pages that are built
- * ahead of time (the planner, recipes, methodology): those are prefetched in full, so
- * they open at once.
+ * ahead of time (the planner, recipes, methodology, the policies): the server has them
+ * ready, so they arrive in one quick trip (or at once, when a link to them was pointed at
+ * and fetched ahead: components/ui/IntentLink.tsx).
  */
 export function skeletonFor(pathname: string): SkeletonKind | null {
     const p = pathname.split(/[?#]/)[0].replace(/\/+$/, '') || '/';

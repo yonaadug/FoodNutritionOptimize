@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import AccountFrame from '@/components/account/AccountFrame';
 import styles from '@/components/account/account.module.css';
 
@@ -44,7 +44,7 @@ export default async function ConfirmSignInPage({ searchParams }: { searchParams
                     : (
                         <>
                             <h1 id="confirm-title" className={styles.heading}>That link isn&apos;t complete</h1>
-                            <p className={styles.lede}>It may have been cut off by your email app. <Link href="/account/sign-in">Request a new sign-in link</Link>.</p>
+                            <p className={styles.lede}>It may have been cut off by your email app. <IntentLink href="/account/sign-in">Request a new sign-in link</IntentLink>.</p>
                         </>
                     )}
             </section>

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import LegalPage, { LawyerNote, Mail, Placeholder, Summary, type Section } from '@/components/legal/LegalPage';
 import { GOAL_PRESETS } from '@/components/planner/goals';
 import { LEGAL_PATHS, OWNER_LEGAL_NAME, RETENTION } from '@/lib/legal';
@@ -48,7 +48,7 @@ export default function HealthDataPrivacyPage() {
                 This policy is for anyone who uses NutritionDictionary, run by <Placeholder>{OWNER_LEGAL_NAME}</Placeholder>. It&apos;s written to
                 meet Washington&apos;s My Health My Data Act (RCW 19.373), Nevada&apos;s consumer health data law (Senate Bill 370, 2023) and
                 Connecticut&apos;s rules on consumer health data (Connecticut Data Privacy Act, as amended in 2023). It adds to our{' '}
-                <Link href={LEGAL_PATHS.privacy}>Privacy Policy</Link>, which covers all the data we handle.
+                <IntentLink href={LEGAL_PATHS.privacy}>Privacy Policy</IntentLink>, which covers all the data we handle.
             </p>
             <p>
                 &quot;Consumer health data&quot; means personal information that is linked or reasonably linkable to you and identifies your past,
@@ -118,7 +118,7 @@ export default function HealthDataPrivacyPage() {
                 record which version of this policy you agreed to and when. If we change this policy, we ask again the next time you sign in.
             </p>
             <p>
-                <strong>To withdraw consent,</strong> delete your account on your <Link href="/account">account page</Link>: that stops
+                <strong>To withdraw consent,</strong> delete your account on your <IntentLink href="/account">account page</IntentLink>: that stops
                 collection and deletes your data. You can also email <Mail />. You can keep using the site without an account.
             </p>
 
@@ -127,7 +127,7 @@ export default function HealthDataPrivacyPage() {
             <ul>
                 <li><strong>Confirm and access:</strong> find out whether we collect, share or sell your consumer health data, and get a copy. <em>Export my data</em> on your account page gives you everything at once.</li>
                 <li><strong>See who has it:</strong> the full list is in <a href="#sharing">Who we share it with</a>. You can ask us for it by email too.</li>
-                <li><strong>Delete it:</strong> single items on your <Link href="/account/history">history page</Link>, or everything with <em>Delete my account</em>. We delete it from our live database right away, and it leaves our backups within {RETENTION.backupsDays} days (<Link href={`${LEGAL_PATHS.privacy}#backups`}>how backups work</Link>). Our processors hold it only as part of our systems, so the same deletion covers them.</li>
+                <li><strong>Delete it:</strong> single items on your <IntentLink href="/account/history">history page</IntentLink>, or everything with <em>Delete my account</em>. We delete it from our live database right away, and it leaves our backups within {RETENTION.backupsDays} days (<IntentLink href={`${LEGAL_PATHS.privacy}#backups`}>how backups work</IntentLink>). Our processors hold it only as part of our systems, so the same deletion covers them.</li>
                 <li><strong>Withdraw consent:</strong> as described above.</li>
                 <li><strong>Appeal:</strong> if we turn down a request, reply to our answer with &quot;Appeal&quot; and we&apos;ll respond in writing within 45 days. If you&apos;re still unhappy, you can complain to your state attorney general; in Washington, through the <Ext href="https://www.atg.wa.gov/file-complaint">Attorney General&apos;s complaint form</Ext>.</li>
             </ul>

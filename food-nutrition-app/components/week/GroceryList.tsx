@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useId, useMemo } from 'react';
 import type { Food } from '@/lib/food-types';
 import { groceryCsv, groceryList, groceryText, lineAmount } from '@/lib/week-planner/grocery';
@@ -92,7 +92,7 @@ export default function GroceryList({ days, foods, checked }: { days: WeekDay[];
                                     </label>
                                     {l.recipe && (
                                         <p className="tiny" style={{ margin: '0 0 8px 30px' }}>
-                                            <Link href={`/recipes?id=${encodeURIComponent(l.recipe.recipeId)}`} prefetch={false}>See the recipe&apos;s ingredients</Link>
+                                            <IntentLink href={`/recipes?id=${encodeURIComponent(l.recipe.recipeId)}`}>See the recipe&apos;s ingredients</IntentLink>
                                         </p>
                                     )}
                                 </li>

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useEffect, useRef, useState } from 'react';
 import DraftNote from '@/components/legal/DraftNote';
 import { primeCurrentUser, signOut, type CurrentUser } from '@/lib/auth/client';
@@ -87,7 +87,7 @@ export default function ConsentGate({ user, next, pending, status, changed }: {
                 ? (
                     <p className={styles.lede}>
                         We&apos;ve updated {changed.map((k, i) => (
-                            <span key={k}>{i > 0 && (i === changed.length - 1 ? ' and ' : ', ')}our <Link href={LEGAL_PATHS[k]} target="_blank">{POLICY_TITLES[k]}</Link></span>
+                            <span key={k}>{i > 0 && (i === changed.length - 1 ? ' and ' : ', ')}our <IntentLink href={LEGAL_PATHS[k]} target="_blank">{POLICY_TITLES[k]}</IntentLink></span>
                         ))}. Please review and agree to keep using your account.
                     </p>
                 )

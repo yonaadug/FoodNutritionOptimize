@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useEffect, useState } from 'react';
 import { refreshCurrentUser } from '@/lib/auth/client';
 import { signInPath } from '@/lib/auth/next-path';
@@ -38,7 +38,7 @@ export default function WelcomeStatus() {
             <div className="panel" role="status">
                 <h1 className={styles.planTitle}>Thanks for subscribing</h1>
                 <p className={styles.planText}>Sign in with the same email to use Plus.</p>
-                <div className={styles.actions}><Link href={signInPath('/account')} className="btn btn-primary">Sign in</Link></div>
+                <div className={styles.actions}><IntentLink href={signInPath('/account')} className="btn btn-primary">Sign in</IntentLink></div>
             </div>
         );
     }
@@ -54,8 +54,8 @@ export default function WelcomeStatus() {
                         : 'This usually takes a few seconds.'}
             </p>
             <div className={styles.actions}>
-                <Link href="/plan" className={`btn ${isPlus ? 'btn-primary' : 'btn-secondary'}`}>Make a plan</Link>
-                <Link href="/account" className="btn btn-secondary">Your account</Link>
+                <IntentLink href="/plan" className={`btn ${isPlus ? 'btn-primary' : 'btn-secondary'}`}>Make a plan</IntentLink>
+                <IntentLink href="/account" className="btn btn-secondary">Your account</IntentLink>
             </div>
         </div>
     );

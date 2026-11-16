@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { usePathname, useRouter } from 'next/navigation';
 import { lazy, Suspense } from 'react';
 import { useCurrentUser, type CurrentUser } from '@/lib/auth/client';
@@ -31,10 +31,10 @@ export default function AccountMenu({ current = false }: { current?: boolean }) 
         // invisibly (app/layout.tsx marks such browsers before the first paint), so the header
         // doesn't show "Sign in" and then swap it for the account button.
         return (
-            <Link href="/account/sign-in" onClick={goToSignIn} className={`btn btn-secondary btn-sm ${styles.signIn}`}
+            <IntentLink href="/account/sign-in" onClick={goToSignIn} className={`btn btn-secondary btn-sm ${styles.signIn}`}
                 aria-current={current ? 'page' : undefined} data-pending={loading || undefined}>
                 Sign in
-            </Link>
+            </IntentLink>
         );
     }
     return (

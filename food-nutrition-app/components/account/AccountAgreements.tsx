@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { redirect } from 'next/navigation';
 import Icon from '@/components/ui/Icon';
 import { afterSignInPath } from '@/lib/auth/next-path';
@@ -28,7 +28,7 @@ export default async function AccountAgreements({ userId }: { userId: string }) 
                 <div role="status" className={`${styles.notice} ${styles.noticeWarning}`} style={{ marginTop: 12 }}>
                     <Icon name="info" />
                     <span className={styles.noticeBody}>
-                        We&apos;ve updated our policies. <Link href={afterSignInPath('/account')}>Review and agree</Link>, or you&apos;ll be asked next time you sign in.
+                        We&apos;ve updated our policies. <IntentLink href={afterSignInPath('/account')}>Review and agree</IntentLink>, or you&apos;ll be asked next time you sign in.
                     </span>
                 </div>
             )}
@@ -40,7 +40,7 @@ export default async function AccountAgreements({ userId }: { userId: string }) 
                     </div>
                     {ORDER.map(k => (
                         <div key={k} className={consentStyles.pair}>
-                            <dt><Link href={LEGAL_PATHS[k]}>{POLICY_TITLES[k]}</Link></dt>
+                            <dt><IntentLink href={LEGAL_PATHS[k]}>{POLICY_TITLES[k]}</IntentLink></dt>
                             <dd>Version <span data-testid={`consent-version-${k}`}>{record.versions[k]}</span>{consent.changed.includes(k) ? ' (since updated)' : ''}</dd>
                         </div>
                     ))}
@@ -52,8 +52,8 @@ export default async function AccountAgreements({ userId }: { userId: string }) 
             )}
             <p className={styles.note} id="deletion-and-backups">
                 Deleting your account removes it from our live database straight away. Copies stay in our backups for up to {RETENTION.backupsDays} days
-                before they age out. <Link href={`${LEGAL_PATHS.privacy}#backups`}>How long we keep data</Link>. Deleting your account also withdraws your
-                consent to <Link href={LEGAL_PATHS.healthData}>consumer health data</Link> processing.
+                before they age out. <IntentLink href={`${LEGAL_PATHS.privacy}#backups`}>How long we keep data</IntentLink>. Deleting your account also withdraws your
+                consent to <IntentLink href={LEGAL_PATHS.healthData}>consumer health data</IntentLink> processing.
             </p>
         </section>
     );

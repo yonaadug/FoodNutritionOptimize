@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { usePathname } from 'next/navigation';
 import { signInPath } from '@/lib/auth/next-path';
 import { PHOTO_LIMITS, TRIAL_DAYS } from '@/lib/billing/entitlements';
@@ -24,7 +24,7 @@ export default function PhotoQuota({ children }: { children: React.ReactNode }) 
                     Photo reads need a free account: {PHOTO_LIMITS.trial.limit} in your first {TRIAL_DAYS} days, then {PHOTO_LIMITS.free.limit} a month.
                 </p>
                 <div className={styles.gateActions}>
-                    <Link href={signInPath(pathname)} className="btn btn-primary-soft btn-sm">Sign in to use a photo</Link>
+                    <IntentLink href={signInPath(pathname)} className="btn btn-primary-soft btn-sm">Sign in to use a photo</IntentLink>
                 </div>
             </div>
         );
@@ -36,7 +36,7 @@ export default function PhotoQuota({ children }: { children: React.ReactNode }) 
             <div className={styles.gate + ' ' + styles.gateCompact} data-testid="photo-quota-gate">
                 <p className={styles.gateText}>{quotaMessage(photo, plan.plan)}</p>
                 <div className={styles.gateActions}>
-                    {plan.plan !== 'plus' && <Link href="/plus" className="btn btn-secondary btn-sm">See what Plus adds</Link>}
+                    {plan.plan !== 'plus' && <IntentLink href="/plus" className="btn btn-secondary btn-sm">See what Plus adds</IntentLink>}
                 </div>
                 <p className={styles.inline}>You can still paste the recipe as text.</p>
             </div>

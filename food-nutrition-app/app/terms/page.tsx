@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import LegalPage, { LawyerNote, Mail, Placeholder, Summary, type Section } from '@/components/legal/LegalPage';
 import { GOVERNING_LAW, LEGAL_PATHS, MINIMUM_AGE, OWNER_LEGAL_NAME, PLUS, REFUND_POLICY } from '@/lib/legal';
 
@@ -50,8 +50,8 @@ export default function TermsPage() {
             <p>
                 These terms are an agreement between you and <Placeholder>{OWNER_LEGAL_NAME}</Placeholder> (&quot;we&quot;, &quot;us&quot;), which
                 runs NutritionDictionary at nutritiondictionary.com. By using the site you agree to them. When you create an account we ask you
-                to agree to them explicitly. Our <Link href={LEGAL_PATHS.privacy}>Privacy Policy</Link> and{' '}
-                <Link href={LEGAL_PATHS.healthData}>Consumer Health Data Privacy Policy</Link> explain how we handle your data.
+                to agree to them explicitly. Our <IntentLink href={LEGAL_PATHS.privacy}>Privacy Policy</IntentLink> and{' '}
+                <IntentLink href={LEGAL_PATHS.healthData}>Consumer Health Data Privacy Policy</IntentLink> explain how we handle your data.
             </p>
 
             <h2 id="not-medical-advice">Not medical advice</h2>
@@ -72,7 +72,7 @@ export default function TermsPage() {
                 The meters for metals, pesticides and microplastics are <strong>general information</strong>. They show typical levels from
                 public testing programs, compared with cautious reference values from public agencies. They don&apos;t measure any particular
                 product, a low reading doesn&apos;t mean none, and a high reading doesn&apos;t mean a food is unsafe. Microplastic meters compare
-                studied foods and don&apos;t rate safety. Our <Link href="/methodology">methodology page</Link> explains how they work and their
+                studied foods and don&apos;t rate safety. Our <IntentLink href="/methodology">methodology page</IntentLink> explains how they work and their
                 limits.
             </p>
 
@@ -90,7 +90,7 @@ export default function TermsPage() {
                 <li>You don&apos;t need an account to use the site. To create one you must be {MINIMUM_AGE} or older, and if you&apos;re under the age of majority where you live, you need a parent or guardian&apos;s permission.</li>
                 <li>You sign in with a link sent to your email or with Google. Keep your email account secure: anyone who can read your email can sign in as you.</li>
                 <li>An account is for one person. Tell us at <Mail /> if you think someone else has used yours.</li>
-                <li>You can export or delete your account at any time from your <Link href="/account">account page</Link>.</li>
+                <li>You can export or delete your account at any time from your <IntentLink href="/account">account page</IntentLink>.</li>
             </ul>
             <LawyerNote>
                 <ul>
@@ -132,7 +132,7 @@ export default function TermsPage() {
             </p>
             <h3>Cancelling</h3>
             <p>
-                Cancel any time in the subscription portal: on your <Link href="/account">account page</Link>, choose the option to manage your
+                Cancel any time in the subscription portal: on your <IntentLink href="/account">account page</IntentLink>, choose the option to manage your
                 subscription. Cancelling stops future renewals, and you keep Plus until the end of the period you&apos;ve paid for. You can
                 also email <Mail /> to cancel.
             </p>
@@ -165,7 +165,7 @@ export default function TermsPage() {
             </p>
             <ul>
                 <li><strong>Nutrition:</strong> <Ext href="https://fdc.nal.usda.gov/">USDA FoodData Central</Ext>, which is in the public domain.</li>
-                <li><strong>Contaminants:</strong> US FDA (Total Diet Study, mercury in fish, arsenic in rice), USDA Pesticide Data Program and US EPA reference values, all US government works in the public domain; EFSA and ATSDR reference values, cited with attribution; and published microplastics studies (Cox et al. 2019, Kosuth et al. 2018, Milne et al. 2024, Danopoulos et al. 2020), whose values we cite with attribution. The full list, with links, is on our <Link href="/methodology#sources">methodology page</Link>.</li>
+                <li><strong>Contaminants:</strong> US FDA (Total Diet Study, mercury in fish, arsenic in rice), USDA Pesticide Data Program and US EPA reference values, all US government works in the public domain; EFSA and ATSDR reference values, cited with attribution; and published microplastics studies (Cox et al. 2019, Kosuth et al. 2018, Milne et al. 2024, Danopoulos et al. 2020), whose values we cite with attribution. The full list, with links, is on our <IntentLink href="/methodology#sources">methodology page</IntentLink>.</li>
             </ul>
             <p>Government agencies and study authors don&apos;t endorse NutritionDictionary.</p>
             <LawyerNote>

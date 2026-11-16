@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useRouter } from 'next/navigation';
 import { OlderEntryMark } from '@/components/food/FoodLink';
 import Icon from '@/components/ui/Icon';
@@ -122,7 +122,7 @@ export default function RecipeTotals({ state, nutrition }: { state: EditorState;
                                 {olderEntries.length === 1
                                     ? olderEntries[0].nutrients.map(nutrientName).join(', ')
                                     : olderEntries.map(e => `${e.food} (${e.nutrients.slice(0, 3).map(nutrientName).join(', ')}${e.nutrients.length > 3 ? ` and ${e.nutrients.length - 3} more` : ''})`).join('; ')}.{' '}
-                                <Link href="/methodology#older-entries">Why we do this</Link>
+                                <IntentLink href="/methodology#older-entries">Why we do this</IntentLink>
                             </p>
                         )}
                         <p className="tiny muted">
@@ -131,9 +131,9 @@ export default function RecipeTotals({ state, nutrition }: { state: EditorState;
 
                         {servingsInPlan > 0 ? (
                             <div className={styles.inPlan} data-testid="recipe-in-plan">
-                                <Link href="/plan#foods" className="btn btn-primary-soft btn-block">
+                                <IntentLink href="/plan#foods" className="btn btn-primary-soft btn-block">
                                     <Icon name="check" size={16} /> In your plan: {fmt(servingsInPlan)} {servingsInPlan === 1 ? 'serving' : 'servings'} · Open plan
-                                </Link>
+                                </IntentLink>
                                 <div className="row-wrap">
                                     <button type="button" className="btn btn-secondary btn-sm" onClick={addToPlan}>
                                         <Icon name="plus" size={14} /> Add another serving

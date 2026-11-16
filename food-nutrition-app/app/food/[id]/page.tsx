@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { getFoodByFdcId, getFoodTypes, getRelatedFoods } from '@/lib/db';
 import { foodGroupOf } from '@/lib/food-groups';
@@ -71,8 +71,8 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
         <main className="container food-page">
             <nav aria-label="Breadcrumb" className="breadcrumb">
                 <ol>
-                    <li><Link href="/">Foods</Link></li>
-                    {food.food_category && <li><Link href={`/food/category/${categorySlug(food.food_category)}`}>{food.food_category}</Link></li>}
+                    <li><IntentLink href="/">Foods</IntentLink></li>
+                    {food.food_category && <li><IntentLink href={`/food/category/${categorySlug(food.food_category)}`}>{food.food_category}</IntentLink></li>}
                     <li aria-current="page">{name}</li>
                 </ol>
             </nav>
@@ -90,7 +90,7 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
                     <span className="callout-icon"><Icon name="info" /></span>
                     <span>
                         USDA has newer measurements for this food.{' '}
-                        <Link href={foodPath(replacement)}>See {displayName(replacement)} in {datasetInfo(replacement.data_type).name}</Link>.
+                        <IntentLink href={foodPath(replacement)}>See {displayName(replacement)} in {datasetInfo(replacement.data_type).name}</IntentLink>.
                         This older {dataset.name} record is kept for reference.
                     </span>
                 </div>
@@ -149,7 +149,7 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
                             <dt>Older entry used</dt>
                             <dd>
                                 {filled.slice(0, 4).map(nutrientName).join(', ')}{filled.length > 4 ? ` and ${filled.length - 4} more` : ''}: from{' '}
-                                <Link href={`/food/${olderEntry}`} prefetch={false}>USDA&apos;s older entry for this food</Link>,
+                                <IntentLink href={`/food/${olderEntry}`}>USDA&apos;s older entry for this food</IntentLink>,
                                 because this record has no value for {filled.length === 1 ? 'it' : 'them'}. Values measured in this record are never replaced.
                             </dd>
                         </div>
@@ -159,7 +159,7 @@ export default async function FoodPage({ params }: PageProps<'/food/[id]'>) {
                             <dt>Same food elsewhere</dt>
                             <dd>
                                 {related.equivalents.map((f, i) => (
-                                    <span key={f.id}>{i > 0 && ', '}<Link href={foodPath(f)}>{dataSourceLabel(f.data_type) ?? f.description}</Link></span>
+                                    <span key={f.id}>{i > 0 && ', '}<IntentLink href={foodPath(f)}>{dataSourceLabel(f.data_type) ?? f.description}</IntentLink></span>
                                 ))}
                             </dd>
                         </div>

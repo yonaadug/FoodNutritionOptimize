@@ -157,7 +157,7 @@ export default function TypePicker({ id, name, count, types, more, mode, onClose
         if (mode.kind === 'link') {
             const current = mode.currentId === t.id;
             return (
-                <IntentLink lazy href={mode.href(t)} className="type-item" data-type-item="" onClick={mode.onOpen}
+                <IntentLink href={mode.href(t)} className="type-item" data-type-item="" onClick={mode.onOpen}
                     aria-current={current ? 'page' : undefined}
                     aria-label={`${name}, ${t.label}, ${spokenKcal(t)}${common}${current ? ', this page' : ''}`}>
                     {body}

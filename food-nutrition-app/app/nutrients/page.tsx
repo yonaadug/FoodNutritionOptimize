@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { connection } from 'next/server';
 import { sortableNutrients } from '@/lib/db';
 import { nutrientName, nutrientSlug, nutrientUnitOf, dailyValueOf, fmt } from '@/lib/food-page';
@@ -17,7 +17,7 @@ export default async function NutrientsPage() {
         <main className="container food-page">
             <nav aria-label="Breadcrumb" className="breadcrumb">
                 <ol>
-                    <li><Link href="/">Foods</Link></li>
+                    <li><IntentLink href="/">Foods</IntentLink></li>
                     <li aria-current="page">Nutrients</li>
                 </ol>
             </nav>
@@ -30,10 +30,10 @@ export default async function NutrientsPage() {
                     const dv = dailyValueOf(k);
                     return (
                         <li key={k}>
-                            <Link href={`/nutrients/${nutrientSlug(k)}`}>
+                            <IntentLink href={`/nutrients/${nutrientSlug(k)}`}>
                                 <span>{nutrientName(k)}</span>
                                 {dv !== null && <span className="muted tabular small">{fmt(dv)} {nutrientUnitOf(k)} a day</span>}
-                            </Link>
+                            </IntentLink>
                         </li>
                     );
                 })}

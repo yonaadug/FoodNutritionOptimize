@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import LegalPage, { LawyerNote, Mail, Placeholder, Summary, type Section } from '@/components/legal/LegalPage';
 import {
     BROWSER_STORAGE, COOKIES, EU_UK_REPRESENTATIVE, LEGAL_PATHS, MINIMUM_AGE, OWNER_LEGAL_NAME, OWNER_POSTAL_ADDRESS, RETENTION,
@@ -60,7 +60,7 @@ export default function PrivacyPage() {
             </p>
             <p>
                 Data that could say something about your health, such as your diet goals and saved plans, has its own policy too:
-                our <Link href={LEGAL_PATHS.healthData}>Consumer Health Data Privacy Policy</Link>.
+                our <IntentLink href={LEGAL_PATHS.healthData}>Consumer Health Data Privacy Policy</IntentLink>.
             </p>
 
             <h2 id="collect">What we collect</h2>
@@ -247,8 +247,8 @@ export default function PrivacyPage() {
             <h2 id="rights">Your rights</h2>
             <p>Wherever you live, you can:</p>
             <ul>
-                <li><strong>See and export your data:</strong> on your <Link href="/account">account page</Link>, press <em>Export my data</em> to download everything we hold about you, including your agreements, as a file.</li>
-                <li><strong>Delete it:</strong> remove single history items on your <Link href="/account/history">history page</Link>, or press <em>Delete my account</em> on your account page to delete everything. Backups age out within {RETENTION.backupsDays} days, as <a href="#backups">explained above</a>.</li>
+                <li><strong>See and export your data:</strong> on your <IntentLink href="/account">account page</IntentLink>, press <em>Export my data</em> to download everything we hold about you, including your agreements, as a file.</li>
+                <li><strong>Delete it:</strong> remove single history items on your <IntentLink href="/account/history">history page</IntentLink>, or press <em>Delete my account</em> on your account page to delete everything. Backups age out within {RETENTION.backupsDays} days, as <a href="#backups">explained above</a>.</li>
                 <li><strong>Correct it:</strong> change your display name on your account page. To change your email address, email us.</li>
                 <li><strong>Withdraw consent:</strong> deleting your account withdraws it and removes the data. You can also email us.</li>
                 <li><strong>Clear this browser:</strong> signing out clears the planner, recipes and searches stored in this browser. Your browser&apos;s settings can clear it too.</li>
@@ -312,7 +312,7 @@ export default function PrivacyPage() {
             </p>
             <p>
                 Washington, Nevada and Connecticut have specific rules for health data. Our{' '}
-                <Link href={LEGAL_PATHS.healthData}>Consumer Health Data Privacy Policy</Link> covers them.
+                <IntentLink href={LEGAL_PATHS.healthData}>Consumer Health Data Privacy Policy</IntentLink> covers them.
             </p>
 
             <h2 id="cookies">Cookies and browser storage</h2>

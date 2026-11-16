@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useState } from 'react';
 import Icon from '@/components/ui/Icon';
 import { plannerActions, type PlannerState } from '@/hooks/usePlannerState';
@@ -254,9 +254,9 @@ function Suggestions({ nutrient, selectedIds, excludeIds, updateAction }: {
                         <span className="suggestion-name">{isAdded ? 'Added: ' : ''}{shortName(f.description)}</span>
                         <span className="muted">{perServingText(f, nutrient, unit)}</span>
                     </button>
-                    <Link href={foodPath(f)} prefetch={false} className="suggestion-info" aria-label={`About ${f.description}`} title="See this food's nutrients and contaminants">
+                    <IntentLink href={foodPath(f)} className="suggestion-info" aria-label={`About ${f.description}`} title="See this food's nutrients and contaminants">
                         <Icon name="info" size={14} />
-                    </Link>
+                    </IntentLink>
                     </span>
                 );
             })}

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { usePathname } from 'next/navigation';
 import Icon from '@/components/ui/Icon';
 import { signInPath } from '@/lib/auth/next-path';
@@ -52,8 +52,8 @@ export function PlusLocked({ feature, signedIn, compact = false }: { feature: Fe
                     : `New accounts get ${TRIAL_DAYS} days of Plus free, with no card.`}
             </p>
             <div className={styles.gateActions}>
-                {!signedIn && <Link href={signInPath(pathname)} className="btn btn-primary btn-sm">Sign in to try it</Link>}
-                <Link href="/plus" className={`btn btn-sm ${signedIn ? 'btn-primary' : 'btn-secondary'}`}>See what Plus adds</Link>
+                {!signedIn && <IntentLink href={signInPath(pathname)} className="btn btn-primary btn-sm">Sign in to try it</IntentLink>}
+                <IntentLink href="/plus" className={`btn btn-sm ${signedIn ? 'btn-primary' : 'btn-secondary'}`}>See what Plus adds</IntentLink>
             </div>
         </section>
     );

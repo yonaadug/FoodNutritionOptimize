@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Icon from '@/components/ui/Icon';
 import { apiFetch, clearCurrentUser } from '@/lib/auth/client';
@@ -171,7 +171,7 @@ export default function HistoryView() {
                 {data.status === 'ready' && data.items.length === 0 && (
                     <div className="empty-state">
                         <p>{tab.empty}</p>
-                        <Link href={tab.browse} className="btn btn-secondary" style={{ marginTop: 12 }}>{tab.browseLabel}</Link>
+                        <IntentLink href={tab.browse} className="btn btn-secondary" style={{ marginTop: 12 }}>{tab.browseLabel}</IntentLink>
                     </div>
                 )}
 
@@ -183,7 +183,7 @@ export default function HistoryView() {
                         {data.limited && data.limited.hidden > 0 && (
                             <p className={styles.note} data-testid="history-limited">
                                 Showing your newest {data.limited.limit} {tab.label.toLowerCase()}. {data.limited.hidden} older {data.limited.hidden === 1 ? 'one is' : 'ones are'} kept
-                                in your account and come back with <Link href="/plus">Plus</Link>. Your data export includes them all.
+                                in your account and come back with <IntentLink href="/plus">Plus</IntentLink>. Your data export includes them all.
                             </p>
                         )}
                         {data.nextCursor && (
@@ -218,7 +218,7 @@ function HistoryRow({ item, onRemove }: { item: HistoryItem; onRemove: () => voi
         <li className={styles.row}>
             <div className={styles.rowMain}>
                 {isSafeHref(item.href)
-                    ? <Link href={item.href} className={styles.rowTitle}>{item.title}</Link>
+                    ? <IntentLink href={item.href} className={styles.rowTitle}>{item.title}</IntentLink>
                     : <span className={styles.rowTitle}>{item.title}</span>}
                 <p className={styles.rowDate}>{shortDate(item.updatedAt)}</p>
                 {facts.length > 0 && (

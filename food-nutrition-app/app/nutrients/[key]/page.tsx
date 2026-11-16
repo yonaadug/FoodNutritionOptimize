@@ -1,6 +1,6 @@
 import { isFilled } from '@/lib/nutrient-fill';
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { notFound } from 'next/navigation';
 import { getBestSources, sortableNutrients } from '@/lib/db';
 import { dailyValueOf, fmt, nutrientKeyFromSlug, nutrientName, nutrientUnitOf } from '@/lib/food-page';
@@ -45,8 +45,8 @@ export default async function NutrientPage({ params, searchParams }: PageProps<'
         <main className="container food-page">
             <nav aria-label="Breadcrumb" className="breadcrumb">
                 <ol>
-                    <li><Link href="/">Foods</Link></li>
-                    <li><Link href="/nutrients">Nutrients</Link></li>
+                    <li><IntentLink href="/">Foods</IntentLink></li>
+                    <li><IntentLink href="/nutrients">Nutrients</IntentLink></li>
                     <li aria-current="page">{name}</li>
                 </ol>
             </nav>
@@ -58,7 +58,7 @@ export default async function NutrientPage({ params, searchParams }: PageProps<'
                         ? 'Every food, ranked by a typical serving, including supplements, powders, organ meats and other specialty items.'
                         : 'Ranked by a typical serving, with familiar, well-measured foods first.'}
                     {' '}
-                    <Link href={all ? `/nutrients/${slug}` : `/nutrients/${slug}?all=1`}>{all ? 'Everyday foods only' : 'Include specialty foods'}</Link>
+                    <IntentLink href={all ? `/nutrients/${slug}` : `/nutrients/${slug}?all=1`}>{all ? 'Everyday foods only' : 'Include specialty foods'}</IntentLink>
                 </p>
             </header>
             <section className="panel" aria-label={`Foods high in ${name}`}>

@@ -58,6 +58,8 @@ data/csv/
 FoodData_Central_*/
 *.csv
 !data/samples/*.csv
+# Reviewed build inputs (e.g. the Foundation <-> SR Legacy crosswalk) are source, not downloads
+!scripts/data/*.csv
 
 # OS files
 .DS_Store

@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Food } from '@/lib/food-types';
 import { ActionBar, Stepper, Welcome } from '@/components/shell/Shell';
@@ -194,7 +194,7 @@ export default function PlannerApp() {
                         <span className="callout-icon"><Icon name="alert" /></span>
                         <span>
                             {OPEN_MESSAGES[openState]}{' '}
-                            {openState === 'signed-out' && <Link href={signInPath(typeof window === 'undefined' ? null : nextFromLocation(window.location))} prefetch={false}>Sign in</Link>}
+                            {openState === 'signed-out' && <IntentLink href={signInPath(typeof window === 'undefined' ? null : nextFromLocation(window.location))}>Sign in</IntentLink>}
                         </span>
                     </div>
                 )}

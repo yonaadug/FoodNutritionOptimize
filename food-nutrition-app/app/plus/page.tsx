@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import PlusActions from '@/components/billing/PlusActions';
 import styles from '@/components/billing/billing.module.css';
 import Icon from '@/components/ui/Icon';
@@ -79,7 +79,7 @@ export default async function PlusPage() {
                     <div>
                         <h3>How do I cancel?</h3>
                         <p>
-                            Open <Link href="/account">your account</Link> and choose Manage subscription. You keep Plus until the end of the period you paid for.
+                            Open <IntentLink href="/account">your account</IntentLink> and choose Manage subscription. You keep Plus until the end of the period you paid for.
                             Payments and receipts are handled by Stripe.
                         </p>
                     </div>

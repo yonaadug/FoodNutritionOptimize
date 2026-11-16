@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { connection } from 'next/server';
 import { getCategories } from '@/lib/db';
 
@@ -16,7 +16,7 @@ export default async function CategoriesPage() {
         <main className="container food-page">
             <nav aria-label="Breadcrumb" className="breadcrumb">
                 <ol>
-                    <li><Link href="/">Foods</Link></li>
+                    <li><IntentLink href="/">Foods</IntentLink></li>
                     <li aria-current="page">Categories</li>
                 </ol>
             </nav>
@@ -26,10 +26,10 @@ export default async function CategoriesPage() {
             <ul className="category-list">
                 {categories.map(c => (
                     <li key={c.slug}>
-                        <Link href={`/food/category/${c.slug}`}>
+                        <IntentLink href={`/food/category/${c.slug}`}>
                             <span>{c.category}</span>
                             <span className="muted tabular small">{c.count.toLocaleString('en-US')}</span>
-                        </Link>
+                        </IntentLink>
                     </li>
                 ))}
             </ul>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useRouter } from 'next/navigation';
 import Icon from '@/components/ui/Icon';
 import { usePlannerState } from '@/hooks/usePlannerState';
@@ -27,11 +27,11 @@ export default function PlanNudge() {
     const state = usePlannerState();
     const count = state.foods.length + state.fixedFoods.length;
     return (
-        <Link href="/plan" className="plan-link">
+        <IntentLink href="/plan" className="plan-link">
             {count > 0
                 ? <>Continue your plan ({count} {count === 1 ? 'food' : 'foods'})</>
                 : <>Plan a day</>}
             <Icon name="arrowRight" size={15} />
-        </Link>
+        </IntentLink>
     );
 }

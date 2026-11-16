@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { getCategories, getDbInfo, getTopHits, searchFoodGroups, SEARCH_MAX_QUERY_LENGTH } from '@/lib/db';
 import { categorySlug, nutrientName, nutrientSlug } from '@/lib/food-page';
 import { SITE_TAGLINE } from '@/lib/nav';
@@ -64,14 +64,14 @@ async function BrowseSections() {
             <section aria-labelledby="categories-title">
                 <div className="browse-head">
                     <h2 className="browse-title" id="categories-title">Browse by category</h2>
-                    <Link href="/food/category" className="small browse-more">All categories <Icon name="arrowRight" size={14} /></Link>
+                    <IntentLink href="/food/category" className="small browse-more">All categories <Icon name="arrowRight" size={14} /></IntentLink>
                 </div>
                 <ul className="chip-list">
                     {HOME_CATEGORIES.filter(c => counts.has(c.category)).map(c => (
                         <li key={c.category}>
-                            <Link href={`/food/category/${categorySlug(c.category)}`} className="chip chip-btn">
+                            <IntentLink href={`/food/category/${categorySlug(c.category)}`} className="chip chip-btn">
                                 {c.label} <span className="muted tabular">{counts.get(c.category)}</span>
-                            </Link>
+                            </IntentLink>
                         </li>
                     ))}
                 </ul>
@@ -80,12 +80,12 @@ async function BrowseSections() {
             <section aria-labelledby="nutrients-title">
                 <div className="browse-head">
                     <h2 className="browse-title" id="nutrients-title">Best sources of</h2>
-                    <Link href="/nutrients" className="small browse-more">All nutrients <Icon name="arrowRight" size={14} /></Link>
+                    <IntentLink href="/nutrients" className="small browse-more">All nutrients <Icon name="arrowRight" size={14} /></IntentLink>
                 </div>
                 <ul className="chip-list">
                     {NUTRIENT_SHORTCUTS.map(key => (
                         <li key={key}>
-                            <Link href={`/nutrients/${nutrientSlug(key)}`} className="chip chip-btn">{nutrientName(key).replace(/ \(.*\)$/, '')}</Link>
+                            <IntentLink href={`/nutrients/${nutrientSlug(key)}`} className="chip chip-btn">{nutrientName(key).replace(/ \(.*\)$/, '')}</IntentLink>
                         </li>
                     ))}
                 </ul>

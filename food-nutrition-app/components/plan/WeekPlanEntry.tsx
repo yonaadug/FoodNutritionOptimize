@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import Icon from '@/components/ui/Icon';
 
 /**
@@ -16,9 +16,9 @@ export default function WeekPlanEntry() {
                         Seven days from these foods and goals, with different foods on different days, leftovers for recipes, and a grocery list.
                     </p>
                 </div>
-                <Link href="/plan/week" className="btn btn-primary" data-testid="plan-week-link">
+                <IntentLink href="/plan/week" className="btn btn-primary" data-testid="plan-week-link">
                     <Icon name="sparkle" size={16} /> Plan a week
-                </Link>
+                </IntentLink>
             </div>
         </section>
     );

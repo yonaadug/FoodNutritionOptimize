@@ -6,7 +6,7 @@
  *
  * PLUS-GATE: planContaminants. Self-contained: wrapping <PlanContaminants> is the whole gate.
  */
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { formatAmount, formatPercent, LEVELS } from '@/lib/contaminants-meter';
 import { reduceFactor, type PlanContaminantRow, type PlanContaminantSummary, type PlanPortion } from '@/lib/plan-contaminants-core';
@@ -207,7 +207,7 @@ function Details({ summary }: { summary: PlanContaminantSummary }) {
                     </div>
                 ))}
                 <p className="small" style={{ marginTop: 12 }}>
-                    Each food&apos;s amount is the food page&apos;s figure at the planned grams. <Link href={METHODOLOGY}>How we total a plan</Link>
+                    Each food&apos;s amount is the food page&apos;s figure at the planned grams. <IntentLink href={METHODOLOGY}>How we total a plan</IntentLink>
                 </p>
             </div>
         </details>
@@ -226,7 +226,7 @@ export default function PlanContaminants({ days, dayNames, busy, ...actions }: P
             <h3 className="panel-title" id={headingId}>Contaminants in this {days.length > 1 ? 'week' : 'plan'}</h3>
             <p className={`small secondary ${styles.intro}`}>
                 Lead, cadmium, arsenic and pesticides are totalled against a day&apos;s reference, and mercury against a week&apos;s, at the planned amounts.{' '}
-                <Link href={METHODOLOGY}>How we total a plan</Link>
+                <IntentLink href={METHODOLOGY}>How we total a plan</IntentLink>
             </p>
             {failed && (
                 <div className="callout callout-warn" role="alert" style={{ marginTop: 12 }}>

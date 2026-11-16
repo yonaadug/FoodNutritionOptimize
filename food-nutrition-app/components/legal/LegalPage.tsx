@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import {
     CONTACT_EMAIL, formatLegalDate, LEGAL_DRAFT, LEGAL_EFFECTIVE_DATE, LEGAL_PATHS, POLICY_TITLES, POLICY_VERSIONS, type PolicyKey,
 } from '@/lib/legal';
@@ -51,7 +51,7 @@ export default function LegalPage({ policy, sections, intro, children }: {
         <main className="container food-page">
             <nav aria-label="Breadcrumb" className="breadcrumb">
                 <ol>
-                    <li><Link href="/">Foods</Link></li>
+                    <li><IntentLink href="/">Foods</IntentLink></li>
                     <li aria-current="page">{POLICY_TITLES[policy]}</li>
                 </ol>
             </nav>
@@ -71,7 +71,7 @@ export default function LegalPage({ policy, sections, intro, children }: {
                 {children}
                 <p className={styles.related}>
                     See also: {others.map((k, i) => (
-                        <span key={k}>{i > 0 && ' · '}<Link href={LEGAL_PATHS[k]}>{POLICY_TITLES[k]}</Link></span>
+                        <span key={k}>{i > 0 && ' · '}<IntentLink href={LEGAL_PATHS[k]}>{POLICY_TITLES[k]}</IntentLink></span>
                     ))}. Questions: <Mail />.
                 </p>
             </article>

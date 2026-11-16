@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useEffect, useId, useState } from 'react';
 import {
     LEVELS, formatAmount, formatPercent, levelLabel,
@@ -348,7 +348,7 @@ export default function ContaminantPanel({ fdcId, servingGrams }: { fdcId: numbe
                 <h2 className={styles.title} id={titleId}>Contaminants</h2>
                 <p className={styles.explanation}>
                     No public contaminant testing matches this food yet. That doesn&apos;t tell you anything either way about what it contains.{' '}
-                    <Link href={`${report.methodologyUrl}#similar-foods`}>How we match foods</Link>
+                    <IntentLink href={`${report.methodologyUrl}#similar-foods`}>How we match foods</IntentLink>
                 </p>
             </section>
         );
@@ -371,7 +371,7 @@ export default function ContaminantPanel({ fdcId, servingGrams }: { fdcId: numbe
                         <li>Microplastics, particles per serving: low under 10, moderate 10-50, elevated 50-200, high 200 or more. This compares studied foods and is not a safety rating.</li>
                     </ul>
                     <p>Similar foods share one set of measurements, so large and medium eggs use the same egg testing. Dried and cooked forms are scaled for water content where that is reasonable.</p>
-                    <p><Link href={report.methodologyUrl}>Read the full methodology and all sources</Link></p>
+                    <p><IntentLink href={report.methodologyUrl}>Read the full methodology and all sources</IntentLink></p>
                 </div>
             </details>
             <p className={styles.disclaimer}>{report.disclaimer}</p>

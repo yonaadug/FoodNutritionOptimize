@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { apiFetch } from '@/lib/auth/client';
 import { LEGAL_PATHS, MINIMUM_AGE, POLICY_VERSIONS } from '@/lib/legal';
 import styles from './consent.module.css';
@@ -89,12 +89,12 @@ export default function ConsentChecks({ value, onChange, missing, idPrefix, lege
     return (
         <fieldset className={styles.fieldset}>
             <legend className={styles.legend}>{legend}</legend>
-            {box('acceptTerms', <>I agree to the <Link href={LEGAL_PATHS.terms} target="_blank">Terms of Use</Link> and have read the <Link href={LEGAL_PATHS.privacy} target="_blank">Privacy Policy</Link>.</>)}
+            {box('acceptTerms', <>I agree to the <IntentLink href={LEGAL_PATHS.terms} target="_blank">Terms of Use</IntentLink> and have read the <IntentLink href={LEGAL_PATHS.privacy} target="_blank">Privacy Policy</IntentLink>.</>)}
             {box('ageConfirmed', <>I am {MINIMUM_AGE} or older.</>)}
             <div>
                 {box(
                     'healthDataConsent',
-                    <>I consent to NutritionDictionary collecting and using my consumer health data to run my account, as described in the <Link href={LEGAL_PATHS.healthData} target="_blank">Consumer Health Data Privacy Policy</Link>.</>,
+                    <>I consent to NutritionDictionary collecting and using my consumer health data to run my account, as described in the <IntentLink href={LEGAL_PATHS.healthData} target="_blank">Consumer Health Data Privacy Policy</IntentLink>.</>,
                     disclosureId,
                 )}
                 <div id={disclosureId} className={styles.disclosure}>

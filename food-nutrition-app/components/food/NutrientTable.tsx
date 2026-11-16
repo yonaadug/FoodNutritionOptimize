@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import type { Food } from '@/lib/food-types';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { fmt, nutrientTable } from '@/lib/food-page';
 import { filledKeys, isFilled, OLDER_ENTRY_NOTE } from '@/lib/nutrient-fill';
 import { OlderEntryMark } from './FoodLink';
@@ -62,8 +62,8 @@ export default function NutrientTable({ food, grams, servingLabel }: { food: Foo
                 <p className="small secondary" style={{ marginTop: 10 }} data-testid="older-entry-note">
                     <span aria-hidden="true">† </span>
                     Values marked † are {OLDER_ENTRY_NOTE}, because the newest entry has no measurement for them.{' '}
-                    {olderIds.map((id, i) => <span key={id}>{i > 0 && ', '}<Link href={`/food/${id}`} prefetch={false}>See the older entry</Link></span>)}
-                    {' · '}<Link href="/methodology#older-entries">Why we do this</Link>
+                    {olderIds.map((id, i) => <span key={id}>{i > 0 && ', '}<IntentLink href={`/food/${id}`}>See the older entry</IntentLink></span>)}
+                    {' · '}<IntentLink href="/methodology#older-entries">Why we do this</IntentLink>
                 </p>
             )}
             <p className="tiny muted" style={{ marginTop: 10 }}>

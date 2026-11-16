@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useRouter } from 'next/navigation';
 import type { Food } from '@/lib/food-types';
 import { servingForType, servingParam, type FoodTypeOption } from '@/lib/food-groups';
@@ -194,9 +194,9 @@ function FoodActions({ food, grams, servingLabel, gramsValid, comparing, onCompa
         <div className="food-actions-wrap">
         <div className="food-actions">
             {inPlan ? (
-                <Link ref={openPlan} href="/plan#foods" className="btn btn-primary-soft" data-testid="in-plan">
+                <IntentLink ref={openPlan} href="/plan#foods" className="btn btn-primary-soft" data-testid="in-plan">
                     <Icon name="check" size={16} /> In your plan{fixed ? ` · exactly ${fmt(fixed.grams)} g` : ''} · Open plan
-                </Link>
+                </IntentLink>
             ) : (
                 <button type="button" className="btn btn-primary" onClick={add}>
                     <Icon name="plus" size={16} /> Add to my plan

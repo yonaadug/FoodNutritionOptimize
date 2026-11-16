@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useState } from 'react';
 import Icon from '@/components/ui/Icon';
 import { FREE_HISTORY_LIMIT, PHOTO_LIMITS } from '@/lib/billing/entitlements';
@@ -102,9 +102,9 @@ export default function PlanSection({ initial }: { initial: PlanSummary | null |
                     ? <ManageSubscriptionButton primary={plan.plan === 'plus'} />
                     : null}
                 {plan.plan !== 'plus' && (
-                    <Link href="/plus" className={`btn ${plan.hasBillingAccount ? 'btn-secondary' : 'btn-primary'}`}>
+                    <IntentLink href="/plus" className={`btn ${plan.hasBillingAccount ? 'btn-secondary' : 'btn-primary'}`}>
                         {plan.plan === 'trial' ? 'Keep Plus after the trial' : 'See what Plus adds'}
-                    </Link>
+                    </IntentLink>
                 )}
             </div>
             {!plan.billingAvailable && plan.plan !== 'plus' && (

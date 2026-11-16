@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import Icon from '@/components/ui/Icon';
 import NumberInput from '@/components/ui/NumberInput';
 import { shortFoodName } from '@/components/planner/nutrients';
@@ -104,10 +104,10 @@ function IngredientRow({ row, index, onAmount, onFood, onRemove }: {
                 </td>
                 <td className={styles.cellFood} data-label="USDA food">
                     {row.food ? (
-                        <Link href={foodPath(row.food)} className={styles.foodLink} target="_blank" title={row.food.description}>
+                        <IntentLink href={foodPath(row.food)} className={styles.foodLink} target="_blank" title={row.food.description}>
                             <span className={styles.foodShort}>{shortFoodName(row.food.description)}</span>
                             <span className={`tiny muted ${styles.foodFull}`}>{row.food.description}</span>
-                        </Link>
+                        </IntentLink>
                     ) : (
                         <span className="chip chip-danger">No match yet</span>
                     )}

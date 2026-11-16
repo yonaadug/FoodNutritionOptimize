@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useEffect, useId, useMemo, useRef } from 'react';
 import type { Food } from '@/lib/food-types';
 import { isFilled } from '@/lib/nutrient-fill';
@@ -140,7 +140,7 @@ export default function PlanStep({ state, status, result, error, stale, runInfo,
                         <div className="callout-title">{c.name} leaves out {c.uncounted.join(', ')}</div>
                         <p className="small secondary">
                             {c.uncounted.length === 1 ? 'It has' : 'They have'} no amount or no matched food, so {c.uncounted.length === 1 ? "it isn't" : "they aren't"} counted in this plan, and real totals can be higher.{' '}
-                            <Link href={`/recipes?id=${encodeURIComponent(c.recipeId)}`} prefetch={false}>Edit the recipe</Link>
+                            <IntentLink href={`/recipes?id=${encodeURIComponent(c.recipeId)}`}>Edit the recipe</IntentLink>
                         </p>
                     </div>
                 </div>
@@ -349,7 +349,7 @@ function PlanResultView({ state, result, runInfo, stale, restored, updating, hea
                     <div style={{ minWidth: 0, flex: 1 }}>
                         <div className="callout-title">Values marked † are from USDA&apos;s older entry for the food</div>
                         <p className="small secondary">
-                            The newest entry has no measurement for them, so we use the older one. <Link href="/methodology#older-entries">Why we do this</Link>
+                            The newest entry has no measurement for them, so we use the older one. <IntentLink href="/methodology#older-entries">Why we do this</IntentLink>
                         </p>
                         <details className="disclosure disclosure-plain" style={{ marginTop: 4 }}>
                             <summary>See which foods</summary>

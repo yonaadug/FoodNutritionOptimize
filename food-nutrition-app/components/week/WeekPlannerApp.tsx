@@ -5,7 +5,7 @@
  *
  * PLUS-GATE: weekPlanner (UI entry). The whole page is this component, so wrapping it is the gate.
  */
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Food } from '@/lib/food-types';
 import { fetchHistoryItem, fetchLatestHistory, useCurrentUser } from '@/lib/auth/client';
@@ -44,7 +44,7 @@ function Settings({ week, planner, onRun }: { week: WeekState; planner: PlannerS
                     <p className="eyebrow">Your foods and goals</p>
                     <p className="small" style={{ marginTop: 4 }}>
                         {n} {n === 1 ? 'food' : 'foods'}{recipes ? ` (${recipes} ${recipes === 1 ? 'recipe' : 'recipes'})` : ''} · {presetTitle(planner.presetId)}, {goals} {goals === 1 ? 'goal' : 'goals'}.{' '}
-                        <Link href="/plan#foods">Edit foods</Link> · <Link href="/plan#goals">Edit goals</Link>
+                        <IntentLink href="/plan#foods">Edit foods</IntentLink> · <IntentLink href="/plan#goals">Edit goals</IntentLink>
                     </p>
                 </div>
             </div>
@@ -89,7 +89,7 @@ function Settings({ week, planner, onRun }: { week: WeekState; planner: PlannerS
                 <button type="button" className="btn btn-primary" onClick={onRun} disabled={n === 0 || week.status === 'loading'} data-testid="make-week">
                     {week.status === 'loading' ? <><span className="spinner" /> Planning your week…</> : week.result ? 'Make a new week' : 'Make my week'}
                 </button>
-                {n === 0 && <span className="small muted">Add foods in the <Link href="/plan#foods">day planner</Link> first.</span>}
+                {n === 0 && <span className="small muted">Add foods in the <IntentLink href="/plan#foods">day planner</IntentLink> first.</span>}
             </div>
         </section>
     );
@@ -167,8 +167,8 @@ function Infeasible({ result, planner, onRun, hasLocks }: { result: WeekResult; 
                 )}
                 {hasLocks && <button type="button" className="btn btn-secondary btn-sm" onClick={() => { weekActions.clearLocks(); setTimeout(onRun, 0); }}>Unlock all days and foods</button>}
                 {result.diagnosis === 'time' && <button type="button" className="btn btn-secondary btn-sm" onClick={onRun}>Try again</button>}
-                <Link href="/plan#foods" className="btn btn-secondary btn-sm">Add or change foods</Link>
-                <Link href="/plan#goals" className="btn btn-secondary btn-sm">Change goals</Link>
+                <IntentLink href="/plan#foods" className="btn btn-secondary btn-sm">Add or change foods</IntentLink>
+                <IntentLink href="/plan#goals" className="btn btn-secondary btn-sm">Change goals</IntentLink>
             </div>
         </section>
     );
@@ -277,7 +277,7 @@ export default function WeekPlannerApp() {
     return (
         <main className={`container main ${styles.printRoot}`} data-week-print>
             <div className={styles.printHide} style={{ marginBottom: 8 }}>
-                <Link href="/plan#plan" className="small"><Icon name="arrowLeft" size={14} /> Back to your day plan</Link>
+                <IntentLink href="/plan#plan" className="small"><Icon name="arrowLeft" size={14} /> Back to your day plan</IntentLink>
             </div>
             <h1 className="section-title" style={{ marginBottom: 4 }}>Plan your week</h1>
             <p className="secondary" style={{ marginBottom: 16 }}>

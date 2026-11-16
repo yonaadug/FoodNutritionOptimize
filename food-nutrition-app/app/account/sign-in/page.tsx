@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { redirect } from 'next/navigation';
 import AccountFrame from '@/components/account/AccountFrame';
 import SignInForm from '@/components/account/SignInForm';
@@ -58,8 +58,8 @@ export default async function SignInPage({ searchParams }: { searchParams: Promi
                     )}
                 <p className={styles.note}>
                     We store your email and what you choose to keep here, and you can export or delete it at any time
-                    (<Link href={LEGAL_PATHS.privacy}>Privacy Policy</Link>).
-                    The whole site works without an account. <Link href={next === DEFAULT_AFTER_SIGN_IN ? '/' : next}>Continue without signing in</Link>
+                    (<IntentLink href={LEGAL_PATHS.privacy}>Privacy Policy</IntentLink>).
+                    The whole site works without an account. <IntentLink href={next === DEFAULT_AFTER_SIGN_IN ? '/' : next}>Continue without signing in</IntentLink>
                 </p>
             </section>
         </AccountFrame>

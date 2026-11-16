@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { notFound } from 'next/navigation';
 import { getCategories, getFoodsInCategory } from '@/lib/db';
 import FoodResultRow from '@/components/explore/FoodResultRow';
@@ -40,8 +40,8 @@ export default async function CategoryPage({ params, searchParams }: PageProps<'
         <main className="container food-page">
             <nav aria-label="Breadcrumb" className="breadcrumb">
                 <ol>
-                    <li><Link href="/">Foods</Link></li>
-                    <li><Link href="/food/category">Categories</Link></li>
+                    <li><IntentLink href="/">Foods</IntentLink></li>
+                    <li><IntentLink href="/food/category">Categories</IntentLink></li>
                     <li aria-current="page">{cat.category}</li>
                 </ol>
             </nav>
@@ -56,11 +56,11 @@ export default async function CategoryPage({ params, searchParams }: PageProps<'
                 {result.totalPages > 1 && (
                     <nav className="pager" aria-label="Pages">
                         {result.page > 1
-                            ? <Link href={href(result.page - 1)} className="btn btn-secondary" rel="prev"><Icon name="arrowLeft" size={15} /> Previous</Link>
+                            ? <IntentLink href={href(result.page - 1)} className="btn btn-secondary" rel="prev"><Icon name="arrowLeft" size={15} /> Previous</IntentLink>
                             : <span />}
                         <span className="small muted tabular">Page {result.page} of {result.totalPages}</span>
                         {result.page < result.totalPages
-                            ? <Link href={href(result.page + 1)} className="btn btn-secondary" rel="next">Next <Icon name="arrowRight" size={15} /></Link>
+                            ? <IntentLink href={href(result.page + 1)} className="btn btn-secondary" rel="next">Next <Icon name="arrowRight" size={15} /></IntentLink>
                             : <span />}
                     </nav>
                 )}

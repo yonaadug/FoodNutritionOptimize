@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { useEffect, useId, useRef, useState } from 'react';
 import { signOut, type CurrentUser } from '@/lib/auth/client';
 import { userInitial } from './AccountMenu';
@@ -75,12 +75,12 @@ export default function SignedInMenu({ user, current, pathname }: { user: Curren
             {open && (
                 <div id={menuId} ref={menu} role="menu" aria-label="Account" className={styles.menu} onKeyDown={onMenuKey}>
                     <p className={styles.who} title={user.email}>{user.email}</p>
-                    <Link role="menuitem" href="/account" className={styles.item} onClick={() => setOpen(false)}
-                        aria-current={pathname === '/account' ? 'page' : undefined}>Account</Link>
-                    <Link role="menuitem" href="/account/history" className={styles.item} onClick={() => setOpen(false)}
-                        aria-current={pathname === '/account/history' ? 'page' : undefined}>History</Link>
-                    <Link role="menuitem" href="/plus" className={styles.item} onClick={() => setOpen(false)}
-                        aria-current={pathname === '/plus' ? 'page' : undefined}>{user.plan?.plan === 'plus' ? 'Your Plus plan' : 'Plus'}</Link>
+                    <IntentLink role="menuitem" href="/account" className={styles.item} onClick={() => setOpen(false)}
+                        aria-current={pathname === '/account' ? 'page' : undefined}>Account</IntentLink>
+                    <IntentLink role="menuitem" href="/account/history" className={styles.item} onClick={() => setOpen(false)}
+                        aria-current={pathname === '/account/history' ? 'page' : undefined}>History</IntentLink>
+                    <IntentLink role="menuitem" href="/plus" className={styles.item} onClick={() => setOpen(false)}
+                        aria-current={pathname === '/plus' ? 'page' : undefined}>{user.plan?.plan === 'plus' ? 'Your Plus plan' : 'Plus'}</IntentLink>
                     <button role="menuitem" type="button" className={styles.item} onClick={onSignOut}>Sign out</button>
                 </div>
             )}

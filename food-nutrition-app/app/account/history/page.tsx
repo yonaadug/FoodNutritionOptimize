@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
+import IntentLink from '@/components/ui/IntentLink';
 import { redirect } from 'next/navigation';
 import AccountFrame from '@/components/account/AccountFrame';
 import { PrimeUser } from '@/components/account/AccountView';
@@ -19,7 +19,7 @@ export default async function HistoryPage() {
             <div>
                 <h1 className={styles.heading}>Your history</h1>
                 <p className={styles.lede}>
-                    The foods, recipes and plans you&apos;ve looked at. <Link href="/account">Back to your account</Link>
+                    The foods, recipes and plans you&apos;ve looked at. <IntentLink href="/account">Back to your account</IntentLink>
                 </p>
             </div>
             <HistoryView />

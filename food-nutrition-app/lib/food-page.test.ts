@@ -268,6 +268,20 @@ describe('rankRelated', () => {
         assert.deepEqual(equivalents.map(f => f.id), [2]);
         assert.deepEqual(forms, []);
     });
+    // USDA gave some Foundation foods a new NDB number; build_db links their SR twin through
+    // scripts/data/foundation_sr_crosswalk.csv instead, so the numbers differ.
+    const cod = makeFood({ id: 40, fdc_id: 2684444, description: 'Fish, cod, Atlantic, wild caught, raw', food_category: 'Finfish and Shellfish Products', ndb_number: 100328, data_type_rank: 1 });
+    const srCod = makeFood({ id: 41, fdc_id: 171955, description: 'Fish, cod, Atlantic, raw', food_category: 'Finfish and Shellfish Products', ndb_number: 15015, data_type_rank: 2, superseded_by_fdc_id: 2684444 });
+    it('counts an older entry linked without a shared NDB number as the same food', () => {
+        const { equivalents, forms, similar } = rankRelated(cod, [srCod]);
+        assert.deepEqual(equivalents.map(f => f.fdc_id), [171955]);
+        assert.deepEqual([...forms, ...similar], []);
+    });
+    it('shows the replacement as the same food on the older entry’s page', () => {
+        const { equivalents, forms } = rankRelated(srCod, [cod]);
+        assert.deepEqual(equivalents.map(f => f.fdc_id), [2684444]);
+        assert.deepEqual(forms, []);
+    });
     it('puts the closest forms first', () => {
         const { forms } = rankRelated(egg, [
             make(3, 'Egg, duck, whole, fresh, raw', { ndb_number: 1138 }),

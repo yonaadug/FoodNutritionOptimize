@@ -728,8 +728,9 @@ export async function getFoodByFdcId(fdcId: number): Promise<Food | undefined> {
  * Foods related to `food` (see rankRelated in lib/food-page.ts): the same
  * food in another USDA dataset, other forms of it (raw/cooked, sizes, parts,
  * varieties) and nutritionally similar foods in its category. Candidates are
- * the base name matches, the NDB neighbourhood and the category; at most 1,500
- * rows are scored (the largest category has fewer than 1,000).
+ * the base name matches, the NDB neighbourhood, the category, and the entries
+ * it supersedes or is superseded by; at most 1,500 rows are scored (the
+ * largest category has fewer than 1,000).
  */
 export function getRelatedFoodsIn(conn: Connection, food: Food, limits: { forms?: number; similar?: number } = {}): RelatedResult<Food> {
     const params: Record<string, string | number> = { id: food.id };
@@ -753,6 +754,15 @@ export function getRelatedFoodsIn(conn: Connection, food: Food, limits: { forms?
     if (food.food_category) {
         params.category = food.food_category;
         ors.push('food_category = @category');
+    }
+    // Its older entries and its replacement, which can have another name, category and NDB number.
+    if (conn.schema.foodColumns.has('superseded_by_fdc_id')) {
+        params.fdc = food.fdc_id;
+        ors.push('superseded_by_fdc_id = @fdc');
+        if (food.superseded_by_fdc_id) {
+            params.replacement = food.superseded_by_fdc_id;
+            ors.push('fdc_id = @replacement');
+        }
     }
     if (ors.length === 0) return { equivalents: [], forms: [], similar: [] };
     const candidates = conn.db

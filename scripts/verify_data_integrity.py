@@ -10,14 +10,17 @@ Automated integrity checks for food-nutrition-app/nutrition.db.
 
 Checks: schema contract, row counts vs meta, calories non-null with a known
 source, no negative nutrients, macro/unit plausibility ranges, energy vs
-Atwater-from-macros (documented exceptions below), serving sizes, FTS5 table
-in sync, PRAGMA integrity_check, file size, and a random-sample re-check of
-foods against the raw USDA files in data/raw (independent parser).
+Atwater-from-macros (documented exceptions below), serving sizes, superseded
+SR Legacy rows (each explained by an NDB match or a pair in
+scripts/data/foundation_sr_crosswalk.csv), FTS5 table in sync, PRAGMA
+integrity_check, file size, and a random-sample re-check of foods against the
+raw USDA files in data/raw (independent parser).
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import random
@@ -33,6 +36,8 @@ import nutrient_spec as spec  # noqa: E402
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DB = PROJECT_ROOT / "food-nutrition-app" / "nutrition.db"
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
+CROSSWALK = PROJECT_ROOT / "scripts" / "data" / "foundation_sr_crosswalk.csv"
+CROSSWALK_REJECTED = PROJECT_ROOT / "scripts" / "data" / "foundation_sr_crosswalk_rejected.csv"
 
 MAX_DB_MB = 50
 MIN_FOODS = {"foundation_food": 300, "sr_legacy_food": 7000}
@@ -228,10 +233,8 @@ def recheck_sample(con, ck: Checker, sample_n: int, seed: int) -> None:
             checked_values += 1
             if src == "computed_atwater_4_4_9":
                 exp = spec.atwater_kcal(row["protein_g"], row["carbohydrate_g"], row["total_fat_g"], row["alcohol_g"])
-            elif src == spec.CALORIE_SR_FALLBACK:
-                sr = con.execute("SELECT calories FROM foods WHERE superseded_by_fdc_id = ? AND data_type='sr_legacy_food'",
-                                 (fid,)).fetchone()
-                exp = sr[0] if sr else None
+            elif src in spec.CALORIE_SR_FALLBACKS:
+                exp = linked_sr_energy(con, row, src)
             else:
                 nid = dict(spec.CALORIE_SOURCES)[src]
                 exp = n.get(nid)
@@ -252,6 +255,112 @@ def recheck_sample(con, ck: Checker, sample_n: int, seed: int) -> None:
     ck.check(not mismatches, f"raw re-check of {total} random foods ({checked_values} values, seed {seed})",
              f"{len(mismatches)} mismatches: {mismatches[:5]}" if mismatches else
              ", ".join(f"{k}={len(v)}" for k, v in sample.items()))
+
+
+# --------------------------------------------------------------------------- #
+# Foundation foods replacing SR Legacy rows (NDB number or reviewed crosswalk)
+# --------------------------------------------------------------------------- #
+CROSSWALK_COLUMNS = ["foundation_fdc_id", "sr_fdc_id", "foundation_description", "sr_description", "reason"]
+
+
+def read_crosswalk(path: Path) -> list[dict]:
+    """Rows of a crosswalk CSV with integer ids (sr_fdc_id may be blank in the rejected list)."""
+    with open(path, encoding="utf-8", newline="") as fh:
+        reader = csv.DictReader(fh)
+        if reader.fieldnames != CROSSWALK_COLUMNS:
+            raise ValueError(f"{path.name}: columns {reader.fieldnames} != {CROSSWALK_COLUMNS}")
+        rows = list(reader)
+    for r in rows:
+        r["foundation_fdc_id"] = int(r["foundation_fdc_id"])
+        r["sr_fdc_id"] = int(r["sr_fdc_id"]) if r["sr_fdc_id"] else None
+    return rows
+
+
+def linked_sr_energy(con, food, src: str):
+    """Calories a Foundation food takes from the SR Legacy row it replaces: the one with
+    its NDB number, or the first crosswalk row for it (as build_db.link_older_entries)."""
+    if src == spec.CALORIE_SR_FALLBACK:
+        r = con.execute("SELECT calories FROM foods WHERE data_type = 'sr_legacy_food' AND superseded_by_fdc_id = ? "
+                        "AND ndb_number = ?", (food["fdc_id"], food["ndb_number"])).fetchone()
+        return r[0] if r else None
+    for row in read_crosswalk(CROSSWALK):
+        if row["foundation_fdc_id"] == food["fdc_id"]:
+            r = con.execute("SELECT calories FROM foods WHERE fdc_id = ? AND superseded_by_fdc_id = ?",
+                            (row["sr_fdc_id"], food["fdc_id"])).fetchone()
+            if r:
+                return r[0]
+    return None
+
+
+def check_superseded_links(con, ck: Checker, meta: dict) -> None:
+    """Every superseded SR Legacy row is explained by an NDB match or a reviewed crosswalk pair."""
+    try:
+        pairs = read_crosswalk(CROSSWALK)
+        ok, err = True, ""
+    except (OSError, ValueError, KeyError) as e:
+        pairs, ok, err = [], False, str(e)
+    if not ck.check(ok and pairs and all(p["sr_fdc_id"] and p["reason"].strip() for p in pairs),
+                    "crosswalk: file parses (integer ids, a reason on every row)", err or str(CROSSWALK.relative_to(PROJECT_ROOT))):
+        return
+    sr_ids = [p["sr_fdc_id"] for p in pairs]
+    dup = sorted({s for s in sr_ids if sr_ids.count(s) > 1})
+    ck.check(not dup, "crosswalk: an SR Legacy row maps to at most one Foundation food", str(dup))
+    built = json.loads(meta.get("foundation_sr_crosswalk") or "{}")
+    ck.check(built.get("sha256") == hashlib.sha256(CROSSWALK.read_bytes()).hexdigest(),
+             "crosswalk: database was built from this version of the file", f"meta pairs={built.get('pairs')}")
+
+    rows = {r[0]: r for r in con.execute("SELECT fdc_id, data_type, description, ndb_number, superseded_by_fdc_id FROM foods")}
+    excluded = {e["fdc_id"]: e for e in json.loads(meta.get("excluded_foods_no_energy") or "[]")}
+    found_ndb = {r[3]: r[0] for r in rows.values() if r[1] == "foundation_food" and r[3]}
+    bad_type, bad_desc, bad_link, ndb_taken = [], [], [], []
+    for p in pairs:
+        fid, sid = p["foundation_fdc_id"], p["sr_fdc_id"]
+        new, old = rows.get(fid), rows.get(sid)
+        if old is None or old[1] != "sr_legacy_food" or (new is None and fid not in excluded) or (new and new[1] != "foundation_food"):
+            bad_type.append((fid, sid))
+            continue
+        new_desc = new[2] if new else excluded[fid]["description"]
+        if (new_desc, old[2]) != (p["foundation_description"], p["sr_description"]):
+            bad_desc.append((fid, sid))
+        if old[3] in found_ndb:
+            ndb_taken.append(sid)
+        if old[4] != (fid if new else None):   # a crosswalk link to an excluded Foundation food is dropped
+            bad_link.append((sid, old[4], fid))
+    ck.check(not bad_type, "crosswalk: Foundation id is a Foundation food, SR id an SR Legacy food (no Foundation -> Foundation)",
+             str(bad_type[:5]))
+    ck.check(not bad_desc, "crosswalk: descriptions in the file match the database (no mistyped ids)", str(bad_desc[:5]))
+    ck.check(not ndb_taken, "crosswalk: no SR row that is already linked by NDB number", str(ndb_taken[:5]))
+    ck.check(not bad_link, "crosswalk: every pair is applied (SR row superseded by its Foundation food)", str(bad_link[:5]))
+
+    by_pair = {(p["sr_fdc_id"], p["foundation_fdc_id"]) for p in pairs}
+    kinds = {"ndb_number": 0, "crosswalk": 0}
+    unexplained = []
+    for fid, dtype, _desc, ndb, sup in rows.values():
+        if sup is None:
+            continue
+        if dtype == "sr_legacy_food" and ndb and found_ndb.get(ndb) == sup:
+            kinds["ndb_number"] += 1
+        elif dtype == "sr_legacy_food" and (fid, sup) in by_pair:
+            kinds["crosswalk"] += 1
+        else:
+            unexplained.append(fid)
+    ck.check(not unexplained, "superseded rows: each is an SR Legacy row linked by NDB number or the crosswalk",
+             f"{kinds}; unexplained {unexplained[:5]}")
+    if "superseded_link_counts" in meta:
+        ck.check(json.loads(meta["superseded_link_counts"]) == kinds, "superseded rows: link counts match meta", json.dumps(kinds))
+
+    wrong_cal = []
+    for row in con.execute("SELECT fdc_id, ndb_number, calories, calories_source FROM foods WHERE calories_source IN (?, ?)",
+                           spec.CALORIE_SR_FALLBACKS).fetchall():
+        exp = linked_sr_energy(con, {"fdc_id": row[0], "ndb_number": row[1]}, row[3])
+        if exp is None or not close(row[2], exp, tol_abs=0.01):
+            wrong_cal.append((row[0], row[2], exp))
+    ck.check(not wrong_cal, "calories taken from a linked SR Legacy row match that row", str(wrong_cal[:5]))
+
+    if CROSSWALK_REJECTED.exists():
+        rejected = read_crosswalk(CROSSWALK_REJECTED)
+        both = {(r["foundation_fdc_id"], r["sr_fdc_id"]) for r in rejected} & {(p["foundation_fdc_id"], p["sr_fdc_id"]) for p in pairs}
+        ck.check(not both, "crosswalk: no pair is both accepted and rejected", str(sorted(both)[:5]))
 
 
 # --------------------------------------------------------------------------- #
@@ -365,6 +474,7 @@ def run(db_path: Path, sample_n: int, seed: int, skip_raw: bool) -> Checker:
     sup = con.execute("SELECT COUNT(*) FROM foods s LEFT JOIN foods f ON f.fdc_id = s.superseded_by_fdc_id "
                       "WHERE s.superseded_by_fdc_id IS NOT NULL AND (f.id IS NULL OR f.data_type != 'foundation_food')").fetchone()[0]
     ck.check(sup == 0, "superseded_by_fdc_id points at Foundation foods")
+    check_superseded_links(con, ck, meta)
 
     # FTS
     fts = con.execute("SELECT COUNT(*) FROM foods_fts").fetchone()[0]

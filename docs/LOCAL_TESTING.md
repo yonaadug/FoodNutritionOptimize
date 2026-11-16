@@ -50,7 +50,7 @@ Expected (last lines):
 ✔ Node.js v26.x
 ✔ npm 11.x
 ✔ Database: food-nutrition-app/nutrition.db (6.6M)
-foods in DB: 9435
+foods in DB: 9445
 ✔ Web app ready
 ✔ Desktop app ready (cd electron-app && npm start)
 Setup complete.
@@ -113,7 +113,7 @@ Expected from `make smoke`:
 ```
 Smoke testing http://127.0.0.1:3000
   ok  GET / - 200, 15888 bytes of HTML
-  ok  GET /api/meta - 9435 foods, search mode fts
+  ok  GET /api/meta - 9445 foods, search mode fts
   ok  GET /api/search?q=salmon - 56 matches, first: "Fish, salmon, sockeye, wild caught, raw"
   ok  POST /api/optimize (default goals) - infeasible with diagnosis (• Cannot meet Vitamin E target ...)
   ok  POST /api/optimize (relaxed goals) - 3 foods, 1000 kcal, 87 g protein
@@ -181,7 +181,7 @@ function's 1024 MB. Expected: `All 5 smoke checks passed.` on port 9000.
 To check by hand while it runs (`docker run ... -p 9000:3000 nutrition-dictionary-lambda`):
 
 ```bash
-curl -s http://127.0.0.1:9000/api/meta                       # {"meta":{...},"searchMode":"fts","foodCount":9435}
+curl -s http://127.0.0.1:9000/api/meta                       # {"meta":{...},"searchMode":"fts","foodCount":9445}
 curl -s 'http://127.0.0.1:9000/api/search?q=salmon&limit=3'  # {"foods":[{"description":"Fish, salmon, sockeye, ...
 curl -s -X POST http://127.0.0.1:9000/api/optimize -H 'content-type: application/json' \
   -d '{"foods":[{"id":147}],"minCalories":200,"maxCalories":2000}'

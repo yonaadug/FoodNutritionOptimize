@@ -81,6 +81,16 @@ The validator checks these things, and exits with code 1 if any check fails:
   4 listed SR foods.
 - **Serving sizes:** every food has `100 g`, every weight is in (0, 5000] g,
   and there are no orphan rows.
+- **Superseded SR Legacy rows:** each one points at a Foundation food and is
+  explained by a shared NDB number or a pair in
+  `scripts/data/foundation_sr_crosswalk.csv`. For the crosswalk: both ids
+  exist with the right data types (never Foundation to Foundation), the
+  descriptions in the file match the database (a mistyped id fails), no SR
+  row is listed twice or is also linked by NDB number, every pair is applied,
+  the link counts match `meta.superseded_link_counts`, the database was built
+  from the current file (sha256 in `meta`), calories taken from a linked SR
+  row match that row, and no pair is in both the accepted and rejected
+  lists.
 - **FTS5:** the `foods_fts` row count equals the `foods` row count, the FTS5
   `integrity-check` passes, and `MATCH 'chicken'` agrees with `LIKE`.
 - **SQLite:** `PRAGMA integrity_check` and `foreign_key_check` pass, and the
@@ -94,6 +104,10 @@ The validator checks these things, and exits with code 1 if any check fails:
 
 Result of the 2026-11-03 build: **39 passed, 0 failed**. The raw re-check
 covered 90 foods and 3,600 values, with seed 20261103.
+
+Result of the 2026-11-16 build (crosswalk links): **78 passed, 0 failed**.
+`--sample 1200 --seed 1` re-checked all 399 Foundation foods, 400 SR Legacy
+and 400 FNDDS foods (47,960 values).
 
 ## 3. Spot-check against the live FDC API (optional)
 

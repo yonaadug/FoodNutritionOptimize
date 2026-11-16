@@ -11,7 +11,7 @@ both the builder and the validator use.
 
 | Dataset | Release | Format used | Included | Why |
 |---|---|---|---|---|
-| Foundation Foods | 2026-10-29 | JSON | 389 of 424 foods | Newest analytical data. The CSV zip for this release is incomplete (it has no `food.csv`, `food_nutrient.csv` or `food_portion.csv`), so the builder reads the JSON. JSON values are rounded to 3 significant digits, as on the FDC website. |
+| Foundation Foods | 2026-10-29 | JSON | 399 of 424 foods | Newest analytical data. The CSV zip for this release is incomplete (it has no `food.csv`, `food_nutrient.csv` or `food_portion.csv`), so the builder reads the JSON. JSON values are rounded to 3 significant digits, as on the FDC website. |
 | SR Legacy | 2018-04 (final) | CSV | 7,448 of 7,793 | Covers most everyday foods with near-complete nutrient panels. Excludes *Baby Foods*. |
 | FNDDS / Survey foods | 2024-10-31 (FNDDS 2021-2023) | CSV | 1,598 of 5,432 | Only the WWEIA categories 3002-3808 are included: mixed dishes, pizza, sandwiches, burgers, burritos/tacos, stir-fries and soups. |
 
@@ -33,25 +33,58 @@ FNDDS categories are left out for two reasons:
 `--fndds-all` adds them back. Baby foods, infant formula and human milk
 (WWEIA 9002-9602) are always excluded unless you pass `--include-baby-foods`.
 
-**Excluded Foundation foods.** 35 Foundation foods report no energy and only
-part of the protein/fat/carbohydrate panel, so their calories can't be
-determined. Most are the "Beans, Dry, ... (0% moisture)" research samples
-and new 2026 produce entries. These foods are listed in
-`meta.excluded_foods_no_energy`.
+**Excluded Foundation foods.** 25 Foundation foods report no energy and only
+part of the protein/fat/carbohydrate panel, and replace no SR Legacy row that
+has energy, so their calories can't be determined. Most are the "Beans, Dry,
+... (0% moisture)" research samples. These foods are listed in
+`meta.excluded_foods_no_energy`. (Ten others in the same state, such as
+rutabaga, shallots, tomatillos and prune juice, take their energy from the SR
+Legacy row they replace: rule 7 below.)
 
 ## Handling foods that appear in more than one dataset
 
 - Every row is kept, and `data_type` is preserved (`foundation_food`,
   `sr_legacy_food`, `survey_fndds_food`). `data_type_rank` is 1, 2 or 3 in
   that order. Sort search results by `data_type_rank`, then by relevance.
-- 212 SR Legacy rows share an NDB number with a Foundation food, meaning they
-  describe the same commodity analysed earlier. These rows have
-  `superseded_by_fdc_id` set to the Foundation `fdc_id`. They are kept
-  because Foundation rows often have gaps. For example, only 20% of Foundation
-  foods report vitamin D, compared with 66% of SR Legacy foods. The UI can
-  hide superseded rows by default, or show them as "older USDA analysis".
-- Values are never merged across datasets. The one exception is the
-  calories fallback described below, and it is recorded.
+- 262 SR Legacy rows describe the same food as a Foundation food, analysed
+  earlier. These rows have `superseded_by_fdc_id` set to the Foundation
+  `fdc_id` (`meta.superseded_link_counts` says how each was linked):
+  - **212 share an NDB number** with the Foundation food. USDA kept the
+    number when it re-analysed these foods.
+  - **50 are linked by a reviewed crosswalk**,
+    [`scripts/data/foundation_sr_crosswalk.csv`](../scripts/data/foundation_sr_crosswalk.csv).
+    USDA gave these Foundation foods a new NDB number (100xxx), so the NDB
+    match can't find their SR twin (for example "Fish, cod, Atlantic, wild
+    caught, raw" and "Fish, cod, Atlantic, raw"). Each row names both foods
+    and says why they are the same item.
+- A pair goes in the crosswalk only when it is **the exact same item**: same
+  commodity, species and variety, same part or cut and trim, same state (raw,
+  cooked and how, canned, dried, puffed), same fat level, salt and
+  enrichment. Labelling differences don't count against a pair: "wild caught"
+  or "farm raised", "frozen" vs "(may have been previously frozen)",
+  "organic", a brand name for the same food (KAMUT khorasan), where the samples
+  came from ("restaurant"), "from concentrate" for single-strength juice,
+  "raw" vs SR's "dried" for shelled nuts, and edible-portion wording that is
+  SR's edible portion anyway ("peeled" rutabaga, "dehusked" tomatillos). A
+  variety or colour named on one side only is accepted only when the SR entry
+  plainly is that variety (SR raw asparagus is green; SR's plain radish is the
+  red one). An SR row maps to at most one Foundation food and is never also
+  linked by NDB number. The 135 near-misses that were rejected, each with the
+  reason, are in
+  [`foundation_sr_crosswalk_rejected.csv`](../scripts/data/foundation_sr_crosswalk_rejected.csv)
+  (for example different beef trim, onion colour, potatoes with or without
+  skin, blue swimming crab vs blue crab). The crosswalk is tied to the pinned
+  Foundation release: a pair that names a food the release doesn't have stops
+  the build, and `verify_data_integrity.py` checks every pair against the
+  database.
+- Superseded rows are kept because Foundation rows often have gaps (only 20%
+  of Foundation foods report vitamin D, compared with 66% of SR Legacy
+  foods). The site hides them from search, categories, rankings and the
+  sitemap, their page points to the Foundation food, and the Foundation food's
+  missing values are filled from them at run time and marked † (see
+  `lib/nutrient-fill.ts`). A value neither entry has stays NULL.
+- Values are never merged across datasets in the database. The one exception
+  is the calories fallback described below, and it is recorded.
 - `fdc_id` is the stable key across rebuilds. `foods.id` is reassigned on
   every build, in the order data_type_rank, description, fdc_id.
 
@@ -67,7 +100,7 @@ New columns are added after them.
 | `calories_source` | Which energy rule produced `calories` (see below). |
 | `data_type_rank` | 1 = Foundation, 2 = SR Legacy, 3 = FNDDS. |
 | `ndb_number`, `fndds_food_code` | Source identifiers. |
-| `superseded_by_fdc_id` | Set on SR Legacy rows that have a Foundation counterpart. |
+| `superseded_by_fdc_id` | Set on SR Legacy rows that a Foundation food replaces: same NDB number, or a pair in `scripts/data/foundation_sr_crosswalk.csv`. |
 | `publication_date`, `source_release` | Provenance. |
 
 Other tables:
@@ -88,6 +121,8 @@ Other tables:
   - `sources` (JSON: name, release, URL, sha256)
   - `count_<data_type>`, `foods_count`, `serving_sizes_count`
   - `calories_source_counts`, `nutrient_coverage_pct`, `excluded_foods_no_energy`
+  - `superseded_link_counts` (`ndb_number`, `crosswalk`) and
+    `foundation_sr_crosswalk` (file, sha256 and number of pairs used)
   - `duplicate_policy` and other notes
 - `value_provenance(food_id, nutrient_column, source)` has one row for each
   value that did not come from the column's primary nutrient id, such as
@@ -152,6 +187,11 @@ foods and folate for 42%.
 6. `sr_legacy_ndb_match_1008`: Foundation foods only. Uses the energy (1008)
    of the SR Legacy food with the same NDB number (15 foods, e.g. butter,
    oils, raisins, prunes, salt).
+7. `sr_legacy_crosswalk_1008`: Foundation foods only. Uses the energy (1008)
+   of the SR Legacy food the crosswalk links it to, the first one listed if
+   there are several (10 foods: rutabaga, shallots, tomatillos, green onion,
+   spaghetti squash, rhubarb, mayonnaise, and prune, tart cherry and
+   pomegranate juice).
 
 If none of these apply, the food is excluded.
 

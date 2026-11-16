@@ -145,6 +145,10 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
       fallback on Bedrock. HEIC photos are rejected outside Safari (the error now says to send a JPEG).
 - [ ] **Desktop app** shows "Sign in", which leads to "isn't available" in a packaged build. Needs a build flag.
 - [ ] **Food pages** have no CDN cache headers, so every view hits Lambda. Add CloudFront caching before launch.
+- [ ] **Links fetch ahead only on hover or keyboard focus** (2026-11-15, `lib/link-intent.ts`; home page 57 → 1 request).
+      Watch on the live site: a phone tap on Plan, Recipes, methodology or a policy shows no skeleton, so a Lambda
+      cold start would leave the old page up for a second (add skeletons if so); and each link a mouse passes over
+      sends 2 requests (if WebThrottles fires again, wait for the mouse to rest ~100 ms before fetching).
 - [ ] **Not tested on real services:** DynamoDB (emulator only), SES email, Google sign-in, CloudFront.
 - [ ] Rebuild the contaminant extract once with `--download`. The PDP extract step last ran before a small refactor of
       its `main()`.

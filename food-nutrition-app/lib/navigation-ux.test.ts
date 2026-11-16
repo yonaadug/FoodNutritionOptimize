@@ -120,7 +120,7 @@ describe('skeletonFor', () => {
         assert.equal(skeletonFor('/account/history'), 'account');
         assert.equal(skeletonFor('/account/sign-in?next=/plan'), 'account');
     });
-    it('has none for pages built ahead of time, which open at once', () => {
+    it('has none for pages built ahead of time, which arrive in one quick trip', () => {
         for (const p of ['/plan', '/plan#goals', '/recipes', '/recipes?id=abc', '/methodology', '/accounts']) {
             assert.equal(skeletonFor(p), null, p);
         }

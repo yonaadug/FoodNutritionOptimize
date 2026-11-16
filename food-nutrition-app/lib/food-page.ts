@@ -406,7 +406,7 @@ export interface RelatedCandidate {
 }
 
 export interface RelatedResult<T extends RelatedCandidate> {
-    /** The same food in another USDA dataset (same NDB number). */
+    /** The same food in another USDA dataset (same NDB number, or linked as its older entry). */
     equivalents: T[];
     /** Other forms of the same food: cooked vs raw, sizes, parts, varieties. */
     forms: T[];
@@ -466,7 +466,8 @@ export function nutrientProfileSimilarity(a: object, b: object): number | null {
 
 /**
  * Rank candidate foods against `food`.
- *  - equivalents: same NDB number (the Foundation and SR Legacy records of one food)
+ *  - equivalents: the Foundation and SR Legacy records of one food: same NDB number, or
+ *    one supersedes the other (USDA gave some Foundation foods a new NDB number)
  *  - forms: same base name ("Egg, whole, cooked, fried" for "Egg, whole, raw"), ordered
  *    by how much of the rest of the description they share, then NDB proximity
  *  - similar: other foods in the same category, by nutrient-profile similarity, at
@@ -491,7 +492,9 @@ export function rankRelated<T extends RelatedCandidate>(food: RelatedCandidate, 
 
     for (const c of candidates) {
         if (c.id === food.id || c.fdc_id === food.fdc_id) continue;
-        if (food.ndb_number && c.ndb_number === food.ndb_number) { equivalents.push(c); continue; }
+        // Linked by the database build: by NDB number, or by the reviewed crosswalk when USDA renumbered the food.
+        const linked = c.superseded_by_fdc_id === food.fdc_id || (!!food.superseded_by_fdc_id && food.superseded_by_fdc_id === c.fdc_id);
+        if (linked || (food.ndb_number && c.ndb_number === food.ndb_number)) { equivalents.push(c); continue; }
         if (c.superseded_by_fdc_id && (c.superseded_by_fdc_id === food.fdc_id || fdcIds.has(c.superseded_by_fdc_id))) continue;
         const key = c.description.toLowerCase();
         if (seen.has(key)) continue;

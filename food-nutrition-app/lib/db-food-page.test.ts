@@ -25,6 +25,10 @@ const ROWS: Row[] = [
     [7, 9003, 'Fish, salmon, sockeye, raw', SR, 'Finfish', 15085, null, 2],
     [8, 9004, 'Salmon, sockeye, canned', SR, 'Finfish', 15253, null, 2],
     [9, 9005, 'Tuna salad', 'survey_fndds_food', null, null, null, 3],
+    // Linked by the crosswalk (USDA renumbered the Foundation food): another name, another
+    // category and outside the NDB neighbourhood, so only the link itself finds the pair.
+    [10, 747693, 'Ketchup, restaurant', FOUNDATION, 'Vegetables', 11966, null, 1],
+    [11, 168556, 'Catsup', SR, 'Condiments', 11935, 747693, 2],
 ];
 
 let tmp: string;
@@ -89,6 +93,12 @@ describe('getRelatedFoods', () => {
         const food = getFoodByFdcIdIn(conn, 9003)!;
         assert.deepEqual(getRelatedFoodsIn(conn, food).forms.map(f => f.fdc_id), [9004]);
     });
+    it('finds the older entry linked without a shared NDB number, and the replacement from it', () => {
+        assert.deepEqual(getRelatedFoodsIn(conn, getFoodByFdcIdIn(conn, 747693)!).equivalents.map(f => f.fdc_id), [168556]);
+        const fromOld = getRelatedFoodsIn(conn, getFoodByFdcIdIn(conn, 168556)!);
+        assert.deepEqual(fromOld.equivalents.map(f => f.fdc_id), [747693]);
+        assert.deepEqual([...fromOld.forms, ...fromOld.similar], []);
+    });
     it('handles foods with no NDB number or category', () => {
         const r = getRelatedFoodsIn(conn, getFoodByFdcIdIn(conn, 9005)!);
         assert.deepEqual(r, { equivalents: [], forms: [], similar: [] });
@@ -149,7 +159,7 @@ describe('rankCandidates: plain forms', () => {
 describe('getFoodRefs', () => {
     it('lists every food page worth indexing, leaving out superseded records', () => {
         const refs = getFoodRefsIn(conn);
-        assert.equal(refs.length, ROWS.length - 1);
-        assert.ok(!refs.some(r => r.fdc_id === 171287));
+        assert.equal(refs.length, ROWS.filter(r => r[6] === null).length);
+        assert.ok(!refs.some(r => r.fdc_id === 171287 || r.fdc_id === 168556));
     });
 });

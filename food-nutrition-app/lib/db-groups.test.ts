@@ -34,7 +34,7 @@ const ROWS: [number, number, string, string, number][] = [
 let tmp: string;
 const conns: Record<'fts' | 'like', ReturnType<typeof openDatabase>> = {} as never;
 
-function build(file: string, fts: boolean) {
+function build(file: string, fts: boolean, extraSql = '') {
     const w = new Database(file);
     const cols = NUTRIENT_COLUMNS.map(c => `${c} REAL`).join(', ');
     w.exec(`CREATE TABLE foods (id INTEGER PRIMARY KEY, fdc_id INTEGER UNIQUE, description TEXT, data_type TEXT,
@@ -46,6 +46,7 @@ function build(file: string, fts: boolean) {
     for (const [id, fdc, d, t, kcal] of ROWS) ins.run(id, fdc, d, t, t === 'foundation_food' ? 1 : t === 'sr_legacy_food' ? 2 : 3, kcal);
     w.exec(`UPDATE foods SET superseded_by_fdc_id = 2006 WHERE id = 17;
         INSERT INTO serving_sizes (food_id, label, weight_g) VALUES (2, '1 fillet', 180), (6, '1 fillet', 180);`);
+    if (extraSql) w.exec(extraSql);
     if (fts) {
         w.exec(`CREATE VIRTUAL TABLE foods_fts USING fts5(description, food_category, content='foods', content_rowid='id');
             INSERT INTO foods_fts(foods_fts) VALUES('rebuild');`);
@@ -165,6 +166,47 @@ describe('getFoodTypes (the food page Type switcher)', () => {
     });
 });
 
+describe('older entries linked by the crosswalk (USDA renumbered the Foundation food)', () => {
+    // build_db links these through scripts/data/foundation_sr_crosswalk.csv: no shared NDB number,
+    // but "Fish, cod, Atlantic, raw" is "Fish, cod, Atlantic, wild caught, raw" (and Pacific likewise).
+    let conn: ReturnType<typeof openDatabase>;
+    before(() => {
+        conn = build(path.join(tmp, 'linked.db'), true, `
+            UPDATE foods SET superseded_by_fdc_id = 2002, vitamin_d_ug = 0.9, vitamin_b12_ug = 0.91 WHERE id = 6;
+            UPDATE foods SET superseded_by_fdc_id = 2001, vitamin_d_ug = 0.5 WHERE id = 8;
+            UPDATE foods SET vitamin_b12_ug = 1.2 WHERE id = 2;`);
+    });
+    after(() => conn.db.close());
+
+    it('hides them from grouped search, the type list and plain search', () => {
+        const cod = searchFoodGroupsIn(conn, 'cod', 1, 20).groups.find(g => g.key === 'cod')!;
+        assert.equal(cod.count, 6);
+        assert.ok(!cod.types.some(t => [6, 8, 17].includes(t.id)), cod.types.map(t => t.label).join(' | '));
+        assert.deepEqual(searchGroupTypesIn(conn, 'cod', 'cod').map(t => t.id).sort((a, b) => a - b), [1, 2, 3, 4, 5, 7]);
+        assert.ok(!getFoodTypesIn(conn, getFoodByFdcIdIn(conn, 2002)!).some(t => t.id === 6));
+        assert.ok(!searchFoodsIn(conn, 'cod raw', 1, 20).foods.some(f => f.id === 6 || f.id === 8));
+    });
+
+    it('fills only the Foundation food’s gaps from them, and says so', () => {
+        const atlantic = getFoodByFdcIdIn(conn, 2002)!;
+        assert.equal(atlantic.vitamin_d_ug, 0.9);
+        assert.equal(atlantic.filledFrom?.vitamin_d_ug, 2006);
+        assert.equal(atlantic.vitamin_b12_ug, 1.2, 'a value it has is kept');
+        assert.equal(atlantic.filledFrom?.vitamin_b12_ug, undefined);
+        assert.equal(atlantic.calories, 71);
+        assert.equal(getFoodByFdcIdIn(conn, 2001)!.filledFrom?.vitamin_d_ug, 2008);
+        // A nutrient neither record has stays empty.
+        assert.equal(atlantic.vitamin_k_ug, null);
+    });
+
+    it('keeps the older entry itself as USDA published it, pointing at its replacement', () => {
+        const old = getFoodByFdcIdIn(conn, 2006)!;
+        assert.equal(old.superseded_by_fdc_id, 2002);
+        assert.equal(old.calories, 82);
+        assert.equal(old.filledFrom, undefined);
+    });
+});
+
 const DB_PATH = path.join(import.meta.dirname, '..', 'nutrition.db');
 const hasDb = fs.existsSync(DB_PATH) && fs.statSync(DB_PATH).size > 1_000_000;
 
@@ -177,7 +219,10 @@ describe('grouped search on the real database', { skip: !hasDb && 'nutrition.db 
     it('cod: one row with every cod entry, codfish dishes separate', () => {
         const g = groups('cod');
         assert.equal(g[0].name, 'Cod');
-        assert.equal(g[0].count, 9);
+        assert.equal(g[0].count, 7);
+        // The SR Legacy raw cods are the Foundation ones (crosswalk links), so they aren't listed twice.
+        assert.ok(!g[0].types.some(t => t.description === 'Fish, cod, Atlantic, raw'), g[0].types.map(t => t.label).join(' | '));
+        assert.ok(!g[0].types.some(t => t.description.startsWith('Fish, cod, Pacific, raw')));
         assert.equal(g[0].food.description, 'Fish, cod, Atlantic, wild caught, raw');
         assert.ok(g.slice(1).some(x => /^Codfish salad/.test(x.food.description)));
         assert.equal(g.filter(x => x.key === 'cod').length, 1);
@@ -264,7 +309,7 @@ describe('grouped search on the real database', { skip: !hasDb && 'nutrition.db 
     it('GET /api/search?group=1 returns groups; without it, foods as before', async () => {
         const grouped = await (await searchRoute(new NextRequest('http://localhost/api/search?q=cod&group=1&limit=5'))).json();
         assert.equal(grouped.groups[0].name, 'Cod');
-        assert.equal(grouped.groups[0].count, 9);
+        assert.equal(grouped.groups[0].count, 7);
         assert.ok(grouped.total < grouped.entries);
         const flat = await (await searchRoute(new NextRequest('http://localhost/api/search?q=cod&limit=5'))).json();
         assert.equal(flat.groups, undefined);

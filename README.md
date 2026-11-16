@@ -14,7 +14,7 @@ NutritionDictionary lets you look up the nutrients in any food, see what contami
 
 ## What Does This App Do?
 
-- **Foods** (`/`): search 9,435 USDA foods, or browse by category or nutrient. Each food page has a serving selector, a Nutrition Facts label and a full nutrient table.
+- **Foods** (`/`): search 9,445 USDA foods, or browse by category or nutrient. Each food page has a serving selector, a Nutrition Facts label and a full nutrient table.
 - **Contaminants** (on each food page): meters for heavy metals, pesticide residues and microplastics in the serving you chose, with sources. Foods with no testing say so instead of showing zero. See [how they're worked out](docs/CONTAMINANT_DATA.md).
 - **Plan** (`/plan`): pick foods you'd happily eat and choose your goals. It works out how much of each to eat, in grams and everyday servings.
 - **Recipes** (`/recipes`): paste a recipe, add a photo or start blank, check the ingredients, and get nutrition per serving. Add a serving to your plan. AI reading needs a provider switched on; otherwise it runs in a clearly labelled demo mode. See [RECIPES.md](docs/RECIPES.md).
@@ -200,8 +200,8 @@ Each build runs the web app's production build first. Installers end up in `elec
 ## Data Setup (Optional)
 
 The app ships with a pre-built database (`food-nutrition-app/nutrition.db`, Git LFS, ~7 MB) of
-9,435 foods from USDA FoodData Central:
-- 389 Foundation Foods (2026-10 release)
+9,445 foods from USDA FoodData Central:
+- 399 Foundation Foods (2026-10 release)
 - 7,448 SR Legacy foods
 - 1,598 FNDDS mixed dishes
 
@@ -252,7 +252,7 @@ FoodNutritionOptimize/
 │   │   ├── optimizer.ts         # Linear programming model, diagnostics, warnings
 │   │   ├── nutrient-defaults.ts # FDA Daily Values and upper limits (cited)
 │   │   └── api.ts               # Request validation and JSON errors
-│   ├── nutrition.db             # SQLite database (9,435 USDA foods, Git LFS)
+│   ├── nutrition.db             # SQLite database (9,445 USDA foods, Git LFS)
 │   └── package.json
 │
 ├── electron-app/                # Electron desktop wrapper

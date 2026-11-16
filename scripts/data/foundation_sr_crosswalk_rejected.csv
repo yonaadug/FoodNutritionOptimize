@@ -1,0 +1,136 @@
+foundation_fdc_id,sr_fdc_id,foundation_description,sr_description,reason
+333008,174963,"Cookies, oatmeal, soft, with raisins","Cookies, oatmeal, with raisins",Foundation is the soft type; SR doesn't say soft and has a separate soft-type oatmeal cookie (172726)
+2646174,169495,"Beef, chuck, roast, boneless, choice, raw","Beef, chuck, blade roast, separable lean and fat, trimmed to 1/8"" fat, choice, raw","SR beef names a sub-cut, trim level and lean/fat separation; Foundation names none, so no SR entry is the same item"
+2646175,169433,"Beef, flank, steak, boneless, choice, raw","Beef, flank, steak, separable lean and fat, trimmed to 0"" fat, choice, raw","Trim and lean/fat separation not stated (SR flank is 'trimmed to 0"" fat')"
+2646172,173393,"Beef, ribeye, steak, boneless, choice, raw","Beef, rib eye steak/roast, boneless, lip-on, separable lean and fat, trimmed to 1/8"" fat, choice, raw",Trim and lip-on/off not stated (macros match this SR ribeye closely: 260 vs 253 kcal)
+2646173,173980,"Beef, round, top round, boneless, choice, raw","Beef, round, top round steak, boneless, separable lean and fat, trimmed to 0"" fat, choice, raw","Steak or roast, trim and lean/fat separation not stated"
+2727572,173116,"Beef, short loin (NY strip steak), raw","Beef, short loin, top loin, steak, separable lean only, trimmed to 1/8"" fat, choice, raw",SR has top loin steaks by trim and lean/fat; Foundation states neither
+2727574,168728,"Beef, top sirloin steak, raw","Beef, top sirloin, steak, separable lean and fat, trimmed to 1/8"" fat, choice, raw",Trim and lean/fat separation not stated
+2727573,169545,"Beef, tenderloin steak, raw","Beef, tenderloin, steak, separable lean and fat, trimmed to 1/8"" fat, choice, raw",Trim and lean/fat separation not stated (Foundation fat 6.5 g sits between SR lean-only and lean-and-fat)
+2257045,174832,"Almond milk, unsweetened, plain, refrigerated","Beverages, almond milk, unsweetened, shelf stable","Refrigerated vs shelf-stable; this SR row already belongs to Foundation 'Almond milk, unsweetened, plain, shelf stable'"
+2779262,170682,"Amaranth, flour, pre-gelatinized, organic","Amaranth grain, uncooked",Pre-gelatinized flour vs uncooked grain
+2779249,170682,"Amaranth, puffed, organic","Amaranth grain, uncooked",Puffed vs uncooked grain
+2779261,168898,"Brown rice, flour, coarse ground, pre-gelatinized, organic","Rice flour, brown","Pre-gelatinized coarse flour; this SR row already belongs to Foundation 'Flour, rice, brown'"
+2779267,174288,"Chickpea flour, pre-gelatinized",Chickpea flour (besan),Pre-gelatinized vs plain chickpea flour
+2779255,173756,"Chickpeas, puffed","Chickpeas (garbanzo beans, bengal gram), mature seeds, raw",Puffed vs raw chickpeas
+2710835,169696,"Corn flour, masa harina, white or yellow, dry, raw","Corn flour, masa, unenriched, white","SR splits masa flour by colour and enrichment (white unenriched/enriched, yellow enriched); Foundation is 'white or yellow' with enrichment unstated"
+2779266,169695,"Corn, flour, pre-gelatinized","Corn flour, yellow, degermed, unenriched",Pre-gelatinized vs plain corn flour
+790276,168867,"Flour, corn, yellow, fine meal, enriched","Cornmeal, degermed, enriched, yellow",'Fine meal' sits between SR corn flour and cornmeal entries; neither is clearly the same item
+2261421,169741,"Flour, oat, whole grain","Oat flour, partially debranned",Whole-grain vs partially debranned oat flour
+1104913,169761,"Flour, pastry, unenriched, unbleached","Wheat flour, white, all-purpose, unenriched",Pastry flour (lower protein) is not all-purpose flour; SR has no pastry flour
+1104867,169714,"Flour, rice, glutinous","Rice flour, white, unenriched","Glutinous (sweet) rice flour is a different rice; this SR row already belongs to Foundation 'Flour, rice, white, unenriched'"
+2512375,168886,"Flour, rye","Rye flour, medium","SR splits rye flour into dark, medium and light; Foundation doesn't say which"
+2003588,168933,"Flour, semolina, coarse and semi-coarse","Semolina, unenriched","SR splits semolina by enrichment (168933 unenriched, 169715 enriched), Foundation by grind; no one-to-one match"
+2003589,169715,"Flour, semolina, fine","Semolina, enriched","SR splits semolina by enrichment, Foundation by grind; no one-to-one match"
+2512373,168943,"Flour, sorghum","Sorghum flour, whole-grain",Refinement not stated; SR has whole-grain (168943) and refined (173262) sorghum flour
+2779245,169743,"Kamut, puffed, organic","Wheat, KAMUT khorasan, uncooked",Puffed vs uncooked grain
+2779244,169743,"Khorasan, puffed, organic","Wheat, KAMUT khorasan, uncooked","Puffed vs uncooked grain (the SR row is linked to Foundation 'Khorasan, grain, dry, raw')"
+2779265,172023,"Millet, flour, pre-gelatinized",Millet flour,Pre-gelatinized vs plain millet flour
+2779260,172023,"Millet, flour, pre-gelatinized, organic",Millet flour,Pre-gelatinized vs plain millet flour
+2779243,167724,"Millet, puffed, organic","Millet, puffed","Same food, but this SR row already belongs to Foundation 'Millet, puffed' (same NDB number)"
+2346397,169705,"Oats, whole grain, steel cut",Oats (Includes foods for USDA's Food Distribution Program),"Steel-cut oats; this SR row already belongs to Foundation 'Oats, whole grain, rolled, old fashioned'"
+2759000,169738,"Pasta, dry, whole grain, spaghetti","Pasta, whole-wheat, dry (Includes foods for USDA's Food Distribution Program)",'Whole grain' may mean 100% whole wheat (169738) or the 51% whole-wheat blend (168915); SR has both
+2779259,168874,"Quinoa flour, pre-gelatinized, organic","Quinoa, uncooked",Pre-gelatinized flour vs uncooked grain
+2779252,168874,"Quinoa, puffed","Quinoa, uncooked",Puffed vs uncooked grain
+2779241,168874,"Quinoa, puffed, organic","Quinoa, uncooked",Puffed vs uncooked grain
+2779250,173912,"Rice, white, puffed","Cereals ready-to-eat, rice, puffed, fortified",SR puffed rice is fortified (31.7 mg iron vs 0.5 mg)
+2710840,173262,"Sorghum flour, white, pearled, unenriched, dry, raw","Sorghum flour, refined, unenriched",Pearled vs refined sorghum flour (3.2 g vs 1.2 g fat)
+2710841,169716,"Sorghum grain, white, pearled, unenriched, dry, raw",Sorghum grain,Pearled vs whole sorghum grain
+2779264,168943,"Sorghum, flour, pre-gelatinized","Sorghum flour, whole-grain",Pre-gelatinized vs plain sorghum flour
+2779258,168943,"Sorghum, flour, pre-gelatinized, organic","Sorghum flour, whole-grain",Pre-gelatinized vs plain sorghum flour
+2779251,169716,"Sorghum, puffed",Sorghum grain,Puffed vs uncooked grain
+2779240,169716,"Sorghum, puffed, organic",Sorghum grain,Puffed vs uncooked grain
+2710842,169716,"Sorghum, whole grain, white, dry, raw",Sorghum grain,SR 'Sorghum grain' doesn't name a colour; Foundation is white sorghum (variety)
+2779254,169721,"Wheat, durum, puffed","Wheat, durum",Puffed vs uncooked grain
+2779263,169714,"White rice, flour, pre-gelatinized","Rice flour, white, unenriched",Pre-gelatinized vs plain rice flour
+2779246,168890,"Winter wheat, hard red, puffed, organic","Wheat, hard red winter",Puffed vs uncooked grain
+747429,171290,"Cheese, American, restaurant","Cheese, pasteurized process, American, without added vitamin D",Vitamin D fortification not stated; SR has fortified (already linked to a Foundation food) and unfortified American cheese
+2647441,173437,"Cheese, oaxaca, solid","Cheese, mexican, queso asadero",Oaxaca and asadero are different cheeses; SR has no Oaxaca cheese
+2259795,171247,"Cheese, parmesan, grated, refrigerated","Cheese, parmesan, grated","Refrigerated vs shelf-stable grated parmesan; this SR row already belongs to Foundation 'Cheese, parmesan, grated'"
+2647439,171289,"Cheese, pasteurized process cheese food or product, American, singles","Cheese product, pasteurized process, American, vitamin D fortified","'Cheese food or product' spans two SR types (cheese product 171289, cheese food 171252); fortification not stated"
+1750351,171413,"Oil, olive, extra light","Oil, olive, salad or cooking",Extra light (refined) olive oil vs SR's generic olive oil
+748608,171413,"Oil, olive, extra virgin","Oil, olive, salad or cooking",Extra virgin vs SR's generic olive oil
+1750349,171025,"Oil, sunflower","Oil, sunflower, linoleic, (approx. 65%)","SR splits sunflower oil by fatty-acid type (linoleic, mid-oleic, high-oleic); Foundation doesn't say"
+2747652,174183,"Anchovies, canned in olive oil, with salt, drained","Fish, anchovy, european, canned in oil, drained solids",SR is European anchovy; Foundation doesn't name the species (canned anchovies are often Argentine or Peruvian)
+2684446,171966,"Crustaceans, crab, blue swimming, lump, pasteurized, refrigerated","Crustaceans, crab, blue, canned",Blue swimming crab (Portunus) is a different species from blue crab (Callinectes)
+2684443,175179,"Crustaceans, shrimp, farm raised, raw","Crustaceans, shrimp, raw",Foundation's 475 mg sodium suggests moisture-retaining additives; SR has separate shrimp with (174210) and without (175179) them
+2747657,174208,"Lobster, tail only, frozen, wild caught","Crustaceans, lobster, northern, raw","Species not stated: lobster tails are often spiny lobster (174211), SR also has northern lobster (174208)"
+2747666,174220,"Scallops, bay, Patagonian, frozen, wild caught","Mollusks, scallop, mixed species, raw",SR scallop is mixed bay and sea species; Foundation has bay and sea separately
+2747667,174220,"Scallops, sea, frozen, wild caught","Mollusks, scallop, mixed species, raw",SR scallop is mixed bay and sea species; Foundation has bay and sea separately
+2747668,175142,"Sea bass, Chilean, frozen, wild caught","Fish, sea bass, mixed species, raw","Chilean sea bass is Patagonian toothfish, a different fish (16.6 g fat vs 2 g)"
+2747670,171969,"Snow crab, legs only, frozen","Crustaceans, crab, queen, raw","Snow crab is queen crab, but frozen legs are usually sold cooked and Foundation doesn't say raw (171969) or cooked (172008)"
+2747671,174223,"Squid (calamari), frozen, tubes only","Mollusks, squid, mixed species, raw","Composition far apart (8.8 g vs 15.6 g protein, 89% vs 79% water): likely water added to the tubes"
+2710824,171706,"Avocado, Hass, peeled, raw","Avocados, raw, California","SR avocados are split by origin (California, Florida, all varieties), not variety; fat 20 g vs 15 g"
+1105073,173944,"Bananas, overripe, raw","Bananas, raw","Overripe vs ripe; this SR row already belongs to Foundation 'Bananas, ripe and slightly ripe, raw'"
+2003593,173041,"Grape juice, white, with added vitamin C, from concentrate, shelf stable","Grape juice, canned or bottled, unsweetened, with added ascorbic acid",White grape juice; this SR row already belongs to Foundation purple grape juice
+2758977,174673,"Grapefruit, raw","Grapefruit, raw, pink and red, all areas",Grapefruit colour not stated; SR splits pink/red (174673) and white (174676)
+2346413,174683,"Grapes, green, seedless, raw","Grapes, red or green (European type, such as Thompson seedless), raw",SR row covers red and green grapes together; it can't belong to only the green ones
+2346412,174683,"Grapes, red, seedless, raw","Grapes, red or green (European type, such as Thompson seedless), raw",SR row covers red and green grapes together; it can't belong to only the red ones
+2710831,168153,"Kiwifruit (kiwi), green, peeled, raw","Kiwifruit, green, raw","Same food, but this SR row already belongs to Foundation 'Kiwifruit, green, raw' (same NDB number)"
+2710832,169105,"Mandarin, seedless, peeled, raw","Tangerines, (mandarin oranges), raw","Seedless mandarin could be a clementine, which is its own SR entry (168195)"
+2710834,169910,"Mango, Ataulfo, peeled, raw","Mangos, raw",SR mango covers all varieties; Foundation has Ataulfo and Tommy Atkins separately
+2710833,169910,"Mango, Tommy Atkins, peeled, raw","Mangos, raw",SR mango covers all varieties; Foundation has Ataulfo and Tommy Atkins separately
+332791,169096,"Olives, green, Manzanilla, stuffed with pimiento","Olives, pickled, canned or bottled, green",Stuffed with pimiento vs plain green olives
+2710843,169130,"Plantains, overripe, raw","Plantains, yellow, raw","Overripe vs ripe; this SR row already belongs to Foundation 'Plantains, ripe, raw'"
+2710837,169949,"Plum, black, with skin, raw","Plums, raw",SR plums don't name a variety; Foundation is black plum
+2747675,167765,"Watermelon, seedless, flesh only, raw","Watermelon, raw",SR watermelon doesn't say seedless (variety); otherwise the same flesh
+2747676,167765,"Watermelon, seedless, rind only, raw","Watermelon, raw",Rind vs flesh
+2727571,175293,"Bison, ground, raw","Bison, ground, grass-fed, raw","Fat level differs from both SR ground bison (8.9 g vs 7.2 g grass-fed, 15.9 g generic 174421)"
+2644285,175188,"Beans, black, canned, sodium added, drained and rinsed","Beans, black turtle, mature seeds, canned",SR has no drained-and-rinsed canned black beans
+2644281,175202,"Beans, cannellini, dry","Beans, white, mature seeds, raw",SR 'white beans' don't name a type; cannellini are white kidney beans
+747444,173734,"Beans, Dry, Black (0% moisture)","Beans, black, mature seeds, raw",0% moisture (dry-matter) basis vs beans as sold (11% water)
+747433,,"Beans, Dry, Brown (0% moisture)",,0% moisture (dry-matter) basis; SR has no brown beans
+747436,,"Beans, Dry, Carioca (0% moisture)",,0% moisture (dry-matter) basis; SR has no carioca beans
+747437,175189,"Beans, Dry, Cranberry (0% moisture)","Beans, cranberry (roman), mature seeds, raw",0% moisture (dry-matter) basis vs beans as sold
+747440,173744,"Beans, Dry, Dark Red Kidney (0% moisture)","Beans, kidney, red, mature seeds, raw",0% moisture (dry-matter) basis vs beans as sold; SR doesn't split dark and light red kidney beans
+747432,,"Beans, Dry, Flor de Mayo (0% moisture)",,0% moisture (dry-matter) basis; SR has no Flor de Mayo beans
+747446,175190,"Beans, Dry, Great Northern (0% moisture)","Beans, great northern, mature seeds, raw (Includes foods for USDA's Food Distribution Program)",0% moisture (dry-matter) basis vs beans as sold
+747438,173744,"Beans, Dry, Light Red Kidney (0% moisture)","Beans, kidney, red, mature seeds, raw",0% moisture (dry-matter) basis vs beans as sold; SR doesn't split dark and light red kidney beans
+747435,,"Beans, Dry, Light Tan (0% moisture)",,0% moisture (dry-matter) basis; SR has no light tan beans
+747430,,"Beans, Dry, Medium Red (0% moisture)",,0% moisture (dry-matter) basis; SR has no medium red beans
+747441,173745,"Beans, Dry, Navy (0% moisture)","Beans, navy, mature seeds, raw",0% moisture (dry-matter) basis vs beans as sold
+747439,173748,"Beans, Dry, Pink (0% moisture)","Beans, pink, mature seeds, raw",0% moisture (dry-matter) basis vs beans as sold
+747445,175199,"Beans, Dry, Pinto (0% moisture)","Beans, pinto, mature seeds, raw (Includes foods for USDA's Food Distribution Program)",0% moisture (dry-matter) basis vs beans as sold
+747431,,"Beans, Dry, Red (0% moisture)",,0% moisture (dry-matter) basis; SR has no generic red beans
+747443,,"Beans, Dry, Small Red (0% moisture)",,0% moisture (dry-matter) basis; SR has no small red beans
+747442,173749,"Beans, Dry, Small White (0% moisture)","Beans, small white, mature seeds, raw",0% moisture (dry-matter) basis vs beans as sold
+747434,,"Beans, Dry, Tan (0% moisture)",,0% moisture (dry-matter) basis; SR has no tan beans
+2644294,175192,"Beans, great northern, canned, sodium added, drained and rinsed","Beans, great northern, mature seeds, canned",SR canned great northern beans aren't rinsed (370 mg vs 223 mg sodium)
+2644289,175243,"Beans, kidney, dark red, canned, sodium added, sugar added, drained and rinsed","Beans, kidney, red, mature seeds, canned, drained solids, rinsed in tap water",SR doesn't split dark and light red kidney beans; one SR row can't belong to both Foundation foods
+2644290,175243,"Beans, kidney, light red, canned, sodium added, sugar added, drained and rinsed","Beans, kidney, red, mature seeds, canned, drained solids, rinsed in tap water",SR doesn't split dark and light red kidney beans; one SR row can't belong to both Foundation foods
+2644286,173747,"Beans, navy, canned, sodium added, drained and rinsed","Beans, navy, mature seeds, canned",SR canned navy beans aren't rinsed (336 mg vs 190 mg sodium)
+2644293,173760,"Blackeye pea, canned, sodium added, drained and rinsed","Cowpeas, common (blackeyes, crowder, southern), mature seeds, canned, plain","SR canned cowpeas are solids and liquids, Foundation drained and rinsed"
+2758984,172438,"Refried beans, canned (pinto)","Refried beans, canned, traditional style","Style not stated: SR has traditional (172438), reduced-sodium traditional (174298), vegetarian (already linked) and fat-free refried beans"
+2257044,172456,"Soy milk, sweetened, plain, refrigerated","Soymilk, original and vanilla, with added calcium, vitamins A and D",SR combines original and vanilla soymilk; Foundation is plain
+2262073,170191,"Sesame butter, creamy","Seeds, sesame butter, paste",Ambiguous between SR sesame paste (170191) and the tahini types
+746952,173864,"Ham, sliced, restaurant","Ham, sliced, regular (approximately 11% fat)",Fat 3.7 g vs 8.8 g; SR is regular (11% fat) ham
+2727576,167812,"Pork, belly, with skin, raw","Pork, fresh, belly, raw",SR belly doesn't say with skin; fat 36 g vs 53 g
+2727575,168238,"Pork, chop, center cut, raw","Pork, fresh, loin, center loin (chops), bone-in, separable lean and fat, raw","Bone and lean/fat separation not stated (SR center loin chops come bone-in/boneless, lean only/lean and fat)"
+749420,168322,"Pork, cured, bacon, cooked, restaurant","Pork, cured, bacon, pre-sliced, cooked, pan-fried","Cooking method not stated (SR has pan-fried 168322, baked 167914, microwaved 168321)"
+2646168,168314,"Pork, loin, boneless, raw","Pork, fresh, loin, top loin (roasts), boneless, separable lean and fat, raw","Loin sub-cut not stated (SR has top loin, center loin, sirloin, blade)"
+2758992,171637,"Bologna, classic","Bologna, meat and poultry","Meat not stated (SR bologna is beef, pork, turkey, beef and pork, or meat and poultry)"
+2759004,173874,"Lunchmeat, chicken breast, sliced","Chicken breast, deli, rotisserie seasoned, sliced, prepackaged","SR chicken-breast lunchmeats are flavoured (rotisserie, mesquite) or fat-free"
+2759002,173863,"Lunchmeat, ham, black forest, sliced","Ham, sliced, pre-packaged, deli meat (96%fat free, water added)",Black Forest ham; this SR row already belongs to a Foundation deli ham
+2759001,172941,"Lunchmeat, turkey, oven roasted, sliced","Turkey breast, sliced, prepackaged",Foundation doesn't say breast; SR doesn't say oven roasted
+2759005,172938,"Salami, hard, sliced","Salami, dry or hard, pork",Meat not stated (SR hard salami is pork 172938 or pork and beef 174582)
+746781,173859,"Sausage, pork, chorizo, link or ground, cooked, pan-fried","Sausage, pork, chorizo, link or ground, raw",Cooked vs raw chorizo
+2710822,169387,"Arugula, baby, raw","Arugula, raw",Baby arugula vs mature leaves
+2727583,169979,"Cabbage, napa, leaf, destemmed, raw","Cabbage, chinese (pe-tsai), raw","Napa cabbage is Chinese cabbage (pe-tsai), but 'leaf, destemmed' may be a different edible portion from SR's whole head (calcium 35 mg vs 77 mg)"
+2710826,169998,"Corn, sweet, yellow and white kernels,  fresh, raw","Corn, sweet, yellow, raw","Foundation mixes yellow and white kernels; SR splits them (169998 yellow, 168538 white)"
+2727584,169246,"Leeks, bulb and greens, root removed, raw","Leeks, (bulb and lower leaf-portion), raw",Different part: bulb and all greens vs bulb and lower leaf
+2346389,169247,"Lettuce, romaine, green, raw","Lettuce, cos or romaine, raw","This SR row already belongs to Foundation 'Lettuce, cos or romaine, raw' (same NDB number)"
+2003599,168580,"Mushroom, king oyster","Mushrooms, oyster, raw","King oyster is a different species from oyster mushroom; the SR row already belongs to Foundation 'Mushroom, oyster'"
+790577,170000,"Onions, red, raw","Onions, raw","SR onions cover all colours; three Foundation onions (red, white, yellow) can't all take it"
+1104962,170000,"Onions, white, raw","Onions, raw","SR onions cover all colours; three Foundation onions (red, white, yellow) can't all take it"
+790646,170000,"Onions, yellow, raw","Onions, raw","SR onions cover all colours; three Foundation onions (red, white, yellow) can't all take it"
+2747660,169394,"Peppers, banana or Hungarian wax, seeded, raw","Pepper, banana, raw","Foundation combines two SR entries (banana pepper 169394, Hungarian pepper 168578)"
+2747661,168576,"Peppers, jalapeno, seeded, raw","Peppers, jalapeno, raw",Seeded (seeds removed) vs whole pepper
+2747663,169395,"Peppers, serrano, seeded, raw","Peppers, serrano, raw",Seeded (seeds removed) vs whole pepper
+2346403,170026,"Potatoes, gold, without skin, raw","Potatoes, flesh and skin, raw",Without skin vs flesh and skin
+2346402,170029,"Potatoes, red, without skin, raw","Potatoes, red, flesh and skin, raw",Without skin vs flesh and skin
+2346401,170027,"Potatoes, russet, without skin, raw","Potatoes, russet, flesh and skin, raw (Includes foods for USDA's Food Distribution Program)",Without skin vs flesh and skin
+1999632,168462,"Spinach, baby","Spinach, raw","Baby vs mature spinach; this SR row already belongs to Foundation 'Spinach, mature'"
+2727578,168448,"Squash, pie pumpkin, peeled, seeded, raw","Pumpkin, raw",SR pumpkin doesn't name a variety; Foundation is pie (sugar) pumpkin
+1999634,170457,"Tomato, roma","Tomatoes, red, ripe, raw, year round average",Roma (variety) vs SR's year-round average of red tomatoes
+333281,170051,"Tomatoes, canned, red, ripe, diced","Tomatoes, red, ripe, canned, packed in tomato juice",Diced vs whole; this SR row goes to Foundation whole canned tomatoes
+321360,170457,"Tomatoes, grape, raw","Tomatoes, red, ripe, raw, year round average",Grape tomatoes vs SR's year-round average of red tomatoes

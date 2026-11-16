@@ -76,6 +76,17 @@ describe('matching on the real database', { skip: !hasDb && 'nutrition.db not av
         assert.equal(garlic.calories, raw.calories);
         assert.equal(garlic.filledFrom?.calories, undefined);
     });
+    // These SR Legacy rows are hidden now that the crosswalk links them to their Foundation twins.
+    it('finds the Foundation food when its SR Legacy twin is hidden', () => {
+        const food = (line: string) => analyzeIngredient(conn, ing(line), 'x').food!;
+        assert.equal(food('1 1/2 cups dried lentils, rinsed').description, 'Lentils, dry');
+        assert.equal(food('1 cup lentils').description, 'Lentils, dry');
+        assert.match(food('1 cup dried chickpeas').description, /^chickpeas.*dry$/i);
+        assert.match(food('3 green onions, sliced').description, /^green onion.*scallion/i);
+        assert.equal(food('1 lb chicken thighs').description, 'Chicken, thigh, boneless, skinless, raw');
+        const cod = food('1 lb cod fillets');
+        assert.equal(cod.superseded_by_fdc_id ?? null, null);
+    });
     it('a plain banana is not an overripe one', () => {
         const a = analyzeIngredient(conn, ing('2 ripe bananas'), 'x');
         assert.doesNotMatch(a.food!.description, /overripe/i);

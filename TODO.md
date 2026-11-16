@@ -8,7 +8,20 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 
 - [ ] **USDA data updates with admin approval and change tracking.** Design is pending one choice: approve on a
       page of the website (needs an admin login), or email + GitHub pull request (free, history built in).
-      Foods are matched across USDA releases by NDB number, because USDA gives updated foods new FDC IDs.
+      Foods are matched across USDA releases by NDB number, because USDA gives updated foods new FDC IDs, plus the
+      reviewed crosswalk (`scripts/data/foundation_sr_crosswalk.csv`) for Foundation foods USDA renumbered. A new
+      Foundation release needs new candidates reviewed the same way; the build stops on a pair whose food is gone.
+- [ ] **Review the Foundation ↔ SR Legacy crosswalk (owner).** 50 pairs were accepted and 135 near-misses rejected,
+      each with a reason ([docs/KEY_NUTRIENTS.md](docs/KEY_NUTRIENTS.md#handling-foods-that-appear-in-more-than-one-dataset)).
+      Rejected on one detail and worth a look: watermelon (seedless) flesh, black plum, white whole-grain sorghum,
+      pie pumpkin, napa cabbage ("leaf, destemmed"; calcium 35 vs 77 mg), canned anchovies (species unstated),
+      farm-raised shrimp (sodium suggests additives), ribeye (macros match the 1/8"-trim SR entry). Accepted but
+      close calls: halibut, snapper, Brazil nuts (fat 57 vs 67 g), boneless skinless chicken thigh (fat 7.9 vs
+      4.1 g), tart cherry and pomegranate juice. Moving a row between the two files and rebuilding is all it takes.
+      Two of USDA's own NDB links look wrong and can't be fixed through the crosswalk: Foundation "Apples, honeycrisp,
+      with skin, raw" shares an NDB number with SR "Apples, raw, golden delicious, with skin", and raw Foundation
+      "Mushroom, portabella" with SR "Mushrooms, portabella, grilled". Those SR rows are hidden and fill the
+      Foundation foods' gaps. Fixing it needs a small list of NDB links to ignore in `build_db.py`.
 - [ ] **Plus and Stripe (owner: set up the sandbox, then try it).** Built 2026-11-14 and tested with a fake Stripe client
       only; nothing has called Stripe yet ([docs/STRIPE_PLAN.md §7](docs/STRIPE_PLAN.md#7-testing-locally-no-real-money)).
       Create the product, both prices, the portal settings and a webhook in the sandbox, set `STRIPE_MODE=test` with
@@ -89,6 +102,10 @@ Feature work is specified in [docs/FEATURE_ROADMAP.md](docs/FEATURE_ROADMAP.md).
 - [ ] **Missing-data warnings show on most plans.** Foundation foods are sparse (vitamin D is reported for ~20%).
       Options: factor data completeness into search ranking, offer the equivalent SR Legacy row, or fill gaps
       from the superseded SR row with provenance.
+- [ ] **Calories from an older entry aren't marked †.** 25 Foundation foods report no energy and take it from
+      the SR Legacy row they replace at build time (`calories_source` `sr_legacy_ndb_match_1008` or
+      `sr_legacy_crosswalk_1008`, e.g. rutabaga, mayonnaise, raisins). Every other value from that row is marked †;
+      calories should be too (`lib/nutrient-fill.ts` could record it in `filledFrom`).
 - [ ] **Household serving labels** are heuristic and some read oddly ("≈ 12½ cups, pieces of ~1\"").
 - [ ] **Save multiple plans/days; print, share and export (CSV).** Roadmap "Now" phase.
 - [ ] **Carbohydrate default minimum** is the 275 g DV. Consider the 130 g RDA in the Everyday essentials preset.

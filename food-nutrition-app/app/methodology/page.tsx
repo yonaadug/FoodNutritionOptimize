@@ -193,7 +193,11 @@ export default function MethodologyPage() {
                 </p>
                 <ul>
                     <li>A value measured in the newer record is always kept, including a measured zero.</li>
-                    <li>Only gaps are filled, and only from the older entry USDA lists for the same food.</li>
+                    <li>
+                        Only gaps are filled, and only from the older entry for the same food: the one with the same USDA food number, or, where USDA gave the
+                        newer record a new number, the one we matched by hand as the exact same item (same species or variety, the same cut, raw or cooked the same way).
+                    </li>
+                    <li>Where a food is in both datasets, only the newer record is listed. The older entry&apos;s page points to it.</li>
                     <li>Every filled value is marked <strong>†</strong> wherever it appears, on the food&apos;s page, in a plan and in a recipe, and the food&apos;s page links to the older entry.</li>
                 </ul>
                 <p>Older entries are sometimes a different sample or variety, so treat these values as a good estimate. &ldquo;—&rdquo; means neither entry has a value, which isn&apos;t the same as zero.</p>

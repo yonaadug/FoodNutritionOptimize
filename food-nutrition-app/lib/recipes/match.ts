@@ -108,7 +108,7 @@ const ALIASES: Alias[] = [
 
     // Vegetables and fruit
     { re: /\bgarlic$/, queries: ['garlic raw'] },
-    { re: /\b(green onions?|scallions?|spring onions?)\b/, queries: ['onions spring or scallions raw'] },
+    { re: /\b(green onions?|scallions?|spring onions?)\b/, queries: ['green onion scallion raw', 'onions spring or scallions raw'] },
     { re: /\bred onions?$/, queries: ['onions red raw'] },
     { re: /\bonions?$/, queries: ['onions raw', 'onions yellow raw'], cooked: ['onions cooked boiled'] },
     { re: /\b(cherry|grape) tomato(es)?\b/, queries: ['tomatoes grape raw'] },
@@ -152,14 +152,14 @@ const ALIASES: Alias[] = [
     { re: /^(?!rice ).*\b(spaghetti|penne|pasta|macaroni|linguine|fettuccine|rigatoni|noodles)$/, queries: ['pasta dry enriched', 'spaghetti dry'], cooked: ['pasta cooked enriched without added salt'] },
     { re: /\bblack beans?$/, queries: ['beans black canned sodium added drained', 'beans black mature seeds canned', 'beans black mature seeds raw'], cooked: ['beans black mature seeds cooked boiled without salt'] },
     { re: /\bkidney beans?$/, queries: ['beans kidney red mature seeds canned drained', 'beans kidney red mature seeds raw'], cooked: ['beans kidney red mature seeds cooked boiled without salt'] },
-    { re: /\b(chickpeas?|garbanzo beans?)$/, queries: ['chickpeas canned sodium added drained', 'chickpeas mature seeds raw'], cooked: ['chickpeas mature seeds cooked boiled without salt'] },
-    { re: /\blentils?$/, queries: ['lentils raw', 'lentils dry'], cooked: ['lentils mature seeds cooked boiled without salt'] },
+    { re: /\b(chickpeas?|garbanzo beans?)$/, queries: ['chickpeas canned sodium added drained', 'chickpeas dry', 'chickpeas mature seeds raw'], cooked: ['chickpeas mature seeds cooked boiled without salt'] },
+    { re: /\blentils?$/, queries: ['lentils dry', 'lentils raw'], cooked: ['lentils mature seeds cooked boiled without salt'] },
     { re: /\bbread ?crumbs?$/, queries: ['bread crumbs dry grated plain'] },
     { re: /^(sandwich |white )?bread$/, queries: ['bread white commercial'] },
 
     // Meat and fish
     { re: /\bchicken breasts?$/, queries: ['chicken breast boneless skinless raw'], cooked: ['chicken breast meat only cooked roasted'] },
-    { re: /\bchicken thighs?$/, queries: ['chicken thigh meat only raw', 'chicken dark meat thigh raw'], cooked: ['chicken thigh meat only cooked roasted'] },
+    { re: /\bchicken thighs?$/, queries: ['chicken thigh boneless skinless raw', 'chicken thigh meat only raw', 'chicken dark meat thigh raw'], cooked: ['chicken thigh meat only cooked roasted'] },
     { re: /\bchicken (broth|stock)\b/, queries: ['soup chicken broth ready to serve', 'soup stock chicken'] },
     { re: /\bbeef (broth|stock)\b/, queries: ['soup beef broth', 'soup stock beef'] },
     { re: /\bvegetable (broth|stock)\b/, queries: ['soup vegetable broth', 'soup stock vegetable'] },
